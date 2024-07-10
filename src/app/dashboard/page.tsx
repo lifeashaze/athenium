@@ -7,11 +7,12 @@ import { ClipLoader } from 'react-spinners';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Dashboard: React.FC = () => {
   const { user, isLoaded } = useUser();
+  const { toast } = useToast();
   const [name, setName] = useState<string>('');
   const [classroomCode, setClassroomCode] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
@@ -29,11 +30,19 @@ const Dashboard: React.FC = () => {
       const res = await axios.post('/api/classrooms/create', { name }, {
         headers: { 'Content-Type': 'application/json' },
       });
-      toast({ title: "Success", description: "Classroom created successfully" });
+      toast({
+        variant: "default",
+        title: "Success",
+        description: "Classroom created successfully",
+      });
       setName('');
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Failed to create classroom", variant: "destructive" });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create classroom",
+      });
     } finally {
       setIsCreating(false);
     }
@@ -45,11 +54,18 @@ const Dashboard: React.FC = () => {
       const res = await axios.post('/api/classrooms/join', { code: classroomCode }, {
         headers: { 'Content-Type': 'application/json' },
       });
-      toast({ title: "Success", description: "Joined classroom successfully" });
+      toast({
+        title: "Success",
+        description: "Joined classroom successfully",
+      });
       setClassroomCode('');
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Failed to join classroom", variant: "destructive" });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to join classroom",
+      });
     } finally {
       setIsJoining(false);
     }
