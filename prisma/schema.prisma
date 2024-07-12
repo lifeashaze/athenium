@@ -8,28 +8,30 @@ generator client {
 }
 
 model User {
-  id        String    @id @default(cuid())  // Use String type for ID
-  email     String    @unique
-  password  String
-  name      String
-  classrooms Classroom[] @relation("ClassroomAdmin")
+  id         String       @id @default(cuid())
+  email      String       @unique
+  password   String
+  name       String
+  classrooms Classroom[]  @relation("ClassroomAdmin")
   memberships Membership[]
 }
 
 model Classroom {
-  id         Int        @id @default(autoincrement())
+  id         Int          @id @default(autoincrement())
   name       String
-  code       String     @unique
-  inviteLink String     @unique
-  admin      User       @relation("ClassroomAdmin", fields: [adminId], references: [id])
-  adminId    String     // Adjust adminId to String type to match User id
+  code       String       @unique
+  inviteLink String       @unique
+  admin      User         @relation("ClassroomAdmin", fields: [adminId], references: [id])
+  adminId    String
   memberships Membership[]
 }
 
 model Membership {
-  userId      String   // Use String type for userId
+  userId      String
   classroomId Int
-  user        User     @relation(fields: [userId], references: [id])
-  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+  classroom   Classroom   @relation(fields: [classroomId], references: [id])
+  role        String      @default("MEMBER")
+  
   @@id([userId, classroomId])
 }

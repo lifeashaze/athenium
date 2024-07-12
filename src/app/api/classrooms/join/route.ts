@@ -16,6 +16,11 @@ export async function POST(req: NextRequest) {
 
   const { code } = await req.json();
 
+  if (!code || typeof code !== 'string') {
+    console.log('Invalid request: Missing or invalid code');
+    return NextResponse.json({ error: 'Invalid request: Missing or invalid code' }, { status: 400 });
+  }
+
   try {
     const classroom = await prisma.classroom.findUnique({ where: { code } });
 
@@ -24,6 +29,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Classroom not found' }, { status: 404 });
     }
 
+    // Check if the user is already a member of the classroom
+    const existingMembership = await prisma.membership.findUnique({
+      where: {
+        userId_classroomId: {
+          userId: userId,
+          classroomId: classroom.id,
+        },
+      },
+    });
+
+    if (existingMembership) {
+      console.log('User is already a member of this classroom');
+      return NextResponse.json({ message: 'You are already a member of this classroom' }, { status: 200 });
+    }
+
+    // Create the membership
     await prisma.membership.create({
       data: {
         user: { connect: { id: userId } },
@@ -32,9 +53,9 @@ export async function POST(req: NextRequest) {
     });
 
     console.log('Joined classroom:', classroom);
-    return NextResponse.json(classroom, { status: 200 });
+    return NextResponse.json({ message: 'Successfully joined the classroom', classroom }, { status: 200 });
   } catch (error) {
-    console.log('Internal server error:', error);
+    console.error('Internal server error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

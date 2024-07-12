@@ -22,8 +22,11 @@ const Dashboard: React.FC = () => {
   const { toast } = useToast();
   const router = useRouter();
   const [name, setName] = useState<string>('');
+  const [joinCode, setJoinCode] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
 
@@ -85,6 +88,42 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const joinClassroom = async () => {
+    if (!joinCode.trim()) {
+      setJoinError("Join code cannot be empty");
+      return;
+    }
+    setJoinError(null);
+    setIsJoining(true);
+    try {
+      const res = await axios.post('/api/classrooms/join', { code: joinCode }, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      const classroom = res.data;
+      
+      toast({
+        variant: "default",
+        title: "Success",
+        description: `Joined classroom "${classroom.name}" successfully`,
+      });
+      
+      setJoinCode('');
+      // Optionally, you can refresh the classrooms list or redirect to the joined classroom
+      // fetchClassrooms();
+      // router.push(`/classroom/${classroom.id}`);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to join classroom",
+      });
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   if (isPageLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -129,6 +168,37 @@ const Dashboard: React.FC = () => {
                   disabled={isCreating}
                 >
                   {isCreating ? 'Creating...' : 'Create Classroom'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Join Classroom (For Testing)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Input
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => {
+                    setJoinCode(e.target.value);
+                    setJoinError(null);
+                  }}
+                  placeholder="Classroom Code"
+                />
+                {joinError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{joinError}</AlertDescription>
+                  </Alert>
+                )}
+                <Button 
+                  onClick={joinClassroom} 
+                  className="w-full"
+                  disabled={isJoining}
+                >
+                  {isJoining ? 'Joining...' : 'Join Classroom'}
                 </Button>
               </div>
             </CardContent>
