@@ -159,7 +159,6 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
     <Header />
     <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-center mb-8">Admin Dashboard</h1>
       <div className="grid md:grid-cols-2 gap-8 mb-8">
         <Card>
           <CardHeader>
@@ -194,7 +193,7 @@ const Dashboard: React.FC = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Join Classroom (For Testing)</CardTitle>
+            <CardTitle>Join Classroom</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
