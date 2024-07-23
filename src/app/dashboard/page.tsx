@@ -3,13 +3,14 @@ import { useUser } from '@clerk/nextjs';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
 import { ClipLoader } from 'react-spinners';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Header } from '@/components/Header';
+import { Trash2 } from 'lucide-react';
 
 interface Classroom {
   id: number;
@@ -123,6 +124,24 @@ const Dashboard: React.FC = () => {
       setIsJoining(false);
     }
   };
+  const deleteClassroom = async (classroomId: number) => {
+    try {
+      await axios.delete(`/api/classrooms/${classroomId}`);
+      setClassrooms(classrooms.filter(classroom => classroom.id !== classroomId));
+      toast({
+        variant: "default",
+        title: "Success",
+        description: "Classroom deleted successfully",
+      });
+    } catch (error) {
+      console.error('Failed to delete classroom:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete classroom",
+      });
+    }
+  };
 
   if (isPageLoading) {
     return (
@@ -138,96 +157,105 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8">Admin Dashboard</h1>
-        <div className="grid md:grid-cols-1 gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create Classroom</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Input
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setCreateError(null);
-                  }}
-                  placeholder="Classroom Name"
-                />
-                {createError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{createError}</AlertDescription>
-                  </Alert>
-                )}
-                <Button 
-                  onClick={createClassroom} 
-                  className="w-full"
-                  disabled={isCreating}
-                >
-                  {isCreating ? 'Creating...' : 'Create Classroom'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Join Classroom (For Testing)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Input
-                  type="text"
-                  value={joinCode}
-                  onChange={(e) => {
-                    setJoinCode(e.target.value);
-                    setJoinError(null);
-                  }}
-                  placeholder="Classroom Code"
-                />
-                {joinError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{joinError}</AlertDescription>
-                  </Alert>
-                )}
-                <Button 
-                  onClick={joinClassroom} 
-                  className="w-full"
-                  disabled={isJoining}
-                >
-                  {isJoining ? 'Joining...' : 'Join Classroom'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Classrooms</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {classrooms.length === 0 ? (
-                <p>You havent created any classrooms yet.</p>
-              ) : (
-                <ul className="space-y-4">
-                  {classrooms.map((classroom) => (
-                    <li key={classroom.id} className="flex justify-between items-center">
-                      <span>{classroom.name} (Code: {classroom.code})</span>
-                      <Button onClick={() => router.push(`/classroom/${classroom.id}`)}>
-                        View Classroom
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+    <Header />
+    <main className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-center mb-8">Admin Dashboard</h1>
+      <div className="grid md:grid-cols-2 gap-8 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Create Classroom</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setCreateError(null);
+                }}
+                placeholder="Classroom Name"
+              />
+              {createError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{createError}</AlertDescription>
+                </Alert>
               )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+              <Button 
+                onClick={createClassroom} 
+                className="w-full"
+                disabled={isCreating}
+              >
+                {isCreating ? 'Creating...' : 'Create Classroom'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Join Classroom (For Testing)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Input
+                type="text"
+                value={joinCode}
+                onChange={(e) => {
+                  setJoinCode(e.target.value);
+                  setJoinError(null);
+                }}
+                placeholder="Classroom Code"
+              />
+              {joinError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{joinError}</AlertDescription>
+                </Alert>
+              )}
+              <Button 
+                onClick={joinClassroom} 
+                className="w-full"
+                disabled={isJoining}
+              >
+                {isJoining ? 'Joining...' : 'Join Classroom'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Classrooms</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {classrooms.length === 0 ? (
+            <p>You haven&apos;t created any classrooms yet.</p>
+          ) : (
+            <ul className="space-y-4">
+              {classrooms.map((classroom) => (
+                <li key={classroom.id} className="flex justify-between items-center">
+                  <span>{classroom.name} (Code: {classroom.code})</span>
+                  <div className="space-x-2">
+                    <Button onClick={() => router.push(`/classroom/${classroom.id}`)}>
+                      View Classroom
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => deleteClassroom(classroom.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </main>
+  </div>
   );
 };
 

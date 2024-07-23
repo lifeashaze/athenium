@@ -61,3 +61,46 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const { userId } = getAuth(req);
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const classroomId = parseInt(params.id, 10);
+    if (isNaN(classroomId)) {
+      return NextResponse.json({ error: 'Invalid classroom ID' }, { status: 400 });
+    }
+
+    const classroom = await prisma.classroom.findUnique({
+      where: { id: classroomId },
+      include: { admin: true },
+    });
+
+    if (!classroom) {
+      return NextResponse.json({ error: 'Classroom not found' }, { status: 404 });
+    }
+
+    if (classroom.adminId !== userId) {
+      return NextResponse.json({ error: 'You are not authorized to delete this classroom' }, { status: 403 });
+    }
+
+    // Delete all memberships associated with the classroom
+    await prisma.membership.deleteMany({
+      where: { classroomId: classroomId },
+    });
+
+    // Delete the classroom
+    await prisma.classroom.delete({
+      where: { id: classroomId },
+    });
+
+    return NextResponse.json({ message: 'Classroom deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting classroom:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
