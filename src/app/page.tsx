@@ -20,7 +20,8 @@ export default function Home() {
             Get Started
           </Link>
 
-          <Link href='/about'>
+          <Link href='/about'
+          className="underline">
           Learn More
           
           </Link>
