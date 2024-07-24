@@ -42,38 +42,57 @@ const ClassroomPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ title: '', deadline: '' });
 
+  const fetchClassroomData = async () => {
+    if (!params.id) return;
+
+    try {
+      const response = await axios.get(`/api/classrooms/${params.id}`);
+      setClassroom(response.data.classroom);
+      setMembers(response.data.members || []);
+    } catch (err) {
+      console.error('Failed to fetch classroom data:', err);
+      setError('Failed to load classroom data. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchAssignments = async () => {
+    try {
+      const response = await axios.get(`/api/classrooms/${params.id}/assignments`);
+      setAssignments(response.data);
+    } catch (error) {
+      console.error('Failed to fetch assignments:', error);
+      setError('Failed to load assignments. Please try again later.');
+    }
+  };
+
   useEffect(() => {
-    const fetchClassroomData = async () => {
-      if (!params.id) return;
-
-      try {
-        const response = await axios.get(`/api/classrooms/${params.id}`);
-        setClassroom(response.data.classroom);
-        setMembers(response.data.members || []);
-        setAssignments(response.data.assignments || []);
-      } catch (err) {
-        console.error('Failed to fetch classroom data:', err);
-        setError('Failed to load classroom data. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (isUserLoaded && user) {
+    if (isUserLoaded && user && params.id) {
       fetchClassroomData();
+      fetchAssignments();
     }
   }, [isUserLoaded, user, params.id]);
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`/api/classrooms/${params.id}/assignments`, newAssignment);
-      setAssignments(prev => [...prev, response.data]);
+      const formattedDeadline = new Date(newAssignment.deadline).toISOString();
+      await axios.post(`/api/classrooms/${params.id}/assignments`, {
+        ...newAssignment,
+        deadline: formattedDeadline
+      });
+      // Fetch assignments after creating a new one
+      await fetchAssignments();
       setIsDialogOpen(false);
       setNewAssignment({ title: '', deadline: '' });
-    } catch (err) {
-      console.error('Failed to create assignment:', err);
-      setError('Work in progress.');
+    } catch (error) {
+      console.error('Failed to create assignment:', error);
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || 'Failed to create assignment. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
   };
 
