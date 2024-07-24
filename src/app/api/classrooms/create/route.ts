@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         code: uuidv4(),
-        inviteLink: `https://yourdomain.com/join/${uuidv4()}`,
+        inviteLink: `https://athenium.com/join/${uuidv4()}`,
         admin: { connect: { id: user.id } },
       },
     });

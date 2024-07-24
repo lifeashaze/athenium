@@ -43,7 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const members = classroom.memberships.map(membership => ({
       id: membership.user.id,
-      name: membership.user.name,
+      name: membership.user.firstName,
       email: membership.user.email,
     }));
 

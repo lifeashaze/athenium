@@ -6,10 +6,14 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Header } from '@/components/Header';
 
 interface Classroom {
-  id: number;  // Changed from string to number
+  id: number;
   name: string;
   code: string;
   inviteLink: string;
@@ -21,13 +25,22 @@ interface User {
   email: string;
 }
 
+interface Assignment {
+  id: number;
+  title: string;
+  deadline: string;
+}
+
 const ClassroomPage = () => {
   const { user, isLoaded: isUserLoaded } = useUser();
   const params = useParams();
   const [classroom, setClassroom] = useState<Classroom | null>(null);
   const [members, setMembers] = useState<User[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newAssignment, setNewAssignment] = useState({ title: '', deadline: '' });
 
   useEffect(() => {
     const fetchClassroomData = async () => {
@@ -36,7 +49,8 @@ const ClassroomPage = () => {
       try {
         const response = await axios.get(`/api/classrooms/${params.id}`);
         setClassroom(response.data.classroom);
-        setMembers(response.data.members);
+        setMembers(response.data.members || []);
+        setAssignments(response.data.assignments || []);
       } catch (err) {
         console.error('Failed to fetch classroom data:', err);
         setError('Failed to load classroom data. Please try again later.');
@@ -49,6 +63,19 @@ const ClassroomPage = () => {
       fetchClassroomData();
     }
   }, [isUserLoaded, user, params.id]);
+
+  const handleCreateAssignment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(`/api/classrooms/${params.id}/assignments`, newAssignment);
+      setAssignments(prev => [...prev, response.data]);
+      setIsDialogOpen(false);
+      setNewAssignment({ title: '', deadline: '' });
+    } catch (err) {
+      console.error('Failed to create assignment:', err);
+      setError('Work in progress.');
+    }
+  };
 
   if (!isUserLoaded || isLoading) {
     return (
@@ -78,7 +105,6 @@ const ClassroomPage = () => {
             <CardContent>
               <p><strong>ID:</strong> {classroom.id}</p>
               <p><strong>Code:</strong> {classroom.code}</p>
-              <p><strong>Invite Link:</strong> {classroom.inviteLink}</p>
             </CardContent>
           </Card>
           <Card>
@@ -86,11 +112,71 @@ const ClassroomPage = () => {
               <CardTitle>Members</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul>
-                {members.map((member) => (
-                  <li key={member.id}>{member.name} ({member.email})</li>
-                ))}
-              </ul>
+              {members.length > 0 ? (
+                <ul>
+                  {members.map((member) => (
+                    <li key={member.id}>{member.name} ({member.email})</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No members in this classroom yet.</p>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Assignments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {assignments.length > 0 ? (
+                <ul>
+                  {assignments.map((assignment) => (
+                    <li key={assignment.id}>{assignment.title} (Due: {new Date(assignment.deadline).toLocaleDateString()})</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No assignments yet.</p>
+              )}
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="mt-4">Create New Assignment</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Assignment</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateAssignment}>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="title" className="text-right">
+                          Title
+                        </Label>
+                        <Input
+                          id="title"
+                          value={newAssignment.title}
+                          onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="deadline" className="text-right">
+                          Deadline
+                        </Label>
+                        <Input
+                          id="deadline"
+                          type="date"
+                          value={newAssignment.deadline}
+                          onChange={(e) => setNewAssignment({ ...newAssignment, deadline: e.target.value })}
+                          className="col-span-3"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="submit">Create Assignment</Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>

@@ -8,11 +8,12 @@ generator client {
 }
 
 model User {
-  id        String    @id @default(cuid())  
-  email     String    @unique
-  firstName String
+  id         String      @id @default(cuid())  
+  email      String      @unique
+  firstName  String
   classrooms Classroom[] @relation("ClassroomAdmin")
   memberships Membership[]
+  assignments Assignment[] @relation("AssignmentCreator")
 }
 
 model Classroom {
@@ -21,14 +22,26 @@ model Classroom {
   code       String     @unique
   inviteLink String     @unique
   admin      User       @relation("ClassroomAdmin", fields: [adminId], references: [id])
-  adminId    String     // Adjust adminId to String type to match User id
+  adminId    String
   memberships Membership[]
+  assignments Assignment[]
 }
 
 model Membership {
-  userId      String   // Use String type for userId
+  userId      String
   classroomId Int
   user        User     @relation(fields: [userId], references: [id])
   classroom   Classroom @relation(fields: [classroomId], references: [id])
   @@id([userId, classroomId])
+}
+
+model Assignment {
+  id          Int      @id @default(autoincrement())
+  title       String
+  deadline    DateTime
+  createdAt   DateTime @default(now())
+  creator     User     @relation("AssignmentCreator", fields: [creatorId], references: [id])
+  creatorId   String
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  classroomId Int
 }
