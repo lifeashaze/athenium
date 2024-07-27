@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from '@/components/Header';
 import { Trash2 } from 'lucide-react';
+import { SidebarDemo } from '@/components/Sidebar';
 
 interface Classroom {
   id: number;
@@ -156,105 +157,113 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-    <Header />
-    <main className="container mx-auto px-4 py-8">
-      <div className="grid md:grid-cols-2 gap-8 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Create Classroom</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Input
-                type="text"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setCreateError(null);
-                }}
-                placeholder="Classroom Name"
-              />
-              {createError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{createError}</AlertDescription>
-                </Alert>
-              )}
-              <Button 
-                onClick={createClassroom} 
-                className="w-full"
-                disabled={isCreating}
-              >
-                {isCreating ? 'Creating...' : 'Create Classroom'}
-              </Button>
+    <div className="flex h-screen bg-gray-100">
+      <SidebarDemo />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+          <div className="container mx-auto px-4 py-8">
+            <div className='text-center font-extralight m-10'>
+            <h1 className="text-4xl">Guten Tag</h1> 
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Join Classroom</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Input
-                type="text"
-                value={joinCode}
-                onChange={(e) => {
-                  setJoinCode(e.target.value);
-                  setJoinError(null);
-                }}
-                placeholder="Classroom Code"
-              />
-              {joinError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{joinError}</AlertDescription>
-                </Alert>
-              )}
-              <Button 
-                onClick={joinClassroom} 
-                className="w-full"
-                disabled={isJoining}
-              >
-                {isJoining ? 'Joining...' : 'Join Classroom'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Classrooms</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {classrooms.length === 0 ? (
-            <p>You haven&apos;t created any classrooms yet.</p>
-          ) : (
-            <ul className="space-y-4">
-              {classrooms.map((classroom) => (
-                <li key={classroom.id} className="flex justify-between items-center">
-                  <span>{classroom.name} (Code: {classroom.code})</span>
-                  <div className="space-x-2">
-                    <Button onClick={() => router.push(`/classroom/${classroom.id}`)}>
-                      View Classroom
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => deleteClassroom(classroom.id)}
+
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Create Classroom</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Input
+                      type="text"
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setCreateError(null);
+                      }}
+                      placeholder="Classroom Name"
+                    />
+                    {createError && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{createError}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button 
+                      onClick={createClassroom} 
+                      className="w-full"
+                      disabled={isCreating}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {isCreating ? 'Creating...' : 'Create Classroom'}
                     </Button>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    </main>
-  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Join Classroom</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Input
+                      type="text"
+                      value={joinCode}
+                      onChange={(e) => {
+                        setJoinCode(e.target.value);
+                        setJoinError(null);
+                      }}
+                      placeholder="Classroom Code"
+                    />
+                    {joinError && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{joinError}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button 
+                      onClick={joinClassroom} 
+                      className="w-full"
+                      disabled={isJoining}
+                    >
+                      {isJoining ? 'Joining...' : 'Join Classroom'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Classrooms</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {classrooms.length === 0 ? (
+                  <p>You haven&apos;t created any classrooms yet.</p>
+                ) : (
+                  <ul className="space-y-4">
+                    {classrooms.map((classroom) => (
+                      <li key={classroom.id} className="flex justify-between items-center">
+                        <span>{classroom.name} (Code: {classroom.code})</span>
+                        <div className="space-x-2">
+                          <Button onClick={() => router.push(`/classroom/${classroom.id}`)}>
+                            View Classroom
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => deleteClassroom(classroom.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    </div>
   );
 };
 

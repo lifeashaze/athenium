@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Header } from '@/components/Header';
+import { SidebarDemo } from '@/components/Sidebar';
 
 interface Classroom {
   id: number;
@@ -111,96 +111,99 @@ const ClassroomPage = () => {
   if (!classroom) return <p className="text-center text-xl mt-10">Classroom not found</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header />
-
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8">{classroom.name}</h1>
-        <div className="grid md:grid-cols-2 gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Classroom Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p><strong>ID:</strong> {classroom.id}</p>
-              <p><strong>Code:</strong> {classroom.code}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Members</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {members.length > 0 ? (
-                <ul>
-                  {members.map((member) => (
-                    <li key={member.id}>{member.name} ({member.email})</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No members in this classroom yet.</p>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Assignments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {assignments.length > 0 ? (
-                <ul>
-                  {assignments.map((assignment) => (
-                    <li key={assignment.id}>{assignment.title} (Due: {new Date(assignment.deadline).toLocaleDateString()})</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No assignments yet.</p>
-              )}
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="mt-4">Create New Assignment</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Assignment</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleCreateAssignment}>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="title" className="text-right">
-                          Title
-                        </Label>
-                        <Input
-                          id="title"
-                          value={newAssignment.title}
-                          onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-                          className="col-span-3"
-                        />
+    <div className="flex h-screen bg-gray-100">
+    <SidebarDemo />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold text-center mb-8">{classroom.name}</h1>
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Classroom Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p><strong>ID:</strong> {classroom.id}</p>
+                <p><strong>Code:</strong> {classroom.code}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Members</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {members.length > 0 ? (
+                  <ul>
+                    {members.map((member) => (
+                      <li key={member.id}>{member.name} ({member.email})</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No members in this classroom yet.</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Assignments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {assignments.length > 0 ? (
+                  <ul>
+                    {assignments.map((assignment) => (
+                      <li key={assignment.id}>{assignment.title} (Due: {new Date(assignment.deadline).toLocaleDateString()})</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No assignments yet.</p>
+                )}
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="mt-4">Create New Assignment</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Assignment</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateAssignment}>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="title" className="text-right">
+                            Title
+                          </Label>
+                          <Input
+                            id="title"
+                            value={newAssignment.title}
+                            onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="deadline" className="text-right">
+                            Deadline
+                          </Label>
+                          <Input
+                            id="deadline"
+                            type="date"
+                            value={newAssignment.deadline}
+                            onChange={(e) => setNewAssignment({ ...newAssignment, deadline: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="deadline" className="text-right">
-                          Deadline
-                        </Label>
-                        <Input
-                          id="deadline"
-                          type="date"
-                          value={newAssignment.deadline}
-                          onChange={(e) => setNewAssignment({ ...newAssignment, deadline: e.target.value })}
-                          className="col-span-3"
-                        />
+                      <div className="flex justify-end">
+                        <Button type="submit">Create Assignment</Button>
                       </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button type="submit">Create Assignment</Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>
+  </div>
   );
 };
 
