@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SidebarDemo } from '@/components/Sidebar';
+import Link from 'next/link';
 
 interface Classroom {
   id: number;
@@ -42,7 +43,7 @@ const ClassroomPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ title: '', deadline: '' });
 
-  const fetchClassroomData = async () => {
+  const fetchClassroomData = useCallback(async () => {
     if (!params.id) return;
 
     try {
@@ -55,9 +56,9 @@ const ClassroomPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id]);
 
-  const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async () => {
     try {
       const response = await axios.get(`/api/classrooms/${params.id}/assignments`);
       setAssignments(response.data);
@@ -65,14 +66,14 @@ const ClassroomPage = () => {
       console.error('Failed to fetch assignments:', error);
       setError('Failed to load assignments. Please try again later.');
     }
-  };
+  }, [params.id]);
 
   useEffect(() => {
     if (isUserLoaded && user && params.id) {
       fetchClassroomData();
       fetchAssignments();
     }
-  }, [isUserLoaded, user, params.id]);
+  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments]);
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,13 +134,16 @@ const ClassroomPage = () => {
               </CardHeader>
               <CardContent>
                 {members.length > 0 ? (
-                  <ul>
+                  <ul className="space-y-2">
                     {members.map((member) => (
-                      <li key={member.id}>{member.name} ({member.email})</li>
+                      <li key={member.id} className="flex items-center space-x-2">
+                        <span className="text-sm font-medium">{member.name}</span>
+                        <span className="text-xs text-gray-500">({member.email})</span>
+                      </li>
                     ))}
                   </ul>
                 ) : (
-                  <p>No members in this classroom yet.</p>
+                  <p className="text-gray-500 italic">No members in this classroom yet.</p>
                 )}
               </CardContent>
             </Card>
@@ -151,7 +155,11 @@ const ClassroomPage = () => {
                 {assignments.length > 0 ? (
                   <ul>
                     {assignments.map((assignment) => (
-                      <li key={assignment.id}>{assignment.title} (Due: {new Date(assignment.deadline).toLocaleDateString()})</li>
+                      <li key={assignment.id}>
+                        <Link href={`assignment/${assignment.id}`}>
+                          {assignment.title} (Due: {new Date(assignment.deadline).toLocaleDateString()})
+                        </Link>
+                      </li>
                     ))}
                   </ul>
                 ) : (
