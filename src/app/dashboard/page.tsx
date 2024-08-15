@@ -163,7 +163,15 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
           <div className="container mx-auto px-4 py-8">
             <div className='text-center font-extralight m-10'>
-            <h1 className="text-4xl">Guten Tag</h1> 
+            <h1 className="text-4xl">
+              {(() => {
+                const hour = new Date().getHours();
+                if (hour >= 5 && hour < 12) return "Good Morning";
+                if (hour >= 12 && hour < 18) return "Good Afternoon";
+                if (hour >= 18 && hour < 22) return "Good Evening";
+                return "Happy Night";
+              })()}, {user?.firstName}
+            </h1>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-8">
