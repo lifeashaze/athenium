@@ -10,6 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { SidebarDemo } from '@/components/Sidebar';
 import Link from 'next/link';
 
@@ -29,6 +34,7 @@ interface User {
 interface Assignment {
   id: number;
   title: string;
+  type: 'theory' | 'lab';
   deadline: string;
 }
 
@@ -41,7 +47,7 @@ const ClassroomPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newAssignment, setNewAssignment] = useState({ title: '', deadline: '' });
+  const [newAssignment, setNewAssignment] = useState({ title: '', type: 'theory' as 'theory' | 'lab', deadline: new Date() });
 
   const fetchClassroomData = useCallback(async () => {
     if (!params.id) return;
@@ -59,6 +65,7 @@ const ClassroomPage = () => {
   }, [params.id]);
 
   const fetchAssignments = useCallback(async () => {
+    if (!params.id) return;
     try {
       const response = await axios.get(`/api/classrooms/${params.id}/assignments`);
       setAssignments(response.data);
@@ -78,15 +85,14 @@ const ClassroomPage = () => {
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const formattedDeadline = new Date(newAssignment.deadline).toISOString();
+      const formattedDeadline = newAssignment.deadline.toISOString();
       await axios.post(`/api/classrooms/${params.id}/assignments`, {
         ...newAssignment,
-        deadline: formattedDeadline
+        deadline: formattedDeadline,
       });
-      // Fetch assignments after creating a new one
       await fetchAssignments();
       setIsDialogOpen(false);
-      setNewAssignment({ title: '', deadline: '' });
+      setNewAssignment({ title: '', type: 'theory', deadline: new Date() });
     } catch (error) {
       console.error('Failed to create assignment:', error);
       if (axios.isAxiosError(error)) {
@@ -156,8 +162,8 @@ const ClassroomPage = () => {
                   <ul>
                     {assignments.map((assignment) => (
                       <li key={assignment.id}>
-                        <Link href={`assignment/${assignment.id}`}>
-                          {assignment.title} (Due: {new Date(assignment.deadline).toLocaleDateString()})
+                        <Link href={`/classroom/${params.id}/assignment/${assignment.id}`}>
+                          {assignment.title} - {assignment.type} (Due: {new Date(assignment.deadline).toLocaleString()})
                         </Link>
                       </li>
                     ))}
@@ -177,7 +183,7 @@ const ClassroomPage = () => {
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="title" className="text-right">
-                            Title
+                            Assignment Name
                           </Label>
                           <Input
                             id="title"
@@ -187,14 +193,60 @@ const ClassroomPage = () => {
                           />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="type" className="text-right">
+                            Assignment Type
+                          </Label>
+                          <Select
+                            onValueChange={(value: 'theory' | 'lab') => setNewAssignment({ ...newAssignment, type: value })}
+                            defaultValue={newAssignment.type}
+                          >
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="theory">Theory</SelectItem>
+                              <SelectItem value="lab">Lab</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="deadline" className="text-right">
                             Deadline
                           </Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant={"outline"}
+                                className={`col-span-3 justify-start text-left font-normal`}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {newAssignment.deadline ? format(newAssignment.deadline, "PPP") : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={newAssignment.deadline}
+                                onSelect={(date) => date && setNewAssignment({ ...newAssignment, deadline: date })}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="time" className="text-right">
+                            Time
+                          </Label>
                           <Input
-                            id="deadline"
-                            type="date"
-                            value={newAssignment.deadline}
-                            onChange={(e) => setNewAssignment({ ...newAssignment, deadline: e.target.value })}
+                            id="time"
+                            type="time"
+                            value={format(newAssignment.deadline, "HH:mm")}
+                            onChange={(e) => {
+                              const [hours, minutes] = e.target.value.split(':');
+                              const newDate = new Date(newAssignment.deadline);
+                              newDate.setHours(parseInt(hours), parseInt(minutes));
+                              setNewAssignment({ ...newAssignment, deadline: newDate });
+                            }}
                             className="col-span-3"
                           />
                         </div>

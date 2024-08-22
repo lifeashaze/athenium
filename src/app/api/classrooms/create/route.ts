@@ -15,7 +15,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { name } = await req.json();
+  const { year, division, courseCode, courseName } = await req.json();
+
+  if (!year || !division || !courseCode || !courseName) {
+    console.log('Bad request: Missing required fields');
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  }
 
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -27,9 +32,13 @@ export async function POST(req: NextRequest) {
 
     const classroom = await prisma.classroom.create({
       data: {
-        name,
+        name: courseName,
         code: uuidv4(),
         inviteLink: `https://athenium.com/join/${uuidv4()}`,
+        year,
+        division,
+        courseCode,
+        courseName,
         admin: { connect: { id: user.id } },
       },
     });
@@ -37,7 +46,7 @@ export async function POST(req: NextRequest) {
     console.log('Classroom created:', classroom);
     return NextResponse.json(classroom, { status: 201 });
   } catch (error) {
-    console.log('Internal server error:', error);
+    console.error('Internal server error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

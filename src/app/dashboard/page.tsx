@@ -12,11 +12,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from '@/components/Header';
 import { Trash2 } from 'lucide-react';
 import { SidebarDemo } from '@/components/Sidebar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Classroom {
   id: number;
   name: string;
   code: string;
+  year: string;
+  division: string;
+  courseCode: string;
+  courseName: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -31,6 +36,10 @@ const Dashboard: React.FC = () => {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [year, setYear] = useState<string>('');
+  const [division, setDivision] = useState<string>('');
+  const [courseCode, setCourseCode] = useState<string>('');
+  const [courseName, setCourseName] = useState<string>('');
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -57,14 +66,20 @@ const Dashboard: React.FC = () => {
   };
 
   const createClassroom = async () => {
-    if (!name.trim()) {
-      setCreateError("Classroom name cannot be empty");
+    if (!courseName.trim() || !year || !division.trim() || !courseCode.trim()) {
+      setCreateError("All fields are required");
       return;
     }
     setCreateError(null);
     setIsCreating(true);
     try {
-      const res = await axios.post('/api/classrooms/create', { name }, {
+      const res = await axios.post('/api/classrooms/create', { 
+        name: courseName, 
+        year, 
+        division, 
+        courseCode,
+        courseName 
+      }, {
         headers: { 'Content-Type': 'application/json' },
       });
       
@@ -73,11 +88,14 @@ const Dashboard: React.FC = () => {
       toast({
         variant: "default",
         title: "Success",
-        description: `Classroom "${classroom.name}" created successfully`,
+        description: `Classroom "${classroom.courseName}" created successfully`,
       });
       
       setClassrooms([...classrooms, classroom]);
-      setName('');
+      setCourseName('');
+      setYear('');
+      setDivision('');
+      setCourseCode('');
     } catch (error) {
       console.error(error);
       toast({
@@ -181,14 +199,34 @@ const Dashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    <Select onValueChange={setYear} value={year}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="First Year">First Year</SelectItem>
+                        <SelectItem value="Second Year">Second Year</SelectItem>
+                        <SelectItem value="Third Year">Third Year</SelectItem>
+                        <SelectItem value="Fourth Year">Fourth Year</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Input
                       type="text"
-                      value={name}
-                      onChange={(e) => {
-                        setName(e.target.value);
-                        setCreateError(null);
-                      }}
-                      placeholder="Classroom Name"
+                      value={division}
+                      onChange={(e) => setDivision(e.target.value)}
+                      placeholder="Division"
+                    />
+                    <Input
+                      type="text"
+                      value={courseCode}
+                      onChange={(e) => setCourseCode(e.target.value)}
+                      placeholder="Course Code"
+                    />
+                    <Input
+                      type="text"
+                      value={courseName}
+                      onChange={(e) => setCourseName(e.target.value)}
+                      placeholder="Course Name"
                     />
                     {createError && (
                       <Alert variant="destructive">

@@ -14,6 +14,7 @@ model User {
   classrooms Classroom[] @relation("ClassroomAdmin")
   memberships Membership[]
   assignments Assignment[] @relation("AssignmentCreator")
+  submissions Submission[]
 }
 
 model Classroom {
@@ -21,6 +22,10 @@ model Classroom {
   name       String
   code       String     @unique
   inviteLink String     @unique
+  year       String
+  division   String
+  courseCode String
+  courseName String
   admin      User       @relation("ClassroomAdmin", fields: [adminId], references: [id])
   adminId    String
   memberships Membership[]
@@ -39,9 +44,23 @@ model Assignment {
   id          Int      @id @default(autoincrement())
   title       String
   deadline    DateTime
+  type        String
   createdAt   DateTime @default(now())
   creator     User     @relation("AssignmentCreator", fields: [creatorId], references: [id])
   creatorId   String
   classroom   Classroom @relation(fields: [classroomId], references: [id])
   classroomId Int
+  submissions Submission[]
+}
+
+model Submission {
+  id           Int       @id @default(autoincrement())
+  submittedAt  DateTime  @default(now())
+  content      String
+  user         User      @relation(fields: [userId], references: [id])
+  userId       String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  assignmentId Int
+
+  @@unique([userId, assignmentId])
 }
