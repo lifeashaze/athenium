@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
 import { PrismaClient } from '@prisma/client';
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
 export async function POST(
   req: NextRequest,
@@ -15,18 +24,55 @@ export async function POST(
   }
 
   try {
-    // Here you would handle the file upload to your storage solution (e.g., AWS S3)
-    // For now, we'll just create a submission record without actual file content
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
 
-    const submission = await prisma.submission.create({
-      data: {
+    if (!file) {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
+
+    const fileBuffer = await file.arrayBuffer();
+    const fileName = `${uuidv4()}-${file.name}`;
+
+    const uploadParams = {
+      Bucket: 'athenium-assignments',
+      Key: fileName,
+      Body: Buffer.from(fileBuffer),
+      ContentType: file.type,
+    };
+
+    const command = new PutObjectCommand(uploadParams);
+    await s3Client.send(command);
+
+    const fileUrl = `https://athenium-assignments.s3.amazonaws.com/${fileName}`;
+
+    // Check for existing submission
+    const existingSubmission = await prisma.submission.findFirst({
+      where: {
         userId: userId,
         assignmentId: parseInt(params.assignmentId),
-        content: 'File submitted successfully', // This would be the file URL in a real implementation
       },
     });
 
-    return NextResponse.json(submission, { status: 201 });
+    let submission;
+    if (existingSubmission) {
+      // Update existing submission
+      submission = await prisma.submission.update({
+        where: { id: existingSubmission.id },
+        data: { content: fileUrl },
+      });
+    } else {
+      // Create new submission
+      submission = await prisma.submission.create({
+        data: {
+          userId: userId,
+          assignmentId: parseInt(params.assignmentId),
+          content: fileUrl,
+        },
+      });
+    }
+
+    return NextResponse.json(submission, { status: 200 });
   } catch (error) {
     console.error('Error submitting assignment:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
