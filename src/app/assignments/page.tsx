@@ -1,6 +1,5 @@
 "use client"
 
-import { SidebarDemo } from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
@@ -28,7 +27,6 @@ const Page = () => {
   
   return (
     <div className="flex h-screen bg-gray-100">
-      <SidebarDemo />
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
           <div className="container mx-auto px-4 py-8">

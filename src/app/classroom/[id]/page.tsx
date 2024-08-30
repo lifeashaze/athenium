@@ -5,8 +5,14 @@ import { useUser } from '@clerk/nextjs';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import Link from "next/link"
+import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,14 +21,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { SidebarDemo } from '@/components/Sidebar';
-import Link from 'next/link';
 
 interface Classroom {
   id: number;
   name: string;
   code: string;
   inviteLink: string;
+  year: string;
+  division: string;
+  owner: string;
+  description: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface User {
@@ -36,6 +46,25 @@ interface Assignment {
   title: string;
   type: 'theory' | 'lab';
   deadline: string;
+  creator: {
+    firstName: string;
+  };
+}
+
+function getRemainingTime(dueDate: string) {
+  const now = new Date()
+  const due = new Date(dueDate)
+  const diff = due.getTime() - now.getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  return `${days}d ${hours}h remaining`
+}
+
+function getProgress(startDate: string, endDate: string) {
+  const start = new Date(startDate).getTime()
+  const end = new Date(endDate).getTime()
+  const now = new Date().getTime()
+  return Math.round(((now - start) / (end - start)) * 100)
 }
 
 const ClassroomPage = () => {
@@ -86,11 +115,12 @@ const ClassroomPage = () => {
     e.preventDefault();
     try {
       const formattedDeadline = newAssignment.deadline.toISOString();
-      await axios.post(`/api/classrooms/${params.id}/assignments`, {
+      const response = await axios.post(`/api/classrooms/${params.id}/assignments`, {
         ...newAssignment,
         deadline: formattedDeadline,
       });
-      await fetchAssignments();
+      const createdAssignment = response.data;
+      setAssignments([...assignments, createdAssignment]);
       setIsDialogOpen(false);
       setNewAssignment({ title: '', type: 'theory', deadline: new Date() });
     } catch (error) {
@@ -102,6 +132,8 @@ const ClassroomPage = () => {
       }
     }
   };
+
+  const progress = classroom ? getProgress(classroom.startDate, classroom.endDate) : 0;
 
   if (!isUserLoaded || isLoading) {
     return (
@@ -118,152 +150,214 @@ const ClassroomPage = () => {
   if (!classroom) return <p className="text-center text-xl mt-10">Classroom not found</p>;
 
   return (
-    <div className="flex h-screen bg-gray-100">
-    <SidebarDemo />
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-center mb-8">{classroom.name}</h1>
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Classroom Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p><strong>ID:</strong> {classroom.id}</p>
-                <p><strong>Code:</strong> {classroom.code}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Members</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {members.length > 0 ? (
-                  <ul className="space-y-2">
-                    {members.map((member) => (
-                      <li key={member.id} className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">{member.name}</span>
-                        <span className="text-xs text-gray-500">({member.email})</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500 italic">No members in this classroom yet.</p>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Assignments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {assignments.length > 0 ? (
-                  <ul>
-                    {assignments.map((assignment) => (
-                      <li key={assignment.id}>
-                        <Link href={`/classroom/${params.id}/assignment/${assignment.id}`}>
-                          {assignment.title} - {assignment.type} (Due: {new Date(assignment.deadline).toLocaleString()})
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No assignments yet.</p>
-                )}
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="mt-4">Create New Assignment</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New Assignment</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleCreateAssignment}>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="title" className="text-right">
-                            Assignment Name
-                          </Label>
-                          <Input
-                            id="title"
-                            value={newAssignment.title}
-                            onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="type" className="text-right">
-                            Assignment Type
-                          </Label>
-                          <Select
-                            onValueChange={(value: 'theory' | 'lab') => setNewAssignment({ ...newAssignment, type: value })}
-                            defaultValue={newAssignment.type}
-                          >
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="theory">Theory</SelectItem>
-                              <SelectItem value="lab">Lab</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="deadline" className="text-right">
-                            Deadline
-                          </Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant={"outline"}
-                                className={`col-span-3 justify-start text-left font-normal`}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {newAssignment.deadline ? format(newAssignment.deadline, "PPP") : <span>Pick a date</span>}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar
-                                mode="single"
-                                selected={newAssignment.deadline}
-                                onSelect={(date) => date && setNewAssignment({ ...newAssignment, deadline: date })}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="time" className="text-right">
-                            Time
-                          </Label>
-                          <Input
-                            id="time"
-                            type="time"
-                            value={format(newAssignment.deadline, "HH:mm")}
-                            onChange={(e) => {
-                              const [hours, minutes] = e.target.value.split(':');
-                              const newDate = new Date(newAssignment.deadline);
-                              newDate.setHours(parseInt(hours), parseInt(minutes));
-                              setNewAssignment({ ...newAssignment, deadline: newDate });
-                            }}
-                            className="col-span-3"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end">
-                        <Button type="submit">Create Assignment</Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
+    <div className="container mx-auto p-4">
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>{classroom.name}</CardTitle>
+            <div className="flex gap-2">
+              <Badge variant="secondary">{classroom.year}</Badge>
+              <Badge variant="outline">Division {classroom.division}</Badge>
+            </div>
           </div>
-        </div>
-      </main>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-sm font-medium">Classroom Code</p>
+              <p className="text-2xl font-bold">{classroom.code}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Classroom Owner</p>
+              <p className="text-2xl font-bold">{classroom.owner}</p>
+            </div>
+          </div>
+          <p className="mt-4 text-muted-foreground">{classroom.description}</p>
+          <div className="mt-4">
+            <p className="text-sm font-medium">Class Progress</p>
+            <Progress value={progress} className="mt-2" />
+            <p className="mt-1 text-sm text-muted-foreground">{progress}% Complete</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bell className="mr-2 h-4 w-4" />
+              Latest Announcements
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-4">
+              {/* Add announcements here */}
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <BarChart className="mr-2 h-4 w-4" />
+              Your Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="font-medium">Assignments Completed</p>
+                <Progress value={33} className="mt-2" />
+                <p className="mt-1 text-sm text-muted-foreground">1 out of 3 assignments completed</p>
+              </div>
+              <div>
+                <p className="font-medium">Overall Grade</p>
+                <Progress value={85} className="mt-2" />
+                <p className="mt-1 text-sm text-muted-foreground">Current Grade: 85%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="assignments" className="mb-8">
+        <TabsList>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="grades">Grades</TabsTrigger>
+        </TabsList>
+        <TabsContent value="assignments">
+          <div className="grid gap-4">
+            {assignments.map((assignment) => (
+              <Card key={assignment.id}>
+                <CardContent className="flex items-center justify-between p-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">{assignment.title}</h3>
+                    <p className="text-sm text-muted-foreground">Due: {new Date(assignment.deadline).toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">{getRemainingTime(assignment.deadline)}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {/* Add submission status indicator here */}
+                    <Link href={`/classroom/${params.id}/assignment/${assignment.id}`}>
+                      <Button variant="outline">
+                        View Assignment
+                        <ExternalLink className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="mt-4">Create New Assignment</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Assignment</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreateAssignment}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="title" className="text-right">
+                      Assignment Name
+                    </Label>
+                    <Input
+                      id="title"
+                      value={newAssignment.title}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="type" className="text-right">
+                      Assignment Type
+                    </Label>
+                    <Select
+                      onValueChange={(value: 'theory' | 'lab') => setNewAssignment({ ...newAssignment, type: value })}
+                      defaultValue={newAssignment.type}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="theory">Theory</SelectItem>
+                        <SelectItem value="lab">Lab</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="deadline" className="text-right">
+                      Deadline
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={`col-span-3 justify-start text-left font-normal`}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {newAssignment.deadline ? format(newAssignment.deadline, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={newAssignment.deadline}
+                          onSelect={(date) => date && setNewAssignment({ ...newAssignment, deadline: date })}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="time" className="text-right">
+                      Time
+                    </Label>
+                    <Input
+                      id="time"
+                      type="time"
+                      value={format(newAssignment.deadline, "HH:mm")}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(':');
+                        const newDate = new Date(newAssignment.deadline);
+                        newDate.setHours(parseInt(hours), parseInt(minutes));
+                        setNewAssignment({ ...newAssignment, deadline: newDate });
+                      }}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button type="submit">Create Assignment</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+        <TabsContent value="resources">
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Class Materials</h3>
+              <ul className="space-y-2">
+                {/* Add resource links here */}
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="grades">
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Your Grades</h3>
+              <div className="space-y-4">
+                {/* Add grade information here */}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
-  </div>
   );
 };
 

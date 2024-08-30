@@ -28,8 +28,11 @@ export async function POST(
     const file = formData.get('file') as File;
 
     if (!file) {
+      console.error('No file uploaded');
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
+
+    console.log('File received:', file.name, 'Type:', file.type, 'Size:', file.size);
 
     const fileBuffer = await file.arrayBuffer();
     const fileName = `${uuidv4()}-${file.name}`;
@@ -45,6 +48,8 @@ export async function POST(
     await s3Client.send(command);
 
     const fileUrl = `https://athenium-assignments.s3.amazonaws.com/${fileName}`;
+
+    console.log('File uploaded to S3:', fileUrl);
 
     // Check for existing submission
     const existingSubmission = await prisma.submission.findFirst({
@@ -72,9 +77,11 @@ export async function POST(
       });
     }
 
+    console.log('Submission saved:', submission);
+
     return NextResponse.json(submission, { status: 200 });
   } catch (error) {
     console.error('Error submitting assignment:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: (error as Error).message }, { status: 500 });
   }
 }

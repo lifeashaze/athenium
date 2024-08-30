@@ -26,6 +26,15 @@ export async function POST(
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Fetch the user from the database
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     const assignment = await prisma.assignment.create({
       data: {
         title,
@@ -33,6 +42,13 @@ export async function POST(
         deadline: new Date(deadline),
         creatorId: userId,
         classroomId,
+      },
+      include: {
+        creator: {
+          select: {
+            firstName: true,
+          },
+        },
       },
     });
 

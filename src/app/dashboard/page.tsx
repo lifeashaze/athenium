@@ -1,6 +1,6 @@
 'use client'
 import { useUser } from '@clerk/nextjs';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { ClipLoader } from 'react-spinners';
@@ -11,7 +11,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from '@/components/Header';
 import { Trash2 } from 'lucide-react';
-import { SidebarDemo } from '@/components/Sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Classroom {
@@ -41,15 +40,7 @@ const Dashboard: React.FC = () => {
   const [courseCode, setCourseCode] = useState<string>('');
   const [courseName, setCourseName] = useState<string>('');
 
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      fetchClassrooms();
-    } else if (isLoaded) {
-      setIsPageLoading(false);
-    }
-  }, [isLoaded, isSignedIn]);
-
-  const fetchClassrooms = async () => {
+  const fetchClassrooms = useCallback(async () => {
     try {
       const response = await axios.get('/api/classrooms');
       setClassrooms(response.data);
@@ -63,7 +54,15 @@ const Dashboard: React.FC = () => {
     } finally {
       setIsPageLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      fetchClassrooms();
+    } else if (isLoaded) {
+      setIsPageLoading(false);
+    }
+  }, [isLoaded, isSignedIn, fetchClassrooms]);
 
   const createClassroom = async () => {
     if (!courseName.trim() || !year || !division.trim() || !courseCode.trim()) {
@@ -176,7 +175,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <SidebarDemo />
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
           <div className="container mx-auto px-4 py-8">
