@@ -20,7 +20,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId },
       include: {
-        admin: true,
+        admin: {
+          select: {
+            id: true,
+            firstName: true,
+            email: true,
+          }
+        },
         memberships: {
           include: {
             user: true
@@ -53,6 +59,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         name: classroom.name,
         code: classroom.code,
         inviteLink: classroom.inviteLink,
+        adminFirstName: classroom.admin.firstName,
+        courseCode: classroom.courseCode,
+        year: classroom.year,
+        division: classroom.division,
       },
       members: members,
     });

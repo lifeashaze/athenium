@@ -14,12 +14,18 @@ export async function GET(req: NextRequest) {
   try {
     const classrooms = await prisma.classroom.findMany({
       where: { adminId: userId },
-      select: {
-        id: true,
-        name: true,
-        code: true,
+      include: {
+        admin: {
+          select: {
+            id: true,
+            firstName: true,
+            email: true,
+          },
+        },
       },
     });
+
+    console.log('Fetched classrooms:', JSON.stringify(classrooms, null, 2));
 
     return NextResponse.json(classrooms);
   } catch (error) {

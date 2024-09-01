@@ -21,6 +21,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import Image from "next/image";
 
 interface Classroom {
   id: number;
@@ -29,10 +30,11 @@ interface Classroom {
   inviteLink: string;
   year: string;
   division: string;
-  owner: string;
+  adminFirstName: string;
   description: string;
   startDate: string;
   endDate: string;
+  courseCode: string;
 }
 
 interface User {
@@ -151,35 +153,47 @@ const ClassroomPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <Card className="mb-8">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>{classroom.name}</CardTitle>
-            <div className="flex gap-2">
-              <Badge variant="secondary">{classroom.year}</Badge>
-              <Badge variant="outline">Division {classroom.division}</Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm font-medium">Classroom Code</p>
-              <p className="text-2xl font-bold">{classroom.code}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Classroom Owner</p>
-              <p className="text-2xl font-bold">{classroom.owner}</p>
-            </div>
-          </div>
-          <p className="mt-4 text-muted-foreground">{classroom.description}</p>
-          <div className="mt-4">
-            <p className="text-sm font-medium">Class Progress</p>
-            <Progress value={progress} className="mt-2" />
-            <p className="mt-1 text-sm text-muted-foreground">{progress}% Complete</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="relative mb-16">
+        <div className="w-full h-48 overflow-hidden">
+          <Image
+            src="https://images.unsplash.com/photo-1579547621706-1a9c79d5c9f1?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            alt="Classroom header"
+            layout="fill"
+            objectFit="cover"
+          />
+        </div>
+        
+        <div className="container mx-auto px-4">
+          <Card className="relative -mt-16 z-10">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>{classroom.name}</CardTitle>
+                <div className="flex gap-2">
+                  <Badge variant="secondary">{classroom.year}</Badge>
+                  <Badge variant="outline">Division {classroom.division}</Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                  <p className="text-sm font-medium">Course Code</p>
+                  <p className="text-2xl font-bold">{classroom.courseCode}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Classroom Owner</p>
+                  <p className="text-2xl font-bold">{classroom.adminFirstName}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Classroom Code</p>
+                  <p className="text-lg">{classroom.code}</p>
+                </div>
+              </div>
+              <p className="mt-4 text-muted-foreground">{classroom.description}</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-8">
         <Card>
@@ -190,9 +204,7 @@ const ClassroomPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-4">
-              {/* Add announcements here */}
-            </ul>
+            <p className="text-muted-foreground">No announcements at this time.</p>
           </CardContent>
         </Card>
 
