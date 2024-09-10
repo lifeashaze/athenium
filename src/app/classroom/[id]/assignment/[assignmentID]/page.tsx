@@ -96,9 +96,15 @@ const AssignmentPage = () => {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
+  const isDeadlinePassed = useCallback(() => {
+    if (!assignment) return false;
+    const dueDate = new Date(assignment.deadline);
+    return Date.now() > dueDate.getTime();
+  }, [assignment]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file || isDeadlinePassed()) return;
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -130,7 +136,7 @@ const AssignmentPage = () => {
     } finally {
       setIsUploading(false);
     }
-  }, [file, params.id, params.assignmentID, router]);
+  }, [file, params.id, params.assignmentID, router, isDeadlinePassed]);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -146,13 +152,6 @@ const AssignmentPage = () => {
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
           <div className="container mx-auto p-4">
             <nav className="text-sm breadcrumbs mb-4">
-              <ul className="flex items-center space-x-2">
-                <li><Link href="/classroom" className="text-muted-foreground hover:text-primary">Classrooms</Link></li>
-                <ChevronRight className="w-4 h-4" />
-                <li><Link href={`/classroom/${params.id}`} className="text-muted-foreground hover:text-primary">{assignment.classroom.name}</Link></li>
-                <ChevronRight className="w-4 h-4" />
-                <li className="text-primary font-medium">{assignment.title}</li>
-              </ul>
             </nav>
 
             <Card className="w-full max-w-3xl mx-auto">
@@ -182,7 +181,6 @@ const AssignmentPage = () => {
                   <p className="text-muted-foreground mb-2">
                     {format(dueDate, "PPpp")} ({timeRemaining})
                   </p>
-                  <Progress value={progress} className="w-full" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Submission Status</h3>
@@ -191,6 +189,11 @@ const AssignmentPage = () => {
                       <>
                         <Check className="text-green-500" />
                         <span className="text-green-500">Submitted</span>
+                      </>
+                    ) : isDeadlinePassed() ? (
+                      <>
+                        <X className="text-red-500" />
+                        <span className="text-red-500">Deadline Passed</span>
                       </>
                     ) : (
                       <>
@@ -208,34 +211,43 @@ const AssignmentPage = () => {
                     </Link>
                   </Button>
                 )}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <Label htmlFor="file-upload" className="block text-lg font-semibold mb-2">
-                    Upload Submission
-                  </Label>
-                  <div 
-                    {...getRootProps()} 
-                    className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
-                      isDragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'
-                    }`}
-                  >
-                    <input {...getInputProps()} id="file-upload" />
-                    {file ? (
-                      <p className="text-sm text-muted-foreground">Selected file: {file.name}</p>
-                    ) : (
-                      <p className='text-muted-foreground'>{isDragActive ? 'Drop the file here' : 'Drag & drop a file here, or click to select a file'}</p>
-                    )}
-                  </div>
-                  <Button type="submit" disabled={!file || isUploading} className="w-full">
-                    <Upload className="w-4 h-4 mr-2" />
-                    {submissionUrl ? 'Replace Submission' : 'Submit Assignment'}
-                  </Button>
-                  {isUploading && (
-                    <div>
-                      <Progress value={uploadProgress} className="w-full" />
-                      <p>{uploadProgress}% uploaded</p>
+                {!isDeadlinePassed() && (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <Label htmlFor="file-upload" className="block text-lg font-semibold mb-2">
+                      Upload Submission
+                    </Label>
+                    <div 
+                      {...getRootProps()} 
+                      className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
+                        isDragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'
+                      }`}
+                    >
+                      <input {...getInputProps()} id="file-upload" />
+                      {file ? (
+                        <p className="text-sm text-muted-foreground">Selected file: {file.name}</p>
+                      ) : (
+                        <p className='text-muted-foreground'>{isDragActive ? 'Drop the file here' : 'Drag & drop a file here, or click to select a file'}</p>
+                      )}
                     </div>
-                  )}
-                </form>
+                    <Button type="submit" disabled={!file || isUploading} className="w-full">
+                      <Upload className="w-4 h-4 mr-2" />
+                      {submissionUrl ? 'Replace Submission' : 'Submit Assignment'}
+                    </Button>
+                    {isUploading && (
+                      <div>
+                        <Progress value={uploadProgress} className="w-full" />
+                        <p>{uploadProgress}% uploaded</p>
+                      </div>
+                    )}
+                  </form>
+                )}
+                {isDeadlinePassed() && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Submission Closed</AlertTitle>
+                    <AlertDescription>The deadline for this assignment has passed. No further submissions are allowed.</AlertDescription>
+                  </Alert>
+                )}
                 {error && (
                   <Alert variant="destructive" className="mb-4">
                     <AlertCircle className="h-4 w-4" />
