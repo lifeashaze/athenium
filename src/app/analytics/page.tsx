@@ -1,9 +1,13 @@
 import React from 'react'
+import { AdminUserManagement } from '@/components/admin-user-management'
 
 const page = () => {
   return (
-    <div>page</div>
+    <div>
+      <AdminUserManagement />
+    </div>
   )
 }
 
 export default page
+
