@@ -20,19 +20,26 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId },
       include: {
-        admin: {
-          select: {
+        admin: { 
+          select: { 
             id: true,
             firstName: true,
             email: true,
-          }
+          } 
         },
         memberships: {
           include: {
-            user: true
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                email: true,
+                role: true
+              }
+            }
           }
         }
-      },
+      }
     });
 
     if (!classroom) {
@@ -47,11 +54,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const members = classroom.memberships.map(membership => ({
-      id: membership.user.id,
-      name: membership.user.firstName,
-      email: membership.user.email,
-    }));
+    const members = classroom.memberships.map(membership => membership.user);
 
     return NextResponse.json({
       classroom: {

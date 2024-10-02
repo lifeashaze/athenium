@@ -16,6 +16,7 @@ model User {
   memberships Membership[]
   assignments Assignment[] @relation("AssignmentCreator")
   submissions Submission[]
+  attendances Attendance[]
 }
 
 model Classroom {
@@ -31,6 +32,7 @@ model Classroom {
   adminId    String
   memberships Membership[]
   assignments Assignment[]
+  attendances Attendance[]
 }
 
 model Membership {
@@ -64,4 +66,16 @@ model Submission {
   assignmentId Int
 
   @@unique([userId, assignmentId])
+}
+
+model Attendance {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  isPresent   Boolean
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  classroomId Int
+
+  @@unique([userId, classroomId, date])
 }

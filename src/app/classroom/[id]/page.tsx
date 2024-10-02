@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
 import Link from "next/link"
-import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart } from "lucide-react"
+import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +22,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 interface Classroom {
   id: number;
@@ -39,8 +47,9 @@ interface Classroom {
 
 interface User {
   id: string;
-  name: string;
+  firstName: string;
   email: string;
+  role: string;
 }
 
 interface Assignment {
@@ -79,6 +88,7 @@ const ClassroomPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ title: '', type: 'theory' as 'theory' | 'lab', deadline: new Date() });
+  const [isStudentListOpen, setIsStudentListOpen] = useState(false);
 
   const fetchClassroomData = useCallback(async () => {
     if (!params.id) return;
@@ -369,6 +379,38 @@ const ClassroomPage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-semibold mb-4">Enrolled Students</h2>
+        {members.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members.map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell>{member.firstName}</TableCell>
+                  <TableCell>{member.email}</TableCell>
+                  <TableCell>{member.role}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-muted-foreground">No students enrolled in this course yet.</p>
+        )}
+      </div>
+
+      <div className="mt-8">
+        <Link href={`/classroom/${params.id}/attendance`}>
+          <Button>Manage Attendance</Button>
+        </Link>
+      </div>
     </div>
   );
 };
