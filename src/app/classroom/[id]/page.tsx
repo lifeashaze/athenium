@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
 import Link from "next/link"
-import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart, Users } from "lucide-react"
+import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart, Users, ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -78,6 +78,21 @@ function getProgress(startDate: string, endDate: string) {
   return Math.round(((now - start) / (end - start)) * 100)
 }
 
+function getRoleBadgeColor(role: string) {
+  const roleColors = {
+    student: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+    professor: "bg-green-100 text-green-800 hover:bg-green-200",
+    admin: "bg-red-100 text-red-800 hover:bg-red-200",
+  };
+  return roleColors[role as keyof typeof roleColors] || "bg-gray-100 text-gray-800 hover:bg-gray-200";
+}
+
+function capitalizeFirstLetter(string: string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+const ITEMS_PER_PAGE = 10;
+
 const ClassroomPage = () => {
   const { user, isLoaded: isUserLoaded } = useUser();
   const params = useParams();
@@ -89,6 +104,7 @@ const ClassroomPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ title: '', type: 'theory' as 'theory' | 'lab', deadline: new Date() });
   const [isStudentListOpen, setIsStudentListOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchClassroomData = useCallback(async () => {
     if (!params.id) return;
@@ -146,6 +162,13 @@ const ClassroomPage = () => {
   };
 
   const progress = classroom ? getProgress(classroom.startDate, classroom.endDate) : 0;
+
+  const paginatedMembers = members.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
 
   if (!isUserLoaded || isLoading) {
     return (
@@ -381,29 +404,71 @@ const ClassroomPage = () => {
       </Tabs>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">Enrolled Students</h2>
-        {members.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell>{member.firstName}</TableCell>
-                  <TableCell>{member.email}</TableCell>
-                  <TableCell>{member.role}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p className="text-muted-foreground">No students enrolled in this course yet.</p>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Users className="mr-2 h-4 w-4" />
+              Enrolled Students
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {members.length > 0 ? (
+              <>
+                <div className="rounded-md border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-bold">Name</TableHead>
+                        <TableHead className="font-bold">Email</TableHead>
+                        <TableHead className="font-bold">Role</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedMembers.map((member) => (
+                        <TableRow key={member.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">{member.firstName}</TableCell>
+                          <TableCell>{member.email}</TableCell>
+                          <TableCell>
+                            <Badge className={`${getRoleBadgeColor(member.role)} transition-colors duration-200`}>
+                              {capitalizeFirstLetter(member.role)}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex flex-col md:flex-row justify-between items-center mt-4 space-y-4 md:space-y-0">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, members.length)} of {members.length} members
+                  </div>
+                  <div className="space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-2" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted-foreground">No students enrolled in this course yet.</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-8">
