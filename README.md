@@ -1,6 +1,7 @@
 # Athenium: The Ultimate Student Academic Management System
 
-![Athenium Logo](path/to/your/logo.png)
+![image](https://github.com/user-attachments/assets/d119a9e6-5f66-426f-a449-09bacf8d81f2)
+
 
 Athenium is a comprehensive student academic management system designed to streamline coursework, simplify submissions, and elevate the educational experience for both students and educators.
 
