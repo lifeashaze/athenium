@@ -1,6 +1,7 @@
 # Athenium: The Ultimate Student Academic Management System
 
-![Athenium Logo](path/to/your/logo.png)
+![image](https://github.com/user-attachments/assets/d119a9e6-5f66-426f-a449-09bacf8d81f2)
+
 
 Athenium is a comprehensive student academic management system designed to streamline coursework, simplify submissions, and elevate the educational experience for both students and educators.
 
@@ -27,7 +28,7 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/athenium.git
+   git clone https://github.com/lifeashaze/major-olp.git
    cd athenium
    ```
 
@@ -103,10 +104,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
