@@ -113,7 +113,12 @@ const AttendancePage = () => {
 
   const generateReport = async () => {
     try {
-      const dates = eachDayOfInterval({ start: dateRange.from, end: dateRange.to || dateRange.from });
+      if (!dateRange.from || !dateRange.to) {
+        toast({ title: "Error", description: "Please select both start and end dates.", variant: "destructive" });
+        return;
+      }
+
+      const dates = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
       const report = await Promise.all(dates.map(async (date) => {
         const response = await axios.get(`/api/classrooms/${params.id}/attendance`, {
           params: { date: format(date, 'yyyy-MM-dd') }
@@ -138,7 +143,7 @@ const AttendancePage = () => {
       if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", `attendance_report_${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to || dateRange.from, 'yyyy-MM-dd')}.csv`);
+        link.setAttribute("download", `attendance_report_${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -159,7 +164,7 @@ const AttendancePage = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <CalendarIcon className="mr-2" />
-                Today's Date
+                Today&apos;s Date
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -294,6 +299,7 @@ const AttendancePage = () => {
                       selected={dateRange.to}
                       onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
                       className="rounded-md border"
+                      disabled={(date) => date < (dateRange.from || new Date())}
                     />
                   </div>
                 </div>
