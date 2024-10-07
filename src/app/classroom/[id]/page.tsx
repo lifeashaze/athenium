@@ -289,6 +289,12 @@ const ClassroomPage = () => {
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>
+                    <Link href={`/classroom/${params.id}/assignment/${assignment.id}/evaluate`}>
+                      <Button variant="secondary">
+                        Evaluate
+                        <BarChart className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
