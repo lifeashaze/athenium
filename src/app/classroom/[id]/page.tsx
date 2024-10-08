@@ -6,12 +6,11 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
 import Link from "next/link"
-import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart, Users, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart, Users, ChevronLeft, ChevronRight, FileText, BarChart2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import Image from "next/image";
 import {
   Table,
   TableBody,
@@ -66,6 +64,11 @@ function getRemainingTime(dueDate: string) {
   const now = new Date()
   const due = new Date(dueDate)
   const diff = due.getTime() - now.getTime()
+  
+  if (diff <= 0) {
+    return 'Submission closed'
+  }
+  
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
   return `${days}d ${hours}h remaining`
@@ -186,84 +189,34 @@ const ClassroomPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="relative mb-16">
-        <div className="w-full h-48 overflow-hidden">
-          <Image
-            src="https://images.unsplash.com/photo-1579547621706-1a9c79d5c9f1?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            alt="Classroom header"
-            layout="fill"
-            objectFit="cover"
-          />
-        </div>
-        
-        <div className="container mx-auto px-4">
-          <Card className="relative -mt-16 z-10">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{classroom.name}</CardTitle>
-                <div className="flex gap-2">
-                  <Badge variant="secondary">{classroom.year}</Badge>
-                  <Badge variant="outline">Division {classroom.division}</Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                  <p className="text-sm font-medium">Course Code</p>
-                  <p className="text-2xl font-bold">{classroom.courseCode}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Classroom Owner</p>
-                  <p className="text-2xl font-bold">{classroom.adminFirstName}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Classroom Code</p>
-                  <p className="text-lg">{classroom.code}</p>
-                </div>
-              </div>
-              <p className="mt-4 text-muted-foreground">{classroom.description}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Bell className="mr-2 h-4 w-4" />
-              Latest Announcements
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">No announcements at this time.</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart className="mr-2 h-4 w-4" />
-              Your Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="font-medium">Assignments Completed</p>
-                <Progress value={33} className="mt-2" />
-                <p className="mt-1 text-sm text-muted-foreground">1 out of 3 assignments completed</p>
-              </div>
-              <div>
-                <p className="font-medium">Overall Grade</p>
-                <Progress value={85} className="mt-2" />
-                <p className="mt-1 text-sm text-muted-foreground">Current Grade: 85%</p>
-              </div>
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>{classroom.name}</CardTitle>
+            <div className="flex gap-2">
+              <Badge variant="secondary">{classroom.year}</Badge>
+              <Badge variant="outline">Division {classroom.division}</Badge>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-sm font-medium">Course Code</p>
+              <p className="text-2xl font-bold">{classroom.courseCode}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Classroom Owner</p>
+              <p className="text-2xl font-bold">{classroom.adminFirstName}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Classroom Code</p>
+              <p className="text-lg">{classroom.code}</p>
+            </div>
+          </div>
+          <p className="mt-4 text-muted-foreground">{classroom.description}</p>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="assignments" className="mb-8">
         <TabsList>
@@ -272,34 +225,51 @@ const ClassroomPage = () => {
           <TabsTrigger value="grades">Grades</TabsTrigger>
         </TabsList>
         <TabsContent value="assignments">
-          <div className="grid gap-4">
-            {assignments.map((assignment) => (
-              <Card key={assignment.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">{assignment.title}</h3>
-                    <p className="text-sm text-muted-foreground">Due: {new Date(assignment.deadline).toLocaleString()}</p>
-                    <p className="text-sm text-muted-foreground">{getRemainingTime(assignment.deadline)}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {/* Add submission status indicator here */}
-                    <Link href={`/classroom/${params.id}/assignment/${assignment.id}`}>
-                      <Button variant="outline">
-                        View Assignment
-                        <ExternalLink className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link href={`/classroom/${params.id}/assignment/${assignment.id}/evaluate`}>
-                      <Button variant="secondary">
-                        Evaluate
-                        <BarChart className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {assignments.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <FileText className="h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Assignments Yet</h3>
+                <p className="text-sm text-gray-500 text-center max-w-sm">
+                  There are no assignments for this class yet. Check back later or ask your instructor for more information.
+                </p>
+                {(user as any)?.role === 'professor' && (
+                  <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
+                    Create New Assignment
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {assignments.map((assignment) => (
+                <Card key={assignment.id}>
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">{assignment.title}</h3>
+                      <p className="text-sm text-muted-foreground">Due: {new Date(assignment.deadline).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">{getRemainingTime(assignment.deadline)}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {/* Add submission status indicator here */}
+                      <Link href={`/classroom/${params.id}/assignment/${assignment.id}`}>
+                        <Button variant="outline">
+                          View Assignment
+                          <ExternalLink className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Link href={`/classroom/${params.id}/assignment/${assignment.id}/evaluate`}>
+                        <Button variant="secondary">
+                          Evaluate
+                          <BarChart className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="mt-4">Create New Assignment</Button>
@@ -389,21 +359,28 @@ const ClassroomPage = () => {
         </TabsContent>
         <TabsContent value="resources">
           <Card>
-            <CardContent className="p-4">
-              <h3 className="text-lg font-semibold mb-4">Class Materials</h3>
-              <ul className="space-y-2">
-                {/* Add resource links here */}
-              </ul>
+            <CardContent className="flex flex-col items-center justify-center py-10">
+              <Book className="h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Resources Available</h3>
+              <p className="text-sm text-gray-500 text-center max-w-sm">
+                There are no resources uploaded for this class yet. Check back later or ask your instructor for study materials.
+              </p>
+              {(user as any)?.role === 'professor' && (
+                <Button className="mt-4">
+                  Upload Resource
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="grades">
           <Card>
-            <CardContent className="p-4">
-              <h3 className="text-lg font-semibold mb-4">Your Grades</h3>
-              <div className="space-y-4">
-                {/* Add grade information here */}
-              </div>
+            <CardContent className="flex flex-col items-center justify-center py-10">
+              <BarChart2 className="h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Grades Available</h3>
+              <p className="text-sm text-gray-500 text-center max-w-sm">
+                There are no grades to display at this time. Grades will appear here once assignments have been graded.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
