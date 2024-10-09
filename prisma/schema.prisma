@@ -64,6 +64,7 @@ model Submission {
   userId       String
   assignment   Assignment @relation(fields: [assignmentId], references: [id])
   assignmentId Int
+  marks        Int       @default(0)
 
   @@unique([userId, assignmentId])
 }
