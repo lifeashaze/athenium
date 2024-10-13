@@ -33,6 +33,7 @@ model Classroom {
   memberships Membership[]
   assignments Assignment[]
   attendances Attendance[]
+  resources   Resource[]
 }
 
 model Membership {
@@ -79,4 +80,14 @@ model Attendance {
   classroomId Int
 
   @@unique([userId, classroomId, date])
+}
+
+model Resource {
+  id          Int      @id @default(autoincrement())
+  title       String
+  url         String
+  uploadedBy  String
+  uploadedAt  DateTime @default(now())
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  classroomId Int
 }

@@ -6,7 +6,8 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
 import Link from "next/link"
-import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart, Users, ChevronLeft, ChevronRight, FileText, BarChart2 } from "lucide-react"
+import { CheckCircle, XCircle, Book, ExternalLink, Bell, BarChart, Users, ChevronLeft, ChevronRight, FileText, BarChart2, Loader2 } from "lucide-react"
+import { useDropzone } from 'react-dropzone';
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -60,6 +61,14 @@ interface Assignment {
   };
 }
 
+interface Resource {
+  id: number;
+  title: string;
+  url: string;
+  uploadedBy: string;
+  uploadedAt: string;
+}
+
 function getRemainingTime(dueDate: string) {
   const now = new Date()
   const due = new Date(dueDate)
@@ -102,12 +111,14 @@ const ClassroomPage = () => {
   const [classroom, setClassroom] = useState<Classroom | null>(null);
   const [members, setMembers] = useState<User[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ title: '', type: 'theory' as 'theory' | 'lab', deadline: new Date() });
   const [isStudentListOpen, setIsStudentListOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchClassroomData = useCallback(async () => {
     if (!params.id) return;
@@ -135,12 +146,25 @@ const ClassroomPage = () => {
     }
   }, [params.id]);
 
+  const fetchResources = useCallback(async () => {
+    if (!params.id) return;
+    try {
+      const response = await axios.get(`/api/classrooms/${params.id}/resources`);
+      // Even if the response is an empty array, we'll set it to the state
+      setResources(response.data);
+    } catch (error) {
+      console.error('Failed to fetch resources:', error);
+      setError('Failed to load resources. Please try again later.');
+    }
+  }, [params.id]);
+
   useEffect(() => {
     if (isUserLoaded && user && params.id) {
       fetchClassroomData();
       fetchAssignments();
+      fetchResources();
     }
-  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments]);
+  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchResources]);
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,6 +187,32 @@ const ClassroomPage = () => {
       }
     }
   };
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+    await uploadResource(file);
+  }, [params.id]);
+
+  const uploadResource = async (file: File) => {
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post(`/api/classrooms/${params.id}/resources`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setResources(prevResources => [...prevResources, response.data]);
+    } catch (error) {
+      console.error('Failed to upload resource:', error);
+      setError('Failed to upload resource. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
   const progress = classroom ? getProgress(classroom.startDate, classroom.endDate) : 0;
 
@@ -359,17 +409,67 @@ const ClassroomPage = () => {
         </TabsContent>
         <TabsContent value="resources">
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-10">
-              <Book className="h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Resources Available</h3>
-              <p className="text-sm text-gray-500 text-center max-w-sm">
-                There are no resources uploaded for this class yet. Check back later or ask your instructor for study materials.
-              </p>
-              {(user as any)?.role === 'professor' && (
-                <Button className="mt-4">
-                  Upload Resource
-                </Button>
+            <CardContent>
+              {resources.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10">
+                  <Book className="h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Resources Available</h3>
+                  <p className="text-sm text-gray-500 text-center max-w-sm">
+                    There are no resources uploaded for this class yet. Be the first to upload study materials!
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {resources.map((resource) => (
+                    <Card key={resource.id}>
+                      <CardContent className="flex items-center justify-between p-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">{resource.title}</h3>
+                          <p className="text-sm text-muted-foreground">Uploaded by: {resource.uploadedBy}</p>
+                          <p className="text-sm text-muted-foreground">Date: {new Date(resource.uploadedAt).toLocaleString()}</p>
+                        </div>
+                        <Link href={resource.url} target="_blank" rel="noopener noreferrer">
+                          <Button>View Resource</Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
+              <div className="mt-4">
+                <div {...getRootProps()} className="border-2 border-dashed rounded-md p-4 text-center cursor-pointer">
+                  <input {...getInputProps()} />
+                  {isDragActive ? (
+                    <p>Drop the file here ...</p>
+                  ) : (
+                    <p>Drag n drop a file here, or click to select a file</p>
+                  )}
+                </div>
+                <div className="mt-2 flex justify-center">
+                  <Button
+                    onClick={() => document.getElementById('fileInput')?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      'Upload Resource'
+                    )}
+                  </Button>
+                  <input
+                    id="fileInput"
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadResource(file);
+                    }}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
