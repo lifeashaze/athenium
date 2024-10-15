@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css'
 import { usePathname } from 'next/navigation'
 import { SidebarDemo } from '@/components/Sidebar'
+import '../../public/fonts/fonts.css' // Add this line
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -32,7 +33,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>
+        <body className="font-styrene"> {/* Add this class */}
           <RootLayoutContent>{children}</RootLayoutContent>
           <Toaster />
         </body>
