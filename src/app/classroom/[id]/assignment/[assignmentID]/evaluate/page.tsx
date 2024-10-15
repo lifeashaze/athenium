@@ -28,6 +28,16 @@ import {
   PaginationNext, 
   PaginationPrevious, 
 } from "@/components/ui/pagination";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -61,6 +71,9 @@ const EvaluationClient = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 10;
   const [students, setStudents] = useState<Student[]>([]);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [selectedSubmissionIndex, setSelectedSubmissionIndex] = useState<number | null>(null);
+  const [modalSearchTerm, setModalSearchTerm] = useState('');
 
   useEffect(() => {
     fetchAssignmentAndSubmissions();
@@ -137,6 +150,20 @@ const EvaluationClient = () => {
     });
   };
 
+  const handleNextSubmission = () => {
+    if (selectedSubmissionIndex !== null && selectedSubmissionIndex < submissions.length - 1) {
+      setSelectedSubmissionIndex(selectedSubmissionIndex + 1);
+      setSelectedSubmission(submissions[selectedSubmissionIndex + 1]);
+    }
+  };
+
+  const handlePreviousSubmission = () => {
+    if (selectedSubmissionIndex !== null && selectedSubmissionIndex > 0) {
+      setSelectedSubmissionIndex(selectedSubmissionIndex - 1);
+      setSelectedSubmission(submissions[selectedSubmissionIndex - 1]);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <Card>
@@ -180,7 +207,7 @@ const EvaluationClient = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedStudents.map((student) => {
+                  {paginatedStudents.map((student, index) => {
                     const submission = submissions.find(s => s.userId === student.id);
                     return (
                       <TableRow key={student.id}>
@@ -198,12 +225,114 @@ const EvaluationClient = () => {
                         </TableCell>
                         <TableCell>
                           {submission && (
-                            <Link href={submission.content} target="_blank" rel="noopener noreferrer">
-                              <Button variant="outline" size="sm">
-                                View Submission
-                                <ExternalLink className="ml-2 h-4 w-4" />
-                              </Button>
-                            </Link>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedSubmission(submission);
+                                    setSelectedSubmissionIndex(submissions.findIndex(s => s.id === submission.id));
+                                  }}
+                                >
+                                  View Submission
+                                  <ExternalLink className="ml-2 h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full">
+                                <DialogHeader>
+                                  <DialogTitle>Submission Details</DialogTitle>
+                                </DialogHeader>
+                                <div className="flex h-[calc(95vh-100px)]">
+                                  <div className="w-64 border-r pr-4">
+                                    <h3 className="font-semibold mb-2">All Submissions</h3>
+                                    <div className="relative mb-2">
+                                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                      <Input
+                                        type="text"
+                                        placeholder="Search students"
+                                        value={modalSearchTerm}
+                                        onChange={(e) => setModalSearchTerm(e.target.value)}
+                                        className="pl-8 py-1 text-sm"
+                                      />
+                                    </div>
+                                    <ScrollArea className="h-[calc(100%-60px)]">
+                                      {students
+                                        .filter(student => 
+                                          student.firstName.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+                                          student.email.toLowerCase().includes(modalSearchTerm.toLowerCase())
+                                        )
+                                        .map((student, idx) => {
+                                          const submission = submissions.find(sub => sub.userId === student.id);
+                                          const isSelected = selectedSubmission?.userId === student.id;
+                                          return (
+                                            <Button
+                                              key={student.id}
+                                              variant={isSelected ? "secondary" : "ghost"}
+                                              className={`w-full justify-start mb-2 ${isSelected ? 'border-2 border-primary' : ''}`}
+                                              onClick={() => {
+                                                if (submission) {
+                                                  setSelectedSubmission(submission);
+                                                  setSelectedSubmissionIndex(submissions.findIndex(s => s.id === submission.id));
+                                                }
+                                              }}
+                                              disabled={!submission}
+                                            >
+                                              <div className="flex items-center w-full">
+                                                <span className="flex-grow text-left">{student.firstName}</span>
+                                                {submission ? (
+                                                  <Badge variant="outline" className="ml-2">Submitted</Badge>
+                                                ) : (
+                                                  <Badge variant="outline" className="ml-2 bg-gray-200 text-gray-600">Pending</Badge>
+                                                )}
+                                              </div>
+                                            </Button>
+                                          );
+                                        })}
+                                    </ScrollArea>
+                                  </div>
+                                  <div className="flex-1 pl-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                      <div>
+                                        <h3 className="font-semibold">Student Name</h3>
+                                        <p>{selectedSubmission?.user.firstName}</p>
+                                      </div>
+                                      <div>
+                                        <h3 className="font-semibold">Email</h3>
+                                        <p>{selectedSubmission?.user.email}</p>
+                                      </div>
+                                      <div>
+                                        <h3 className="font-semibold">Submitted At</h3>
+                                        <p>{selectedSubmission && formatDate(selectedSubmission.submittedAt)}</p>
+                                      </div>
+                                    </div>
+                                    <div className="px-10">
+                                      <iframe
+                                        src={`${selectedSubmission?.content}#toolbar=0`}
+                                        className="w-full h-[calc(95vh-250px)]"
+                                        title={`Submission by ${selectedSubmission?.user.firstName}`}
+                                      />
+                                    </div>
+                                    <div className="flex justify-between mt-4">
+                                      <Button
+                                        onClick={handlePreviousSubmission}
+                                        disabled={selectedSubmissionIndex === 0}
+                                      >
+                                        <ChevronLeft className="mr-2 h-4 w-4" />
+                                        Previous
+                                      </Button>
+                                      <Button
+                                        onClick={handleNextSubmission}
+                                        disabled={selectedSubmissionIndex === submissions.length - 1}
+                                      >
+                                        Next
+                                        <ChevronRight className="ml-2 h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                           )}
                         </TableCell>
                       </TableRow>
