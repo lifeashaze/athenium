@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { format, set } from "date-fns";
+import { CalendarIcon, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Assignment {
   id: number;
@@ -45,13 +46,37 @@ function getRemainingTime(dueDate: string) {
 
 export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ assignments, classroomId, userRole, onCreateAssignment }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newAssignment, setNewAssignment] = useState({ title: '', type: 'theory' as 'theory' | 'lab', deadline: new Date() });
+  const [newAssignment, setNewAssignment] = useState({ 
+    title: '', 
+    type: 'theory' as 'theory' | 'lab', 
+    deadline: new Date() 
+  });
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
     await onCreateAssignment(newAssignment);
     setIsDialogOpen(false);
     setNewAssignment({ title: '', type: 'theory', deadline: new Date() });
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setNewAssignment(prev => ({
+        ...prev,
+        deadline: set(prev.deadline, {
+          year: date.getFullYear(),
+          month: date.getMonth(),
+          date: date.getDate()
+        })
+      }));
+    }
+  };
+
+  const handleTimeChange = (hours: number, minutes: number) => {
+    setNewAssignment(prev => ({
+      ...prev,
+      deadline: set(prev.deadline, { hours, minutes })
+    }));
   };
 
   return (
@@ -109,8 +134,113 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ assignments, cla
             <DialogTitle>Create New Assignment</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateAssignment}>
-            {/* Form fields for new assignment */}
-            {/* ... (keep the existing form fields) */}
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  value={newAssignment.title}
+                  onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="type" className="text-right">
+                  Type
+                </Label>
+                <Select
+                  value={newAssignment.type}
+                  onValueChange={(value) => setNewAssignment({ ...newAssignment, type: value as 'theory' | 'lab' })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="theory">Theory</SelectItem>
+                    <SelectItem value="lab">Lab</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="deadline" className="text-right">
+                  Deadline
+                </Label>
+                <div className="col-span-3 flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "justify-start text-left font-normal flex-1",
+                          !newAssignment.deadline && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newAssignment.deadline ? format(newAssignment.deadline, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={newAssignment.deadline}
+                        onSelect={handleDateChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "justify-start text-left font-normal w-[120px]",
+                          !newAssignment.deadline && "text-muted-foreground"
+                        )}
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        {format(newAssignment.deadline, "HH:mm")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-4">
+                      <div className="flex gap-2">
+                        <Select
+                          value={newAssignment.deadline.getHours().toString()}
+                          onValueChange={(value) => handleTimeChange(parseInt(value), newAssignment.deadline.getMinutes())}
+                        >
+                          <SelectTrigger className="w-[70px]">
+                            <SelectValue placeholder="HH" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: 24 }, (_, i) => (
+                              <SelectItem key={i} value={i.toString().padStart(2, '0')}>
+                                {i.toString().padStart(2, '0')}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={newAssignment.deadline.getMinutes().toString()}
+                          onValueChange={(value) => handleTimeChange(newAssignment.deadline.getHours(), parseInt(value))}
+                        >
+                          <SelectTrigger className="w-[70px]">
+                            <SelectValue placeholder="MM" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: 60 }, (_, i) => (
+                              <SelectItem key={i} value={i.toString().padStart(2, '0')}>
+                                {i.toString().padStart(2, '0')}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
             <div className="flex justify-end">
               <Button type="submit">Create Assignment</Button>
             </div>
