@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
@@ -97,13 +97,13 @@ int main() {
     setCode(selectedLanguage.defaultCode);
   }, [selectedLanguage]);
 
-  const testCases: TestCase[] = [
+  const testCases = useMemo(() => [
     { input: "2 3", expectedOutput: "5", isHidden: false, description: "Simple addition" },
     { input: "10 20", expectedOutput: "30", isHidden: false, description: "Larger numbers" },
     { input: "0 0", expectedOutput: "0", isHidden: true, description: "Zero case" },
     { input: "-5 5", expectedOutput: "0", isHidden: true, description: "Negative and positive" },
     { input: "1000000 1000000", expectedOutput: "2000000", isHidden: true, description: "Large numbers" },
-  ];
+  ], []);
 
   const executeCode = useCallback(async () => {
     setIsExecuting(true);
@@ -185,7 +185,7 @@ int main() {
     } finally {
       setIsExecuting(false);
     }
-  }, [code, selectedLanguage]);
+  }, [code, selectedLanguage, testCases]);
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
