@@ -29,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import CodeExecution from '@/components/CodeExecution';
 
 interface Classroom {
   id: number;
@@ -67,6 +68,16 @@ interface Resource {
   url: string;
   uploadedBy: string;
   uploadedAt: string;
+}
+
+// Add this interface for the Judge0 response
+interface Judge0Response {
+  stdout: string;
+  stderr: string;
+  compile_output: string;
+  message: string;
+  time: string;
+  memory: string;
 }
 
 function getRemainingTime(dueDate: string) {
@@ -119,6 +130,9 @@ const ClassroomPage = () => {
   const [isStudentListOpen, setIsStudentListOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
+  const [code, setCode] = useState('');
+  const [output, setOutput] = useState<Judge0Response | null>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
 
   const fetchClassroomData = useCallback(async () => {
     if (!params.id) return;
@@ -223,6 +237,49 @@ const ClassroomPage = () => {
 
   const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
 
+  const executeCode = useCallback(async () => {
+    setIsExecuting(true);
+    try {
+      const response = await axios.post('https://judge0-ce.p.rapidapi.com/submissions', {
+        language_id: 71, // Python (3.8.1)
+        source_code: btoa(code),
+        stdin: btoa(''),
+      }, {
+        headers: {
+          'content-type': 'application/json',
+          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+          'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY', // Replace with your actual RapidAPI key
+        },
+      });
+
+      const { token } = response.data;
+      let executionResult;
+      do {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        executionResult = await axios.get(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, {
+          headers: {
+            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+            'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY', // Replace with your actual RapidAPI key
+          },
+        });
+      } while (executionResult.data.status.id <= 2);
+
+      setOutput(executionResult.data);
+    } catch (error) {
+      console.error('Failed to execute code:', error);
+      setOutput({
+        stdout: '',
+        stderr: '',
+        compile_output: '',
+        message: 'An error occurred while executing the code.',
+        time: '',
+        memory: '',
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [code]);
+
   if (!isUserLoaded || isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -273,6 +330,7 @@ const ClassroomPage = () => {
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
+          <TabsTrigger value="code-execution">Code Execution</TabsTrigger>
         </TabsList>
         <TabsContent value="assignments">
           {assignments.length === 0 ? (
@@ -483,6 +541,9 @@ const ClassroomPage = () => {
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="code-execution">
+          <CodeExecution />
         </TabsContent>
       </Tabs>
 
