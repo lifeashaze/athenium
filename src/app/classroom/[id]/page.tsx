@@ -14,6 +14,8 @@ import CodeExecution from '@/components/CodeExecution';
 import { AssignmentsTab } from '@/components/classroom/AssignmentsTab';
 import { ResourcesTab } from '@/components/classroom/ResourcesTab';
 import { EnrolledStudentsTab } from '@/components/classroom/EnrolledStudentsTab';
+import { Progress } from "@/components/ui/progress"
+import { CalendarDays, Users, BookOpen, Code } from 'lucide-react';
 
 interface Classroom {
   id: number;
@@ -176,43 +178,55 @@ const ClassroomPage = () => {
   if (!classroom) return <p className="text-center text-xl mt-10">Classroom not found</p>;
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="mb-8">
-        <CardHeader>
+    <div className="container mx-auto p-6 max-w-7xl">
+      <Card className="mb-8 shadow-lg">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle>{classroom.name}</CardTitle>
+            <div>
+              <CardTitle className="text-3xl font-bold">{classroom.name}</CardTitle>
+              <p className="text-muted-foreground mt-1">{classroom.courseCode}</p>
+            </div>
             <div className="flex gap-2">
-              <Badge variant="secondary">{classroom.year}</Badge>
-              <Badge variant="outline">Division {classroom.division}</Badge>
+              <Badge variant="secondary" className="text-lg py-1">{classroom.year}</Badge>
+              <Badge variant="outline" className="text-lg py-1">Division {classroom.division}</Badge>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm font-medium">Course Code</p>
-              <p className="text-2xl font-bold">{classroom.courseCode}</p>
+          <div className="grid gap-6 md:grid-cols-3 mb-6">
+            <div className="flex items-center gap-3">
+              <Users className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Classroom Owner</p>
+                <p className="text-lg font-semibold">{classroom.adminFirstName}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium">Classroom Owner</p>
-              <p className="text-2xl font-bold">{classroom.adminFirstName}</p>
+            <div className="flex items-center gap-3">
+              <BookOpen className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Classroom Code</p>
+                <p className="text-lg font-semibold">{classroom.code}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium">Classroom Code</p>
-              <p className="text-lg">{classroom.code}</p>
+            <div className="flex items-center gap-3">
+              <CalendarDays className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Course Progress</p>
+                <Progress value={progress} className="w-[60%]" />
+              </div>
             </div>
           </div>
-          <p className="mt-4 text-muted-foreground">{classroom.description}</p>
+          <p className="text-muted-foreground">{classroom.description}</p>
         </CardContent>
       </Card>
 
       <Tabs defaultValue="assignments" className="mb-8">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-5 mb-8">
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
           <TabsTrigger value="code-execution">Code Execution</TabsTrigger>
-          <TabsTrigger value="enrolled-students">Enrolled Students</TabsTrigger>
+          <TabsTrigger value="enrolled-students">Students</TabsTrigger>
         </TabsList>
         <TabsContent value="assignments">
           <AssignmentsTab
@@ -255,7 +269,9 @@ const ClassroomPage = () => {
 
       <div className="mt-8">
         <Link href={`/classroom/${params.id}/attendance`}>
-          <Button>Manage Attendance</Button>
+          <Button className="w-full md:w-auto">
+            <Users className="mr-2 h-4 w-4" /> Manage Attendance
+          </Button>
         </Link>
       </div>
     </div>

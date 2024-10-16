@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className="font-styrene"> {/* Add this class */}
+        <body className="font-styrene"> 
           <RootLayoutContent>{children}</RootLayoutContent>
           <Toaster />
         </body>
