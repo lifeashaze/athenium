@@ -3,10 +3,12 @@ import axios from 'axios';
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FileCode, Check, X } from 'lucide-react';
+import { FileCode, Check, X, ChevronDown, ChevronUp, Play, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface PistonResponse {
   language: string;
@@ -92,6 +94,7 @@ int main() {
   const [testResults, setTestResults] = useState<{ passed: boolean; output: string }[]>([]);
   const [allTestsPassed, setAllTestsPassed] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(languages[0]);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
     setCode(selectedLanguage.defaultCode);
@@ -188,105 +191,169 @@ int main() {
   }, [code, selectedLanguage, testCases]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Code Execution</h2>
-      
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold mb-2">Problem: Sum of Two Numbers</h3>
-        <p className="mb-2">Write a program that calculates the sum of two integers.</p>
-        <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto whitespace-pre-wrap">
-          {problemStatement}
-        </pre>
+    <div className="container mx-auto p-4 space-y-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Problem: Sum of Two Numbers</h1>
+        <div className="flex items-center space-x-2">
+          <Select
+            value={selectedLanguage.id}
+            onValueChange={(value) => setSelectedLanguage(languages.find(lang => lang.id === value) || languages[0])}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select a language" />
+            </SelectTrigger>
+            <SelectContent>
+              {languages.map((lang) => (
+                <SelectItem key={lang.id} value={lang.id}>
+                  {lang.name} ({lang.version})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button onClick={executeCode} disabled={isExecuting}>
+            <Play className="mr-2 h-4 w-4" />
+            {isExecuting ? 'Executing...' : 'Run Code'}
+          </Button>
+          <Button variant="outline" onClick={() => setCode(selectedLanguage.defaultCode)}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reset
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="language-select">Language:</Label>
-            <Select
-              value={selectedLanguage.id}
-              onValueChange={(value) => setSelectedLanguage(languages.find(lang => lang.id === value) || languages[0])}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select a language" />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map((lang) => (
-                  <SelectItem key={lang.id} value={lang.id}>
-                    {lang.name} ({lang.version})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FileCode className="w-6 h-6" />
-          </div>
-        </div>
-        <div className="h-[60vh] border rounded">
-          <Editor
-            height="100%"
-            defaultLanguage={selectedLanguage.id}
-            language={selectedLanguage.id}
-            value={code}
-            onChange={(value) => setCode(value || '')}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              automaticLayout: true,
-            }}
-          />
-        </div>
-        <Button onClick={executeCode} disabled={isExecuting}>
-          {isExecuting ? 'Executing...' : 'Run Code'}
-        </Button>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Code Editor</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[40vh] border rounded">
+                <Editor
+                  height="100%"
+                  defaultLanguage={selectedLanguage.id}
+                  language={selectedLanguage.id}
+                  value={code}
+                  onChange={(value) => setCode(value || '')}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    automaticLayout: true,
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-      <Tabs defaultValue="test0" className="w-full mt-4">
-        <TabsList className="grid w-full grid-cols-5">
-          {testCases.map((testCase, index) => (
-            <TabsTrigger 
-              key={index} 
-              value={`test${index}`} 
-              className="flex items-center justify-center"
-              disabled={testCase.isHidden}
-            >
-              Test {index + 1}
-              {testResults[index] && (
-                testResults[index].passed 
-                  ? <Check className="w-4 h-4 ml-2 text-green-500" />
-                  : <X className="w-4 h-4 ml-2 text-red-500" />
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {testCases.map((testCase, index) => (
-          <TabsContent key={index} value={`test${index}`}>
-            <div className={`p-4 ${testCase.isHidden ? 'blur-md pointer-events-none select-none' : ''}`}>
-              <p className="font-semibold">Test Case {index + 1} {testCase.isHidden && '(Hidden)'}</p>
-              {!testCase.isHidden && (
-                <>
-                  <p>Input: {testCase.input}</p>
-                  <p>Expected: {testCase.expectedOutput}</p>
-                  {testResults[index] && (
-                    <p>Output: {testResults[index].output}</p>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Test Results</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="results" className="w-full">
+                <TabsList>
+                  <TabsTrigger value="results">Results</TabsTrigger>
+                  <TabsTrigger value="cases">Test Cases</TabsTrigger>
+                </TabsList>
+                <TabsContent value="results">
+                  {testResults.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {testResults.map((result, index) => (
+                        <div
+                          key={index}
+                          className={`p-2 rounded-md flex items-center justify-between ${
+                            result.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          <span className="text-sm font-medium">Test {index + 1}</span>
+                          {result.passed ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>Run your code to see test results.</p>
                   )}
+                  {testResults.some(result => !result.passed) && (
+                    <div className="mt-4">
+                      <h4 className="font-semibold mb-2">Failed Tests:</h4>
+                      <ul className="space-y-1">
+                        {testResults.filter(result => !result.passed).map((result, index) => (
+                          <li key={index} className="text-sm">
+                            Test {testResults.indexOf(result) + 1}: Output: {result.output}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </TabsContent>
+                <TabsContent value="cases">
+                  {testCases.filter(tc => !tc.isHidden).map((tc, index) => (
+                    <div key={index} className="mb-2">
+                      <p><strong>Input:</strong> {tc.input}</p>
+                      <p><strong>Expected Output:</strong> {tc.expectedOutput}</p>
+                    </div>
+                  ))}
+                  <p className="text-sm text-muted-foreground mt-4">
+                    Note: There are additional hidden test cases not shown here.
+                  </p>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Problem Description</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+                {isDescriptionExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm">
+                Given two integers as input, return their sum.
+              </p>
+              {isDescriptionExpanded && (
+                <>
+                  <p className="text-sm mt-2">
+                    Input: Two space-separated integers a and b (−10^9 ≤ a, b ≤ 10^9)
+                  </p>
+                  <p className="text-sm mt-2">
+                    Output: The sum of a and b
+                  </p>
+                  <h3 className="font-semibold mt-4 mb-2">Example:</h3>
+                  <p className="text-sm">Input: 3 5</p>
+                  <p className="text-sm">Output: 8</p>
                 </>
               )}
-              {testCase.isHidden && (
-                <p>This test case is hidden.</p>
-              )}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+            </CardContent>
+          </Card>
 
-      {output && output.message && (
-        <div className="mt-4">
-          <h3 className="font-semibold mb-2">Error:</h3>
-          <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto max-h-[20vh] overflow-y-auto whitespace-pre-wrap">
-            <span className="text-red-500">{output.message}</span>
-          </pre>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Test Cases</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {testCases.filter(tc => !tc.isHidden).map((tc, index) => (
+                <div key={index}>
+                  <p className="text-sm font-semibold">Test Case {index + 1}:</p>
+                  <p className="text-sm"><strong>Input:</strong> {tc.input}</p>
+                  <p className="text-sm"><strong>Expected Output:</strong> {tc.expectedOutput}</p>
+                  <p className="text-sm"><strong>Description:</strong> {tc.description}</p>
+                </div>
+              ))}
+              <p className="text-sm text-muted-foreground">
+                Note: There are additional hidden test cases not shown here.
+              </p>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      </div>
     </div>
   );
 };
