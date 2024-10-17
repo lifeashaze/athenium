@@ -93,7 +93,7 @@ const AttendancePage = () => {
       if (pendingUpdates.length > 0) {
         batchUpdateAttendance();
       }
-    }, 2000); // 2 seconds debounce
+    }, 2500); // 2.5 seconds debounce
 
     return () => clearTimeout(timer);
   }, [pendingUpdates, batchUpdateAttendance]);
