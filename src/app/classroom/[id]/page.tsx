@@ -181,52 +181,45 @@ const ClassroomPage = () => {
     <div className="container mx-auto p-6 max-w-7xl">
       <Card className="mb-8 shadow-lg">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="text-3xl font-bold">{classroom.name}</CardTitle>
-              <p className="text-muted-foreground mt-1">{classroom.courseCode}</p>
+              <CardTitle className="text-2xl sm:text-3xl font-bold">{classroom.name}</CardTitle>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">{classroom.courseCode}</p>
             </div>
-            <div className="flex gap-2">
-              <Badge variant="secondary" className="text-lg py-1">{classroom.year}</Badge>
-              <Badge variant="outline" className="text-lg py-1">Division {classroom.division}</Badge>
+            <div className="flex gap-2 mt-2 sm:mt-0">
+              <Badge variant="secondary" className="text-xs sm:text-sm py-1">{classroom.year}</Badge>
+              <Badge variant="outline" className="text-xs sm:text-sm py-1">Division {classroom.division}</Badge>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-3 mb-6">
-            <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-primary" />
+          <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Classroom Owner</p>
-                <p className="text-lg font-semibold">{classroom.adminFirstName}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Classroom Owner</p>
+                <p className="text-sm sm:text-lg font-semibold">{classroom.adminFirstName}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <BookOpen className="h-8 w-8 text-primary" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Classroom Code</p>
-                <p className="text-lg font-semibold">{classroom.code}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <CalendarDays className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Course Progress</p>
-                <Progress value={progress} className="w-[60%]" />
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Classroom Code</p>
+                <p className="text-sm sm:text-lg font-semibold">{classroom.code}</p>
               </div>
             </div>
           </div>
-          <p className="text-muted-foreground">{classroom.description}</p>
+          <p className="text-sm sm:text-base text-muted-foreground">{classroom.description}</p>
         </CardContent>
       </Card>
 
       <Tabs defaultValue="assignments" className="mb-8">
-        <TabsList className="grid w-full grid-cols-5 mb-8">
-          <TabsTrigger value="assignments">Assignments</TabsTrigger>
-          <TabsTrigger value="resources">Resources</TabsTrigger>
-          <TabsTrigger value="grades">Grades</TabsTrigger>
-          <TabsTrigger value="code-execution">Code Execution</TabsTrigger>
-          <TabsTrigger value="enrolled-students">Students</TabsTrigger>
+        <TabsList className="flex flex-wrap justify-center md:justify-around gap-2 mb-8">
+          <TabsTrigger value="assignments" className="flex-grow sm:flex-grow-0">Assignments</TabsTrigger>
+          <TabsTrigger value="resources" className="flex-grow sm:flex-grow-0">Resources</TabsTrigger>
+          <TabsTrigger value="grades" className="flex-grow sm:flex-grow-0">Grades</TabsTrigger>
+          <TabsTrigger value="code-execution" className="flex-grow sm:flex-grow-0">Code Execution</TabsTrigger>
+          <TabsTrigger value="enrolled-students" className="flex-grow sm:flex-grow-0">Students</TabsTrigger>
         </TabsList>
         <TabsContent value="assignments">
           <AssignmentsTab
