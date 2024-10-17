@@ -2,8 +2,7 @@
 
 ![image](https://github.com/user-attachments/assets/d119a9e6-5f66-426f-a449-09bacf8d81f2)
 
-
-Athenium is a comprehensive student academic management system designed to streamline coursework, simplify submissions, and elevate the educational experience for both students and educators.
+Athenium is a comprehensive student academic management system designed to streamline coursework, simplify submissions, and elevate the educational experience for both students and educators. It serves as an all-in-one platform that empowers students and educators to manage their academic activities efficiently.
 
 ## 🌟 Features
 
@@ -12,6 +11,9 @@ Athenium is a comprehensive student academic management system designed to strea
 - **Attendance System**: Track and manage student attendance effortlessly.
 - **User Dashboard**: Personalized dashboard with todo lists, study timer, and quick notes.
 - **Analytics**: Gain insights into classroom performance and engagement.
+- **Resource Sharing**: Centralized hub for sharing course materials and resources.
+- **Real-time Collaboration**: Built-in tools for group projects and discussions.
+- **Code Execution Environment**: Integrated system for coding assignments and practice.
 - **Responsive Design**: Seamless experience across desktop and mobile devices.
 
 ## 🚀 Getting Started
@@ -53,60 +55,23 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 5. Start the development server:
    ```bash
    npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   # or
-   bun dev
    ```
 
 6. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
 ## 🛠️ Built With
 
 - [Next.js](https://nextjs.org/) - React framework for production
+- [TypeScript](https://www.typescriptlang.org/) - Typed superset of JavaScript
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [Prisma](https://www.prisma.io/) - Next-generation ORM for Node.js and TypeScript
+- [PostgreSQL](https://www.postgresql.org/) - Open source relational database
 - [Clerk](https://clerk.dev/) - Authentication and user management
 - [Framer Motion](https://www.framer.com/motion/) - Animation library for React
 - [Axios](https://axios-http.com/) - Promise-based HTTP client
 - [date-fns](https://date-fns.org/) - Modern JavaScript date utility library
-
-## 📁 Project Structure
-
-```
-athenium/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── classroom/
-│   │   ├── dashboard/
-│   │   └── ...
-│   ├── components/
-│   ├── lib/
-│   └── ...
-├── prisma/
-├── public/
-└── ...
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 🙏 Acknowledgments
-
-- [Shadcn UI](https://ui.shadcn.com/) for the beautiful UI components
-- [Lucide Icons](https://lucide.dev/) for the icon set
-- All contributors who have helped shape Athenium
+- [AWS S3](https://aws.amazon.com/s3/) - Object storage for file handling
+- [Monaco Editor](https://microsoft.github.io/monaco-editor/) - Code editor for browser
+- [Shadcn UI](https://ui.shadcn.com/) - UI component library
+- [Radix UI](https://www.radix-ui.com/) - Unstyled, accessible UI components
+- [Google Generative AI](https://cloud.google.com/ai-platform) - AI integration
