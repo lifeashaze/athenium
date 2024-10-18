@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CalendarIcon, SearchIcon } from "lucide-react"
+import { CalendarIcon, SearchIcon, Loader2 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
@@ -179,6 +179,12 @@ const AttendancePage = () => {
             <div className="text-sm text-muted-foreground">
               Use arrow keys to navigate. Press &apos;P&apos; for Present, &apos;A&apos; for Absent.
             </div>
+            {pendingUpdates.length > 0 && (
+              <div className="flex items-center text-sm text-yellow-600">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving changes...
+              </div>
+            )}
           </div>
           <div className="relative w-64">
             <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />

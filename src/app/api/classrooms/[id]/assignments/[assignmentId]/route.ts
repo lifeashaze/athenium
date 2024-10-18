@@ -117,3 +117,44 @@ export async function POST(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string, assignmentId: string } }
+) {
+  const { userId } = getAuth(req);
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const classroomId = parseInt(params.id);
+    const assignmentId = parseInt(params.assignmentId);
+
+    // Check if the user is the creator of the classroom
+    const classroom = await prisma.classroom.findUnique({
+      where: { id: classroomId },
+      include: { creator: true },
+    });
+
+    if (!classroom || classroom.creator.id !== userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Delete the assignment and its submissions
+    await prisma.$transaction([
+      prisma.submission.deleteMany({
+        where: { assignmentId: assignmentId },
+      }),
+      prisma.assignment.delete({
+        where: { id: assignmentId },
+      }),
+    ]);
+
+    return NextResponse.json({ message: 'Assignment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting assignment:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

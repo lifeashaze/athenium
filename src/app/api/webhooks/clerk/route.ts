@@ -61,14 +61,12 @@ if (evt.type === 'user.created') {
     try {
       const { id, email_addresses, first_name, last_name } = evt.data;
       
-    const primaryEmail = email_addresses[0]?.email_address || '';
+      const primaryEmail = email_addresses[0]?.email_address || '';
 
       if (!primaryEmail) {
         console.error('No email address found for user:', id);
         return new Response('Error: No email address found', { status: 400 });
       }
-
-
 
       // Create a new user in your database
       const newUser = await prisma.user.create({
@@ -76,7 +74,9 @@ if (evt.type === 'user.created') {
           id: id,
           email: primaryEmail,
           firstName: first_name || '',
-
+          lastName: last_name || '',  // New required field
+          role: 'STUDENT',  // Default role, adjust as needed
+          updatedAt: new Date(),  // New required field
         },
       });
 

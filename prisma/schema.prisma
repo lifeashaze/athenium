@@ -11,12 +11,28 @@ model User {
   id         String      @id @default(cuid())  
   email      String      @unique
   firstName  String
-  role       String      @default("student")
-  classrooms Classroom[] @relation("ClassroomAdmin")
-  memberships Membership[]
-  assignments Assignment[] @relation("AssignmentCreator")
-  submissions Submission[]
-  attendances Attendance[]
+  lastName   String
+  role       Role        @default(STUDENT)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  rollNo     String?
+  year       String?
+  division   String?
+  srn        String?     @unique
+  prn        String?     @unique
+  officeHours String?
+  memberships    Membership[]
+  classroomsCreated Classroom[] @relation("ClassroomCreator")
+  assignmentsCreated Assignment[] @relation("AssignmentCreator")
+  submissions    Submission[]
+  attendances    Attendance[]
+  resourcesUploaded Resource[] @relation("ResourceUploader")
+}
+
+enum Role {
+  STUDENT
+  PROFESSOR
+  ADMIN
 }
 
 model Classroom {
@@ -28,8 +44,8 @@ model Classroom {
   division   String
   courseCode String
   courseName String
-  admin      User       @relation("ClassroomAdmin", fields: [adminId], references: [id])
-  adminId    String
+  creator    User       @relation("ClassroomCreator", fields: [creatorId], references: [id])
+  creatorId  String
   memberships Membership[]
   assignments Assignment[]
   attendances Attendance[]
@@ -86,7 +102,8 @@ model Resource {
   id          Int      @id @default(autoincrement())
   title       String
   url         String
-  uploadedBy  String
+  uploader    User     @relation("ResourceUploader", fields: [uploaderId], references: [id])
+  uploaderId  String
   uploadedAt  DateTime @default(now())
   classroom   Classroom @relation(fields: [classroomId], references: [id])
   classroomId Int

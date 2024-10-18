@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
@@ -24,11 +24,11 @@ interface Classroom {
   inviteLink: string;
   year: string;
   division: string;
-  adminFirstName: string;
-  description: string;
-  startDate: string;
-  endDate: string;
+  creatorFirstName: string;
+  creatorLastName: string;
+  creatorEmail: string;
   courseCode: string;
+  courseName: string;
 }
 
 interface User {
@@ -71,6 +71,7 @@ const ClassroomPage = () => {
   const [classroom, setClassroom] = useState<Classroom | null>(null);
   const [members, setMembers] = useState<User[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const assignmentsRef = useRef<Assignment[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +85,11 @@ const ClassroomPage = () => {
       const response = await axios.get(`/api/classrooms/${params.id}`);
       setClassroom(response.data.classroom);
       setMembers(response.data.members || []);
+
+      // Log classroom and creator details
+      console.log('Fetched classroom data:', response.data.classroom);
+      console.log('Creator details:', response.data.classroom.creator);
+
     } catch (err) {
       console.error('Failed to fetch classroom data:', err);
       setError('Failed to load classroom data. Please try again later.');
@@ -97,6 +103,7 @@ const ClassroomPage = () => {
     try {
       const response = await axios.get(`/api/classrooms/${params.id}/assignments`);
       setAssignments(response.data);
+      assignmentsRef.current = response.data;
     } catch (error) {
       console.error('Failed to fetch assignments:', error);
       setError('Failed to load assignments. Please try again later.');
@@ -122,7 +129,7 @@ const ClassroomPage = () => {
     }
   }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchResources]);
 
-  const handleCreateAssignment = async (newAssignment: any) => {
+  const handleCreateAssignment = async (newAssignment: any): Promise<Assignment | null> => {
     try {
       const formattedDeadline = newAssignment.deadline.toISOString();
       const response = await axios.post(`/api/classrooms/${params.id}/assignments`, {
@@ -130,7 +137,10 @@ const ClassroomPage = () => {
         deadline: formattedDeadline,
       });
       const createdAssignment = response.data;
-      setAssignments([...assignments, createdAssignment]);
+      const updatedAssignments = [...assignmentsRef.current, createdAssignment];
+      setAssignments(updatedAssignments);
+      assignmentsRef.current = updatedAssignments;
+      return createdAssignment;
     } catch (error) {
       console.error('Failed to create assignment:', error);
       if (axios.isAxiosError(error)) {
@@ -138,6 +148,7 @@ const ClassroomPage = () => {
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
+      return null;
     }
   };
 
@@ -159,7 +170,19 @@ const ClassroomPage = () => {
     }
   };
 
-  const progress = classroom ? getProgress(classroom.startDate, classroom.endDate) : 0;
+  const handleDeleteAssignment = async (assignmentId: number): Promise<boolean> => {
+    try {
+      await axios.delete(`/api/classrooms/${params.id}/assignments/${assignmentId}`);
+      const updatedAssignments = assignmentsRef.current.filter(a => a.id !== assignmentId);
+      setAssignments(updatedAssignments);
+      assignmentsRef.current = updatedAssignments;
+      return true;
+    } catch (error) {
+      console.error('Failed to delete assignment:', error);
+      setError('Failed to delete assignment. Please try again.');
+      return false;
+    }
+  };
 
   const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
 
@@ -198,7 +221,10 @@ const ClassroomPage = () => {
               <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
               <div>
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground">Classroom Owner</p>
-                <p className="text-sm sm:text-lg font-semibold">{classroom.adminFirstName}</p>
+                <p className="text-sm sm:text-lg font-semibold">
+                  {classroom.creatorFirstName} {classroom.creatorLastName}
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{classroom.creatorEmail}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
@@ -209,7 +235,7 @@ const ClassroomPage = () => {
               </div>
             </div>
           </div>
-          <p className="text-sm sm:text-base text-muted-foreground">{classroom.description}</p>
+          <p className="text-sm sm:text-base text-muted-foreground">{classroom.courseName}</p>
         </CardContent>
       </Card>
 
@@ -227,6 +253,7 @@ const ClassroomPage = () => {
             classroomId={params.id as string}
             userRole={(user as any)?.role}
             onCreateAssignment={handleCreateAssignment}
+            onDeleteAssignment={handleDeleteAssignment}
           />
         </TabsContent>
         <TabsContent value="resources">

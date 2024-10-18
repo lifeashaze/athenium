@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import { FileText, ExternalLink, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, set } from "date-fns";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
+import axios from 'axios';
+import { useToast } from "@/components/ui/use-toast";
+import ConfirmationModal from '@/components/classroom/ConfirmationModal';
 
 interface Assignment {
   id: number;
@@ -27,7 +30,8 @@ interface AssignmentsTabProps {
   assignments: Assignment[];
   classroomId: string;
   userRole: string;
-  onCreateAssignment: (assignment: any) => Promise<void>;
+  onCreateAssignment: (assignment: any) => Promise<Assignment | null>;
+  onDeleteAssignment: (assignmentId: number) => Promise<boolean>;
 }
 
 function getRemainingTime(dueDate: string) {
@@ -44,17 +48,35 @@ function getRemainingTime(dueDate: string) {
   return `${days}d ${hours}h remaining`
 }
 
-export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ assignments, classroomId, userRole, onCreateAssignment }) => {
+export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
+  assignments,
+  classroomId,
+  userRole,
+  onCreateAssignment,
+  onDeleteAssignment,
+}) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ 
     title: '', 
     type: 'theory' as 'theory' | 'lab', 
     deadline: new Date() 
   });
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
+  const { toast } = useToast();
+  const [localAssignments, setLocalAssignments] = useState(assignments);
+
+  // Update local assignments when props change
+  useEffect(() => {
+    setLocalAssignments(assignments);
+  }, [assignments]);
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onCreateAssignment(newAssignment);
+    const createdAssignment = await onCreateAssignment(newAssignment);
+    if (createdAssignment) {
+      setLocalAssignments(prev => [...prev, createdAssignment]);
+    }
     setIsDialogOpen(false);
     setNewAssignment({ title: '', type: 'theory', deadline: new Date() });
   };
@@ -78,10 +100,41 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ assignments, cla
       deadline: set(prev.deadline, { hours, minutes })
     }));
   };
+  const handleDeleteClick = (assignment: Assignment) => {
+    setAssignmentToDelete(assignment);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!assignmentToDelete) return;
+  
+    try {
+      const success = await onDeleteAssignment(assignmentToDelete.id);
+      if (success) {
+        setLocalAssignments(prevAssignments => 
+          prevAssignments.filter(a => a.id !== assignmentToDelete.id)
+        );
+        toast({
+          title: "Assignment deleted",
+          description: "The assignment and all its submissions have been deleted.",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to delete assignment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the assignment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteModalOpen(false);
+      setAssignmentToDelete(null);
+    }
+  };
 
   return (
     <>
-      {assignments.length === 0 ? (
+      {localAssignments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <FileText className="h-12 w-12 text-gray-400 mb-4" />
@@ -89,17 +142,27 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ assignments, cla
             <p className="text-sm text-gray-500 text-center max-w-sm">
               There are no assignments for this class yet. Check back later or ask your instructor for more information.
             </p>
-            {userRole === 'professor' && (
-              <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
-                Create New Assignment
-              </Button>
-            )}
+            <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
+              Create New Assignment
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {assignments.map((assignment) => (
-            <Card key={assignment.id}>
+          {localAssignments.map((assignment) => (
+            <Card key={assignment.id} className="mb-4">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {assignment.title}
+                </CardTitle>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => handleDeleteClick(assignment)}
+                >
+                  Delete
+                </Button>
+              </CardHeader>
               <CardContent className="flex items-center justify-between p-4">
                 <div>
                   <h3 className="text-lg font-semibold">{assignment.title}</h3>
@@ -247,6 +310,13 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ assignments, cla
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Assignment"
+        message="Are you sure you want to delete this assignment? This action cannot be undone and will also delete all submissions for this assignment."
+      />
     </>
   );
 };

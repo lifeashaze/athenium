@@ -13,13 +13,31 @@ export async function GET(req: NextRequest) {
 
   try {
     const classrooms = await prisma.classroom.findMany({
-      where: { adminId: userId },
+      where: {
+        OR: [
+          { creatorId: userId },
+          { memberships: { some: { userId: userId } } }
+        ]
+      },
       include: {
-        admin: {
+        creator: {
           select: {
             id: true,
             firstName: true,
             email: true,
+          },
+        },
+        memberships: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
       },
@@ -27,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     console.log('Fetched classrooms:', JSON.stringify(classrooms, null, 2));
 
-    return NextResponse.json(classrooms);
+    return NextResponse.json({ classrooms });
   } catch (error) {
     console.error('Error fetching classrooms:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

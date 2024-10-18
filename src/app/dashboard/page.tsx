@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Search } from 'lucide-react'
+import Link from 'next/link'
 
 interface Classroom {
   id: number
@@ -26,48 +27,58 @@ interface Classroom {
   courseName: string
 }
 
-export default function Dashboard() {
-  const { user, isLoaded, isSignedIn } = useUser()
-  const { toast } = useToast()
-  const router = useRouter()
-  const [joinCode, setJoinCode] = useState<string>('')
-  const [isCreating, setIsCreating] = useState(false)
-  const [isJoining, setIsJoining] = useState(false)
-  const [createError, setCreateError] = useState<string | null>(null)
-  const [joinError, setJoinError] = useState<string | null>(null)
-  const [isPageLoading, setIsPageLoading] = useState(true)
-  const [classrooms, setClassrooms] = useState<Classroom[]>([])
-  const [year, setYear] = useState<string>('')
-  const [division, setDivision] = useState<string>('')
-  const [courseCode, setCourseCode] = useState<string>('')
-  const [courseName, setCourseName] = useState<string>('')
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-
-  const fetchClassrooms = useCallback(async () => {
-    try {
-      const response = await axios.get('/api/classrooms')
-      setClassrooms(response.data)
-    } catch (error) {
-      console.error('Failed to fetch classrooms:', error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load classrooms",
-      })
-    } finally {
-      setIsPageLoading(false)
-    }
-  }, [toast])
+const DashboardPage = () => {
+  const { user } = useUser();
+  const { toast } = useToast();
+  const router = useRouter();
+  const [joinCode, setJoinCode] = useState<string>('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [year, setYear] = useState<string>('');
+  const [division, setDivision] = useState<string>('');
+  const [courseCode, setCourseCode] = useState<string>('');
+  const [courseName, setCourseName] = useState<string>('');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      fetchClassrooms()
-    } else if (isLoaded) {
-      setIsPageLoading(false)
-    }
-  }, [isLoaded, isSignedIn, fetchClassrooms])
+    const fetchClassrooms = async () => {
+      if (!user) return;
+      
+      setIsLoading(true);
+      try {
+        const response = await axios.get('/api/classrooms');
+        console.log('API response:', response.data); // Add this line for debugging
+        setClassrooms(response.data.classrooms || []);
+      } catch (error) {
+        console.error('Error fetching classrooms:', error);
+        setError('Unable to load classrooms. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClassrooms();
+  }, [user]);
+
+  if (!user) {
+    return <div>Please sign in to access the dashboard.</div>;
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   const createClassroom = async () => {
     if (!courseName.trim() || !year || !division.trim() || !courseCode.trim()) {
@@ -135,7 +146,7 @@ export default function Dashboard() {
       
       setJoinCode('')
       setIsJoinDialogOpen(false)
-      fetchClassrooms()
+      setClassrooms([...classrooms, classroom])
     } catch (error) {
       console.error(error)
       toast({
@@ -171,19 +182,7 @@ export default function Dashboard() {
     classroom.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     classroom.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
     classroom.division.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  if (isPageLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <ClipLoader size={50} color={"#123abc"} loading={true} />
-      </div>
-    )
-  }
-
-  if (!isSignedIn) {
-    return <p className="text-center text-xl mt-10">You need to be logged in</p>
-  }
+  );
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -357,3 +356,5 @@ export default function Dashboard() {
     </div>
   )
 }
+
+export default DashboardPage

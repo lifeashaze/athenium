@@ -39,7 +39,12 @@ export async function POST(req: NextRequest) {
         division,
         courseCode,
         courseName,
-        admin: { connect: { id: user.id } },
+        creator: { connect: { id: user.id } },
+        memberships: {
+          create: {
+            userId: user.id,
+          },
+        },
       },
     });
 

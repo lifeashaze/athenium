@@ -20,10 +20,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId },
       include: {
-        admin: { 
+        creator: { 
           select: { 
             id: true,
             firstName: true,
+            lastName: true,
             email: true,
           } 
         },
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
               select: {
                 id: true,
                 firstName: true,
+                lastName: true,
                 email: true,
                 role: true
               }
@@ -46,11 +48,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Classroom not found' }, { status: 404 });
     }
 
-    // Check if the user is the admin or a member of the classroom
-    const isAdmin = classroom.adminId === userId;
+    // Check if the user is the creator or a member of the classroom
+    const isCreator = classroom.creatorId === userId;
     const isMember = classroom.memberships.some(membership => membership.userId === userId);
 
-    if (!isAdmin && !isMember) {
+    if (!isCreator && !isMember) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -62,8 +64,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         name: classroom.name,
         code: classroom.code,
         inviteLink: classroom.inviteLink,
-        adminFirstName: classroom.admin.firstName,
+        creatorFirstName: classroom.creator.firstName,
+        creatorLastName: classroom.creator.lastName,
+        creatorEmail: classroom.creator.email,
         courseCode: classroom.courseCode,
+        courseName: classroom.courseName,
         year: classroom.year,
         division: classroom.division,
       },
@@ -90,14 +95,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId },
-      include: { admin: true },
+      include: { creator: true },
     });
 
     if (!classroom) {
       return NextResponse.json({ error: 'Classroom not found' }, { status: 404 });
     }
 
-    if (classroom.adminId !== userId) {
+    if (classroom.creatorId !== userId) {
       return NextResponse.json({ error: 'You are not authorized to delete this classroom' }, { status: 403 });
     }
 
