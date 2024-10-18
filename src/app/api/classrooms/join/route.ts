@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     if (existingMembership) {
       console.log('User is already a member of this classroom');
-      return NextResponse.json({ message: 'You are already a member of this classroom' }, { status: 200 });
+      return NextResponse.json({ message: 'You are already a member of this classroom', classroom }, { status: 200 });
     }
 
     // Create the membership

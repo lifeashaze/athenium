@@ -136,17 +136,32 @@ const DashboardPage = () => {
         headers: { 'Content-Type': 'application/json' },
       })
       
-      const classroom = res.data
+      const { message, classroom } = res.data
       
-      toast({
-        variant: "default",
-        title: "Success",
-        description: `Joined classroom "${classroom.name}" successfully`,
-      })
-      
-      setJoinCode('')
-      setIsJoinDialogOpen(false)
-      setClassrooms([...classrooms, classroom])
+      if (classroom && classroom.courseName) {
+        if (message === 'You are already a member of this classroom') {
+          toast({
+            variant: "default",
+            title: "Info",
+            description: message,
+          })
+        } else {
+          toast({
+            variant: "default",
+            title: "Success",
+            description: `Joined classroom "${classroom.courseName}" successfully`,
+          })
+          
+          // Fetch updated classroom list
+          const updatedClassrooms = await fetchClassrooms()
+          setClassrooms(updatedClassrooms)
+        }
+        
+        setJoinCode('')
+        setIsJoinDialogOpen(false)
+      } else {
+        throw new Error('Invalid classroom data received')
+      }
     } catch (error) {
       console.error(error)
       toast({
@@ -156,6 +171,17 @@ const DashboardPage = () => {
       })
     } finally {
       setIsJoining(false)
+    }
+  }
+
+  // Add this function to fetch classrooms
+  const fetchClassrooms = async () => {
+    try {
+      const response = await axios.get('/api/classrooms')
+      return response.data.classrooms
+    } catch (error) {
+      console.error('Failed to fetch classrooms:', error)
+      return []
     }
   }
 
@@ -179,9 +205,9 @@ const DashboardPage = () => {
   }
 
   const filteredClassrooms = classrooms.filter(classroom =>
-    classroom.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    classroom.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    classroom.division.toLowerCase().includes(searchTerm.toLowerCase())
+    (classroom.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+    (classroom.courseCode?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+    (classroom.division?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   );
 
   return (
@@ -194,8 +220,8 @@ const DashboardPage = () => {
                 const hour = new Date().getHours()
                 if (hour >= 5 && hour < 12) return "Good Morning"
                 if (hour >= 12 && hour < 18) return "Good Afternoon"
-                if (hour >= 18 && hour < 22) return "Good Evening"
-                return "Happy Night"
+                if ((hour >= 18 && hour < 23)) return "Good Evening"
+                return "Happy Late Night "
               })()}, {user?.firstName}
             </h1>
             <div className="flex justify-end space-x-4 mb-6">
