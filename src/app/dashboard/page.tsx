@@ -4,7 +4,6 @@ import { useUser } from '@clerk/nextjs'
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
-import { ClipLoader } from 'react-spinners'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
@@ -15,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Search } from 'lucide-react'
-import Link from 'next/link'
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Classroom {
   id: number
@@ -73,7 +72,44 @@ const DashboardPage = () => {
   }
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <main>
+          <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <div className="px-4 py-6 sm:px-0">
+              <Skeleton className="h-12 w-3/4 mx-auto mb-8" />
+              <div className="flex justify-end space-x-4 mb-6">
+                <Skeleton className="h-10 w-40" />
+                <Skeleton className="h-10 w-40" />
+              </div>
+              <Skeleton className="h-8 w-64 mb-6" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, index) => (
+                  <Card key={index}>
+                    <CardHeader className="pb-2">
+                      <Skeleton className="h-6 w-3/4" />
+                    </CardHeader>
+                    <CardContent className="pb-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </div>
+                    </CardContent>
+                    <div className="px-6 pb-4">
+                      <div className="flex justify-between items-center">
+                        <Skeleton className="h-10 w-3/4" />
+                        <Skeleton className="h-10 w-10" />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (error) {

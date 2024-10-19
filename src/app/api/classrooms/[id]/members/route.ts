@@ -13,13 +13,29 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
           select: {
             id: true,
             firstName: true,
+            lastName: true,
             email: true,
+            role: true,
+            rollNo: true,
+            srn: true,
+            prn: true,
           },
         },
       },
     });
 
-    return NextResponse.json(members.map(m => m.user));
+    const formattedMembers = members.map(({ user }) => ({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      rollNo: user.rollNo,
+      srn: user.srn,
+      prn: user.prn,
+    }));
+
+    return NextResponse.json(formattedMembers);
   } catch (error) {
     console.error('Failed to fetch members:', error);
     return NextResponse.json({ error: 'Failed to fetch members' }, { status: 500 });

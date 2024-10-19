@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function UserSettingsPage() {
   const { user } = useUser()
@@ -21,11 +22,12 @@ export default function UserSettingsPage() {
     officeHoursStart: '',
     officeHoursEnd: ''
   })
-
   const [initialFormData, setInitialFormData] = useState({...formData})
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchUserData = async () => {
+      setIsLoading(true)
       try {
         const response = await fetch('/api/user')
         const userData = await response.json()
@@ -38,6 +40,8 @@ export default function UserSettingsPage() {
           description: "Failed to load user data. Please try again.",
           variant: "destructive",
         })
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -92,113 +96,100 @@ export default function UserSettingsPage() {
       <Card>
         <CardHeader className="space-y-1">
           <div className="flex items-center space-x-4">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src={user.imageUrl} alt={user.fullName || "User avatar"} />
-              <AvatarFallback>{user.firstName?.[0]}{user.lastName?.[0]}</AvatarFallback>
-            </Avatar>
+            {isLoading ? (
+              <Skeleton className="w-20 h-20 rounded-full" />
+            ) : (
+              <Avatar className="w-20 h-20">
+                <AvatarImage src={user.imageUrl} alt={user.fullName || "User avatar"} />
+                <AvatarFallback>{user.firstName?.[0]}{user.lastName?.[0]}</AvatarFallback>
+              </Avatar>
+            )}
             <div>
-              <CardTitle className="text-2xl">{user.fullName}</CardTitle>
-              <p className="text-sm text-muted-foreground">{user.primaryEmailAddress?.emailAddress}</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-48" />
+              ) : (
+                <CardTitle className="text-2xl">{user.fullName}</CardTitle>
+              )}
+              {isLoading ? (
+                <Skeleton className="h-4 w-64 mt-2" />
+              ) : (
+                <p className="text-sm text-muted-foreground">{user.primaryEmailAddress?.emailAddress}</p>
+              )}
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information */}
             <div>
               <h3 className="text-lg font-medium">Personal Information</h3>
               <Separator className="my-2" />
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" value={user.firstName || ''} disabled />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" value={user.lastName || ''} disabled />
-                </div>
+                {['firstName', 'lastName'].map((field) => (
+                  <div key={field}>
+                    <Label htmlFor={field}>{field === 'firstName' ? 'First Name' : 'Last Name'}</Label>
+                    {isLoading ? (
+                      <Skeleton className="h-10 w-full" />
+                    ) : (
+                      <Input id={field} value={user[field as keyof typeof user]?.toString() || ''} disabled={false} />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
+            {/* Academic Information */}
             <div>
               <h3 className="text-lg font-medium">Academic Information</h3>
               <Separator className="my-2" />
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="rollNo">Roll Number</Label>
-                  <Input
-                    id="rollNo"
-                    name="rollNo"
-                    value={formData.rollNo}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="year">Year</Label>
-                  <Input
-                    id="year"
-                    name="year"
-                    value={formData.year}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="division">Division</Label>
-                  <Input
-                    id="division"
-                    name="division"
-                    value={formData.division}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="srn">SRN</Label>
-                  <Input
-                    id="srn"
-                    name="srn"
-                    value={formData.srn}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="prn">PRN</Label>
-                  <Input
-                    id="prn"
-                    name="prn"
-                    value={formData.prn}
-                    onChange={handleInputChange}
-                  />
-                </div>
+                {['rollNo', 'year', 'division', 'srn', 'prn'].map((field) => (
+                  <div key={field}>
+                    <Label htmlFor={field}>{field.charAt(0).toUpperCase() + field.slice(1)}</Label>
+                    {isLoading ? (
+                      <Skeleton className="h-10 w-full" />
+                    ) : (
+                      <Input
+                        id={field}
+                        name={field}
+                        value={formData[field as keyof typeof formData]}
+                        onChange={handleInputChange}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
+            {/* Office Hours */}
             <div>
               <h3 className="text-lg font-medium">Office Hours</h3>
               <Separator className="my-2" />
               <div className="flex space-x-4">
-                <div className="flex-1">
-                  <Label htmlFor="officeHoursStart">Start Time</Label>
-                  <Input
-                    id="officeHoursStart"
-                    name="officeHoursStart"
-                    type="time"
-                    value={formData.officeHoursStart}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label htmlFor="officeHoursEnd">End Time</Label>
-                  <Input
-                    id="officeHoursEnd"
-                    name="officeHoursEnd"
-                    type="time"
-                    value={formData.officeHoursEnd}
-                    onChange={handleInputChange}
-                  />
-                </div>
+                {['officeHoursStart', 'officeHoursEnd'].map((field) => (
+                  <div key={field} className="flex-1">
+                    <Label htmlFor={field}>{field === 'officeHoursStart' ? 'Start Time' : 'End Time'}</Label>
+                    {isLoading ? (
+                      <Skeleton className="h-10 w-full" />
+                    ) : (
+                      <Input
+                        id={field}
+                        name={field as keyof typeof formData}
+                        type="time"
+                        value={formData[field as keyof typeof formData]}
+                        onChange={handleInputChange}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </form>
         </CardContent>
         <CardFooter>
-          <Button type="submit" onClick={handleSubmit}>Save Changes</Button>
+          {isLoading ? (
+            <Skeleton className="h-10 w-32" />
+          ) : (
+            <Button type="submit" onClick={handleSubmit}>Save Changes</Button>
+          )}
         </CardFooter>
       </Card>
     </div>

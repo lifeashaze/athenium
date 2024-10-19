@@ -2,6 +2,9 @@
 
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 // Define the Assignment type
 type Assignment = {
@@ -26,30 +29,29 @@ const Page = () => {
   const router = useRouter()
   
   return (
-    <div className="flex h-screen bg-gray-100">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-          <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-6">Assignments</h1>
-            <div className="space-y-4">
-              {assignments.map((assignment) => (
-                <div key={assignment.id} className="bg-white p-4 rounded-lg shadow flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold">{assignment.title}</h2>
-                    <p className="text-gray-600">{assignment.subject}</p>
-                    <p className="text-sm text-gray-500">Due: {assignment.deadline}</p>
-                    <p className={`text-sm ${assignment.submitted ? 'text-green-500' : 'text-red-500'}`}>
-                      {assignment.submitted ? 'Submitted' : 'Not Submitted'}
-                    </p>
-                  </div>
-                  <Button onClick={() => router.push(`/assignment/${assignment.id}`)}>
-                    Open
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Assignments</h1>
+      <div className="space-y-4">
+        {assignments.map((assignment) => (
+          <Card key={assignment.id}>
+            <CardHeader>
+              <CardTitle>{assignment.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">{assignment.subject}</p>
+              <p className="text-sm text-gray-500">Due: {assignment.deadline}</p>
+              <Separator className="my-2" />
+              <div className="flex justify-between items-center">
+                <Badge variant={assignment.submitted ? "secondary" : "outline"}>
+                  {assignment.submitted ? 'Submitted' : 'Not Submitted'}
+                </Badge>
+                <Button onClick={() => router.push(`/assignment/${assignment.id}`)}>
+                  Open
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   )
