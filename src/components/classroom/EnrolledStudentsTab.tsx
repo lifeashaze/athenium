@@ -12,15 +12,19 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-interface User {
+interface Member {
   id: string;
   firstName: string;
+  lastName: string;
   email: string;
   role: string;
+  rollNo: string | null;
+  srn: string | null;
+  prn: string | null;
 }
 
 interface EnrolledStudentsTabProps {
-  members: User[];
+  members: Member[];
   currentPage: number;
   totalPages: number;
   itemsPerPage: number;
@@ -47,6 +51,7 @@ export const EnrolledStudentsTab: React.FC<EnrolledStudentsTabProps> = ({
   itemsPerPage,
   onPageChange
 }) => {
+  console.log('EnrolledStudentsTab received the following props:', { members, currentPage, totalPages, itemsPerPage, onPageChange });
   const paginatedMembers = members.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -67,21 +72,21 @@ export const EnrolledStudentsTab: React.FC<EnrolledStudentsTabProps> = ({
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
+                    <TableHead className="font-bold">Roll No</TableHead>
                     <TableHead className="font-bold">Name</TableHead>
                     <TableHead className="font-bold">Email</TableHead>
-                    <TableHead className="font-bold">Role</TableHead>
+                    <TableHead className="font-bold">SRN</TableHead>
+                    <TableHead className="font-bold">PRN</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedMembers.map((member) => (
                     <TableRow key={member.id} className="hover:bg-muted/50">
-                      <TableCell className="font-medium">{member.firstName}</TableCell>
+                      <TableCell>{member.rollNo || '-'}</TableCell>
+                      <TableCell className="font-medium">{`${member.firstName} ${member.lastName}`}</TableCell>
                       <TableCell>{member.email}</TableCell>
-                      <TableCell>
-                        <Badge className={`${getRoleBadgeColor(member.role)} transition-colors duration-200`}>
-                          {capitalizeFirstLetter(member.role)}
-                        </Badge>
-                      </TableCell>
+                      <TableCell>{member.srn || '-'}</TableCell>
+                      <TableCell>{member.prn || '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

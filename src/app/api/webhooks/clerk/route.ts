@@ -51,8 +51,6 @@ export async function POST(req: Request) {
     })
   }
 
-  // Do something with the payload
-  // For this guide, you simply log the payload to the console
   const { id } = evt.data;
   const eventType = evt.type;
 //   console.log(`Webhook with and ID of ${id} and type of ${eventType}`)
@@ -74,9 +72,9 @@ if (evt.type === 'user.created') {
           id: id,
           email: primaryEmail,
           firstName: first_name || '',
-          lastName: last_name || '',  // New required field
-          role: 'STUDENT',  // Default role, adjust as needed
-          updatedAt: new Date(),  // New required field
+          lastName: last_name || '',  
+          role: 'STUDENT',  
+          updatedAt: new Date(),  
         },
       });
 

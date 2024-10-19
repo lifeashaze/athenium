@@ -56,6 +56,17 @@ interface Resource {
   uploadedAt: string;
 }
 
+interface Member {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  rollNo: string | null;
+  srn: string | null;
+  prn: string | null;
+}
+
 function getProgress(startDate: string, endDate: string) {
   const start = new Date(startDate).getTime()
   const end = new Date(endDate).getTime()
@@ -69,7 +80,7 @@ const ClassroomPage = () => {
   const { user, isLoaded: isUserLoaded } = useUser();
   const params = useParams();
   const [classroom, setClassroom] = useState<Classroom | null>(null);
-  const [members, setMembers] = useState<User[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const assignmentsRef = useRef<Assignment[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
@@ -84,7 +95,6 @@ const ClassroomPage = () => {
     try {
       const response = await axios.get(`/api/classrooms/${params.id}`);
       setClassroom(response.data.classroom);
-      setMembers(response.data.members || []);
 
       // Log classroom and creator details
       console.log('Fetched classroom data:', response.data.classroom);
@@ -121,13 +131,26 @@ const ClassroomPage = () => {
     }
   }, [params.id]);
 
+  const fetchMembers = useCallback(async () => {
+    if (!params.id) return;
+    try {
+      const response = await axios.get(`/api/classrooms/${params.id}/members`);
+      console.log('Fetched members:', response.data);
+      setMembers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
+      setError('Failed to load members. Please try again later.');
+    }
+  }, [params.id]);
+
   useEffect(() => {
     if (isUserLoaded && user && params.id) {
       fetchClassroomData();
       fetchAssignments();
       fetchResources();
+      fetchMembers();
     }
-  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchResources]);
+  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchResources, fetchMembers]);
 
   const handleCreateAssignment = async (newAssignment: any): Promise<Assignment | null> => {
     try {
@@ -258,7 +281,7 @@ const ClassroomPage = () => {
         </TabsContent>
         <TabsContent value="resources">
           <ResourcesTab
-            resources={resources}
+            resources={resources as any}
             isUploading={isUploading}
             onUpload={handleUploadResource}
           />

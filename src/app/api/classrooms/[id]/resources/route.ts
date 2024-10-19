@@ -28,6 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const resources = await prisma.resource.findMany({
       where: { classroomId },
       orderBy: { uploadedAt: 'desc' },
+      include: { uploader: true }, // Include uploader details
     });
     console.log('Resources fetched:', resources);
 
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       data: {
         title: file.name,
         url: fileUrl,
-        uploadedBy: userId,
+        uploaderId: userId, // Changed from uploadedBy to uploaderId
         classroomId,
       },
     });

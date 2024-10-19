@@ -43,6 +43,10 @@ interface Student {
   id: string;
   firstName: string;
   email: string;
+  lastName: string;
+  rollNo: string;
+  srn: string;
+  prn: string;
 }
 
 interface Submission {
@@ -53,6 +57,10 @@ interface Submission {
   user: {
     firstName: string;
     email: string;
+    lastName: string;
+    rollNo: string;
+    srn: string;
+    prn: string;
   };
 }
 
@@ -279,7 +287,9 @@ const EvaluationClient = () => {
                                               disabled={!submission}
                                             >
                                               <div className="flex items-center w-full">
-                                                <span className="flex-grow text-left">{student.firstName}</span>
+                                                <span className="flex-grow text-left">
+                                                  {student.rollNo || 'N/A'} - {student.firstName}
+                                                </span>
                                                 {submission ? (
                                                   <Badge variant="outline" className="ml-2">Submitted</Badge>
                                                 ) : (
@@ -292,14 +302,26 @@ const EvaluationClient = () => {
                                     </ScrollArea>
                                   </div>
                                   <div className="flex-1 pl-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                       <div>
-                                        <h3 className="font-semibold">Student Name</h3>
-                                        <p>{selectedSubmission?.user.firstName}</p>
+                                        <h3 className="font-semibold">Full Name</h3>
+                                        <p>{`${selectedSubmission?.user.firstName} ${selectedSubmission?.user.lastName || ''}`}</p>
                                       </div>
                                       <div>
                                         <h3 className="font-semibold">Email</h3>
                                         <p>{selectedSubmission?.user.email}</p>
+                                      </div>
+                                      <div>
+                                        <h3 className="font-semibold">Roll Number</h3>
+                                        <p>{selectedSubmission?.user.rollNo || 'N/A'}</p>
+                                      </div>
+                                      <div>
+                                        <h3 className="font-semibold">SRN</h3>
+                                        <p>{selectedSubmission?.user.srn || 'N/A'}</p>
+                                      </div>
+                                      <div>
+                                        <h3 className="font-semibold">PRN</h3>
+                                        <p>{selectedSubmission?.user.prn || 'N/A'}</p>
                                       </div>
                                       <div>
                                         <h3 className="font-semibold">Submitted At</h3>
@@ -309,7 +331,7 @@ const EvaluationClient = () => {
                                     <div className="px-10">
                                       <iframe
                                         src={`${selectedSubmission?.content}#toolbar=0`}
-                                        className="w-full h-[calc(95vh-250px)]"
+                                        className="w-full h-[calc(95vh-350px)]"
                                         title={`Submission by ${selectedSubmission?.user.firstName}`}
                                       />
                                     </div>
