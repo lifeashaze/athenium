@@ -39,7 +39,6 @@ int main() {
   rust: `fn main() {
     // Your code here
 }`,
-  // Add more default code templates as needed
 };
 
 export const getDefaultCode = (languageId: string): string => {

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, GenerateContentResult } from '@google/generative-ai';
 import ReactMarkdown from 'react-markdown';
 
 interface ChatWindowProps {
@@ -7,15 +7,42 @@ interface ChatWindowProps {
   pdfContent: string | null;
 }
 
+
 export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) => {
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; content: string; visible: boolean }[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tokenCount, setTokenCount] = useState<number>(0);
+  const [tokenCount, setTokenCount] = useState<{ prompt: number; response: number }>({ prompt: 0, response: 0 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const streamingRef = useRef<NodeJS.Timeout | null>(null);
 
   const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY!);
+
+  const getModel = () => {
+    return genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+      ].filter(setting => Object.values(HarmCategory).includes(setting.category)),
+    });
+  };
 
   useEffect(() => {
     if (pdfContent) {
@@ -27,6 +54,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) =>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    return () => {
+      if (streamingRef.current) {
+        clearTimeout(streamingRef.current);
+      }
+    };
+  }, []);
+
   // Simple token estimation function
   const estimateTokens = (text: string): number => {
     return text.split(/\s+/).length;
@@ -37,7 +72,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) =>
     setError(null);
 
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = getModel();
       const chat = model.startChat({
         history: [],
         generationConfig: {
@@ -49,10 +84,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) =>
 
 ${content}
 
-Based on this content, introduce yourself as an AI assistant and let the user know they can ask any questions about the PDF.`;
+Based on this content, Introduce yourself as 'Athena' and that you've been trained on the pdf and that the user can ask any questions about the pdf. also give some examples of questions that the user might ask.
+DO NOT REFER TO THE INTERNET OR YOUR OWN DATABASE, ONLY REFER TO THE CONTENT PROVIDED.`;
 
       const estimatedTokens = estimateTokens(initialPrompt);
-      setTokenCount(estimatedTokens);
+      setTokenCount({ prompt: estimatedTokens, response: 0 });
 
       const result = await chat.sendMessage(initialPrompt);
       const response = await result.response;
@@ -67,6 +103,27 @@ Based on this content, introduce yourself as an AI assistant and let the user kn
     }
   };
 
+  const streamResponse = useCallback((response: string) => {
+    let index = 0;
+    setStreamingMessage('');
+
+    const streamNextChar = () => {
+      if (index < response.length) {
+        setStreamingMessage((prev) => prev + response[index]);
+        index++;
+        streamingRef.current = setTimeout(streamNextChar, 3); // Adjust speed here
+      } else {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { role: 'model', content: response, visible: true },
+        ]);
+        setStreamingMessage('');
+      }
+    };
+
+    streamNextChar();
+  }, []);
+
   const sendMessage = async (retryCount = 0) => {
     if (input.trim() === '') return;
     const userMessage = { role: 'user' as const, content: input, visible: true };
@@ -76,7 +133,7 @@ Based on this content, introduce yourself as an AI assistant and let the user kn
     setError(null);
 
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = getModel();
       
       // Include PDF content in every message
       const prompt = `PDF Content: ${pdfContent}\n\nUser Question: ${input}`;
@@ -98,7 +155,7 @@ Based on this content, introduce yourself as an AI assistant and let the user kn
 
       const result = await chat.sendMessage(prompt);
       const response = await result.response;
-      setMessages((prevMessages) => [...prevMessages, { role: 'model', content: response.text(), visible: true }]);
+      streamResponse(response.text());
     } catch (error: any) {
       console.error('Error sending message:', error);
       if (error.message.includes('Resource has been exhausted') && retryCount < 3) {
@@ -125,7 +182,16 @@ Based on this content, introduce yourself as an AI assistant and let the user kn
             </div>
           </div>
         ))}
-        {isLoading && (
+        {streamingMessage && (
+          <div className="text-left">
+            <div className="inline-block p-2 rounded-lg bg-gray-200">
+              <ReactMarkdown className="prose max-w-none">
+                {streamingMessage}
+              </ReactMarkdown>
+            </div>
+          </div>
+        )}
+        {isLoading && !streamingMessage && (
           <div className="text-center">
             <div className="inline-block p-2 rounded-lg bg-gray-100">
               AI is thinking...
@@ -140,7 +206,7 @@ Based on this content, introduce yourself as an AI assistant and let the user kn
       <div className="p-4 border-t">
         <div className="flex flex-col space-y-2">
           <div className="text-sm text-gray-500">
-            Estimated token count: {tokenCount}
+            Token count - Prompt: {tokenCount.prompt}, Response: {tokenCount.response}
           </div>
           <div className="flex space-x-2">
             <input

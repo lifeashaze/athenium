@@ -27,6 +27,7 @@ model User {
   submissions    Submission[]
   attendances    Attendance[]
   resourcesUploaded Resource[] @relation("ResourceUploader")
+  notifications Notification[] @relation("UserNotifications")
 }
 
 enum Role {
@@ -107,4 +108,22 @@ model Resource {
   uploadedAt  DateTime @default(now())
   classroom   Classroom @relation(fields: [classroomId], references: [id])
   classroomId Int
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  message   String
+  type      NotificationType
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+  users     User[]   @relation("UserNotifications")
+  relatedId String?  // This can store the ID of the related entity (e.g., assignment ID, classroom ID)
+}
+
+enum NotificationType {
+  ASSIGNMENT
+  ATTENDANCE
+  MEMBERSHIP
+  RESOURCE
+  GENERAL
 }

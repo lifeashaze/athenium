@@ -9,12 +9,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Trash2, Plus, UserPlus, Book, Users } from 'lucide-react'
+import { Trash2, Plus, UserPlus, Book, Users, Bell } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Search } from 'lucide-react'
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Classroom {
   id: number
@@ -24,6 +30,14 @@ interface Classroom {
   division: string
   courseCode: string
   courseName: string
+}
+
+interface Notification {
+  id: number
+  message: string
+  type: 'ASSIGNMENT' | 'ATTENDANCE' | 'MEMBERSHIP' | 'RESOURCE' | 'GENERAL'
+  createdAt: string
+  read: boolean
 }
 
 const DashboardPage = () => {
@@ -46,25 +60,32 @@ const DashboardPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    const fetchClassrooms = async () => {
+    const fetchData = async () => {
       if (!user) return;
       
       setIsLoading(true);
       try {
-        const response = await axios.get('/api/classrooms');
-        console.log('API response:', response.data); // Add this line for debugging
-        setClassrooms(response.data.classrooms || []);
+        // Fetch classrooms
+        const classroomsResponse = await axios.get('/api/classrooms');
+        setClassrooms(classroomsResponse.data.classrooms || []);
+
+        // Fetch notifications
+        const notificationsResponse = await axios.get('/api/notifications');
+        setNotifications(notificationsResponse.data.notifications || []);
+        setUnreadCount(notificationsResponse.data.notifications.filter((n: Notification) => !n.read).length);
       } catch (error) {
-        console.error('Error fetching classrooms:', error);
-        setError('Unable to load classrooms. Please try again later.');
+        console.error('Error fetching data:', error);
+        setError('Unable to load data. Please try again later.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchClassrooms();
+    fetchData();
   }, [user]);
 
   if (!user) {
@@ -246,20 +267,66 @@ const DashboardPage = () => {
     (classroom.division?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   );
 
+  const markAsRead = async (notificationId: number) => {
+    try {
+      await axios.post(`/api/notifications/${notificationId}/read`)
+      setNotifications(notifications.map(n => 
+        n.id === notificationId ? { ...n, read: true } : n
+      ))
+      setUnreadCount(prev => prev - 1)
+    } catch (error) {
+      console.error('Error marking notification as read:', error)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <main>
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
-            <h1 className="text-3xl font-bold text-gray-900 text-center mb-8">
-              {(() => {
-                const hour = new Date().getHours()
-                if (hour >= 5 && hour < 12) return "Good Morning"
-                if (hour >= 12 && hour < 18) return "Good Afternoon"
-                if ((hour >= 18 && hour < 23)) return "Good Evening"
-                return "Happy Late Night "
-              })()}, {user?.firstName}
-            </h1>
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">
+                {(() => {
+                  const hour = new Date().getHours()
+                  if (hour >= 5 && hour < 12) return "Good Morning"
+                  if (hour >= 12 && hour < 18) return "Good Afternoon"
+                  if ((hour >= 18 && hour < 23)) return "Good Evening"
+                  return "Happy Late Night "
+                })()}, {user?.firstName}
+              </h1>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="relative">
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  {notifications.length === 0 ? (
+                    <DropdownMenuItem>No notifications</DropdownMenuItem>
+                  ) : (
+                    notifications.map((notification) => (
+                      <DropdownMenuItem 
+                        key={notification.id} 
+                        className="flex flex-col items-start"
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <span className={`text-sm ${notification.read ? 'text-gray-500' : 'font-semibold'}`}>
+                          {notification.message}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </span>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <div className="flex justify-end space-x-4 mb-6">
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
