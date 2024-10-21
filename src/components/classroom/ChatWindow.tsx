@@ -3,10 +3,9 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, GenerateContentRe
 import ReactMarkdown from 'react-markdown';
 
 interface ChatWindowProps {
-  pdfUrl: string; // We'll keep this prop for future use
+  pdfUrl: string; 
   pdfContent: string | null;
 }
-
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) => {
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; content: string; visible: boolean }[]>([]);
@@ -17,6 +16,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) =>
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const streamingRef = useRef<NodeJS.Timeout | null>(null);
+  const [isIndexing, setIsIndexing] = useState(true);
+  const [indexingProgress, setIndexingProgress] = useState(0);
 
   const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY!);
 
@@ -46,7 +47,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) =>
 
   useEffect(() => {
     if (pdfContent) {
-      sendInitialMessage(pdfContent);
+      simulateIndexingAndSendInitialMessage(pdfContent);
     }
   }, [pdfContent]);
 
@@ -55,7 +56,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) =>
   }, [messages]);
 
   useEffect(() => {
+    // Cleanup function to clear conversation history
     return () => {
+      setMessages([]);
+      setInput('');
+      setStreamingMessage('');
+      setError(null);
+      setTokenCount({ prompt: 0, response: 0 });
       if (streamingRef.current) {
         clearTimeout(streamingRef.current);
       }
@@ -65,6 +72,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ pdfUrl, pdfContent }) =>
   // Simple token estimation function
   const estimateTokens = (text: string): number => {
     return text.split(/\s+/).length;
+  };
+
+  const simulateIndexingAndSendInitialMessage = async (content: string) => {
+    setIsIndexing(true);
+    setIndexingProgress(0);
+
+    // Simulate indexing progress
+    const interval = setInterval(() => {
+      setIndexingProgress((prev) => {
+        const next = prev + Math.random() * 10;
+        return next > 90 ? 90 : next;
+      });
+    }, 500);
+
+    try {
+      await sendInitialMessage(content);
+      clearInterval(interval);
+      setIndexingProgress(100);
+      setTimeout(() => setIsIndexing(false), 500); // Give a moment to see 100%
+    } catch (error) {
+      clearInterval(interval);
+      setIsIndexing(false);
+      setError('Failed to initialize the chat. Please try again.');
+    }
   };
 
   const sendInitialMessage = async (content: string) => {
@@ -97,7 +128,7 @@ DO NOT REFER TO THE INTERNET OR YOUR OWN DATABASE, ONLY REFER TO THE CONTENT PRO
       ]);
     } catch (error: any) {
       console.error('Error sending initial message:', error);
-      setError('An error occurred while preparing the chat. Please try again later.');
+      throw error; // Rethrow to be caught in simulateIndexingAndSendInitialMessage
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +142,7 @@ DO NOT REFER TO THE INTERNET OR YOUR OWN DATABASE, ONLY REFER TO THE CONTENT PRO
       if (index < response.length) {
         setStreamingMessage((prev) => prev + response[index]);
         index++;
-        streamingRef.current = setTimeout(streamNextChar, 3); // Adjust speed here
+        streamingRef.current = setTimeout(streamNextChar, 0.25); // Adjust speed here
       } else {
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -169,6 +200,21 @@ DO NOT REFER TO THE INTERNET OR YOUR OWN DATABASE, ONLY REFER TO THE CONTENT PRO
       setIsLoading(false);
     }
   };
+
+  if (isIndexing) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="w-64 bg-gray-200 rounded-full h-4 mb-4">
+          <div
+            className="bg-blue-500 h-4 rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${indexingProgress}%` }}
+          ></div>
+        </div>
+        <p className="text-lg font-semibold">Indexing PDF Content</p>
+        <p className="text-sm text-gray-600">Please wait while we prepare your chat...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
