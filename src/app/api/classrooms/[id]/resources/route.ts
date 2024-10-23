@@ -15,26 +15,16 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  console.log('Entering GET function');
-
   try {
-    console.log('Attempting to fetch resources');
     const classroomId = parseInt(params.id);
-    console.log('Classroom ID:', classroomId);
-
-    // Log available models
-    console.log('Available Prisma models:', Object.keys(prisma));
-
     const resources = await prisma.resource.findMany({
       where: { classroomId },
       orderBy: { uploadedAt: 'desc' },
       include: { uploader: true }, // Include uploader details
     });
-    console.log('Resources fetched:', resources);
 
     return NextResponse.json(resources);
   } catch (error: any) {
-    console.error('Failed to fetch resources:', error);
     return NextResponse.json({ error: 'Failed to fetch resources', details: error.message }, { status: 500 });
   }
 }
@@ -60,7 +50,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Check if S3 bucket name is set
     const bucketName = process.env.AWS_S3_BUCKET_NAME;
     if (!bucketName) {
-      console.error('AWS_S3_BUCKET_NAME is not set in environment variables');
       return NextResponse.json({ error: 'S3 bucket not configured' }, { status: 500 });
     }
 

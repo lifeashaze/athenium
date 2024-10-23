@@ -8,12 +8,10 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string, assignmentId: string } }
 ) {
-  console.log('API route called with params:', params);
 
   const { userId } = getAuth(req);
 
   if (!userId) {
-    console.log('Unauthorized: No user ID found');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -21,7 +19,6 @@ export async function GET(
     const classroomId = parseInt(params.id);
     const assignmentId = parseInt(params.assignmentId);
 
-    console.log('Parsed IDs:', { classroomId, assignmentId });
 
     // Check if the user is a member of the classroom
     const membership = await prisma.membership.findUnique({
@@ -34,7 +31,6 @@ export async function GET(
     });
 
     if (!membership) {
-      console.log('User not a member of the classroom');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -59,16 +55,13 @@ export async function GET(
       },
     });
 
-    console.log('Assignment found:', assignment);
 
     if (!assignment) {
-      console.log('Assignment not found');
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
     return NextResponse.json(assignment);
   } catch (error) {
-    console.error('Error fetching assignment:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -113,7 +106,6 @@ export async function POST(
 
     return NextResponse.json(newAssignment, { status: 201 });
   } catch (error) {
-    console.error('Error creating assignment:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

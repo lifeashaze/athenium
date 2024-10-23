@@ -55,7 +55,6 @@ export async function PATCH(
 
     return NextResponse.json({ submission: updatedSubmission });
   } catch (error) {
-    console.error("[SUBMISSION_MARKS_PATCH]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
