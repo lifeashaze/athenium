@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, set } from "date-fns";
 import { CalendarIcon, Clock, CalendarDays } from "lucide-react";
@@ -232,13 +232,43 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                   Deadline
                 </Label>
                 <div className="col-span-3 flex gap-2">
-                  <Input
-                    type="date"
-                    id="deadline-date"
-                    value={format(newAssignment.deadline, "yyyy-MM-dd")}
-                    onChange={handleDateChange}
-                    className="flex-1"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "justify-start text-left font-normal flex-1",
+                          !newAssignment.deadline && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(newAssignment.deadline, "PPP")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent 
+                      className="w-auto p-0 z-[1000]"
+                      align="start"
+                    >
+                      <CalendarComponent
+                        mode="single"
+                        selected={newAssignment.deadline}
+                        onSelect={(date) => {
+                          if (date) {
+                            // Create a new date that preserves the current time
+                            const newDate = new Date(date);
+                            newDate.setHours(newAssignment.deadline.getHours());
+                            newDate.setMinutes(newAssignment.deadline.getMinutes());
+                            
+                            setNewAssignment(prev => ({
+                              ...prev,
+                              deadline: newDate
+                            }));
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
