@@ -81,8 +81,9 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
     setNewAssignment({ title: '', type: 'theory', deadline: new Date() });
   };
 
-  const handleDateChange = (date: Date | undefined) => {
-    if (date) {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = new Date(e.target.value);
+    if (!isNaN(date.getTime())) {
       setNewAssignment(prev => ({
         ...prev,
         deadline: set(prev.deadline, {
@@ -231,28 +232,13 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                   Deadline
                 </Label>
                 <div className="col-span-3 flex gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "justify-start text-left font-normal flex-1",
-                          !newAssignment.deadline && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {newAssignment.deadline ? format(newAssignment.deadline, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={newAssignment.deadline}
-                        onSelect={handleDateChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <Input
+                    type="date"
+                    id="deadline-date"
+                    value={format(newAssignment.deadline, "yyyy-MM-dd")}
+                    onChange={handleDateChange}
+                    className="flex-1"
+                  />
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button

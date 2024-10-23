@@ -288,7 +288,7 @@ const EvaluationClient = () => {
                                             >
                                               <div className="flex items-center w-full">
                                                 <span className="flex-grow text-left">
-                                                  {student.rollNo || 'N/A'} - {student.firstName}
+                                                  {selectedSubmission?.user.rollNo || 'N/A'} - {student.firstName}
                                                 </span>
                                                 {submission ? (
                                                   <Badge variant="outline" className="ml-2">Submitted</Badge>
