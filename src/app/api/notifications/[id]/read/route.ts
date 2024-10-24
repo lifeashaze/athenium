@@ -24,7 +24,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error marking notification as read:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

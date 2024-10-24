@@ -6,8 +6,6 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
-  console.log('Prisma instance:', prisma);
-  console.log('Notification model:', prisma.notification);
 
   const { userId } = getAuth(req);
 
@@ -34,11 +32,9 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    console.log('Fetched notifications:', notifications);
 
     return NextResponse.json({ notifications });
   } catch (error) {
-    console.error('Detailed error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

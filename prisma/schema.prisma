@@ -66,6 +66,7 @@ model Assignment {
   title       String
   deadline    DateTime
   type        String
+  maxMarks    Int      @default(25)  
   createdAt   DateTime @default(now())
   creator     User     @relation("AssignmentCreator", fields: [creatorId], references: [id])
   creatorId   String
@@ -83,7 +84,6 @@ model Submission {
   assignment   Assignment @relation(fields: [assignmentId], references: [id])
   assignmentId Int
   marks        Int       @default(0)
-
   @@unique([userId, assignmentId])
 }
 

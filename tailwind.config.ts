@@ -18,6 +18,9 @@ const config: Config = {
       },
     },
     extend: {
+      backdropBlur: {
+        sm: '4px',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

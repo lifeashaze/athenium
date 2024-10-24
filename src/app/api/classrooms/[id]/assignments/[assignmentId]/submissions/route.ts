@@ -30,6 +30,7 @@ export async function GET(
         include: {
           user: {
             select: {
+              id: true,
               firstName: true,
               lastName: true,
               email: true,
@@ -47,5 +48,7 @@ export async function GET(
     } catch (error) {
       console.error('Failed to fetch submissions:', error);
       return NextResponse.json({ error: 'Failed to fetch submissions' }, { status: 500 });
+    } finally {
+      await prisma.$disconnect();
     }
   }

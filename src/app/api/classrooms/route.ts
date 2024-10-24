@@ -43,8 +43,6 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    console.log('Fetched classrooms:', JSON.stringify(classrooms, null, 2));
-
     return NextResponse.json({ classrooms });
   } catch (error) {
     console.error('Error fetching classrooms:', error);
