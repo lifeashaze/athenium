@@ -95,24 +95,27 @@ export function OnboardingDialog({
           }
         }}
       >
-        <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden">
-          <div className="flex h-full">
-            <div className="w-1/3 bg-black p-6 text-white">
+        <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
+          <div className="flex flex-col sm:flex-row h-full">
+            {/* Sidebar */}
+            <div className="w-full sm:w-1/3 bg-black p-4 sm:p-6 text-white">
               <DialogHeader>
-                <DialogTitle className="text-3xl font-bold text-white">
+                <DialogTitle className="text-2xl sm:text-3xl font-bold text-white">
                   Hello {user.firstName}! 👋
                 </DialogTitle>
               </DialogHeader>
-              <div className="mt-8">
+              <div className="mt-4 sm:mt-8">
                 {steps.map((s, index) => (
-                  <div key={index} className={`mb-6 ${step === index ? 'opacity-100' : 'opacity-50'}`}>
-                    <h3 className="text-xl font-semibold">{s.title}</h3>
-                    <p className="text-sm">{s.description}</p>
+                  <div key={index} className={`mb-4 sm:mb-6 ${step === index ? 'opacity-100' : 'opacity-50'}`}>
+                    <h3 className="text-lg sm:text-xl font-semibold">{s.title}</h3>
+                    <p className="text-xs sm:text-sm">{s.description}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="w-2/3 p-6">
+
+            {/* Main Content */}
+            <div className="w-full sm:w-2/3 p-4 sm:p-6">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={step}
@@ -120,7 +123,7 @@ export function OnboardingDialog({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-6"
+                  className="space-y-4 sm:space-y-6"
                 >
                   {step === 0 && (
                     <div className="space-y-4">
@@ -200,7 +203,7 @@ export function OnboardingDialog({
                   )}
                 </motion.div>
               </AnimatePresence>
-              <div className="mt-8 flex justify-between items-center">
+              <div className="mt-6 sm:mt-8 flex justify-between items-center">
                 {step > 0 && (
                   <Button onClick={() => setStep(step - 1)} variant="outline">
                     Back

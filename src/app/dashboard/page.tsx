@@ -425,6 +425,14 @@ const DashboardPage = () => {
                   })()}, {user?.firstName}
                 </h1>
                 <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setShowOnboarding(true)}
+                    title="Update Profile Details"
+                  >
+                    <UserCog className="h-4 w-4" />
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="icon" className="relative">
