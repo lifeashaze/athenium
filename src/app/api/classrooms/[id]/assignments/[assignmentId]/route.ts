@@ -8,7 +8,6 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string, assignmentId: string } }
 ) {
-
   const { userId } = getAuth(req);
 
   if (!userId) {
@@ -19,8 +18,7 @@ export async function GET(
     const classroomId = parseInt(params.id);
     const assignmentId = parseInt(params.assignmentId);
 
-
-    // Check if the user is a member of the classroom
+    // Check if user is a member of the classroom
     const membership = await prisma.membership.findUnique({
       where: {
         userId_classroomId: {
@@ -40,21 +38,27 @@ export async function GET(
         classroomId: classroomId,
       },
       include: {
+        creator: {
+          select: {
+            id: true,
+            firstName: true,
+          },
+        },
         submissions: true,
         classroom: {
           select: {
             id: true,
             name: true,
-          },
-        },
-        creator: {
-          select: {
-            id: true,
+            creator: {
+              select: {
+                id: true,
+                email: true,
+              }
+            }
           },
         },
       },
     });
-
 
     if (!assignment) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
@@ -62,13 +66,14 @@ export async function GET(
 
     return NextResponse.json(assignment);
   } catch (error) {
+    console.error('Error fetching assignment:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function POST(
+export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string, assignmentId: string } }
 ) {
   const { userId } = getAuth(req);
 
@@ -78,34 +83,36 @@ export async function POST(
 
   try {
     const classroomId = parseInt(params.id);
-    const { title, deadline } = await req.json();
+    const assignmentId = parseInt(params.assignmentId);
+    const { title, deadline, description, maxMarks, requirements } = await req.json();
 
-    // Check if the user is a member of the classroom
-    const membership = await prisma.membership.findUnique({
-      where: {
-        userId_classroomId: {
-          userId: userId,
-          classroomId: classroomId,
-        },
-      },
+    // Check if user is the creator of the classroom
+    const classroom = await prisma.classroom.findUnique({
+      where: { id: classroomId },
+      include: { creator: true },
     });
 
-    if (!membership) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!classroom || classroom.creator.id !== userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const newAssignment = await prisma.assignment.create({
+    const updatedAssignment = await prisma.assignment.update({
+      where: {
+        id: assignmentId,
+        classroomId: classroomId,
+      },
       data: {
         title,
-        type: 'assignment',
+        description,
+        maxMarks,
+        requirements,
         deadline: new Date(deadline),
-        creatorId: userId,
-        classroomId: classroomId,
       },
     });
 
-    return NextResponse.json(newAssignment, { status: 201 });
+    return NextResponse.json(updatedAssignment);
   } catch (error) {
+    console.error('Error updating assignment:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -124,7 +131,7 @@ export async function DELETE(
     const classroomId = parseInt(params.id);
     const assignmentId = parseInt(params.assignmentId);
 
-    // Check if the user is the creator of the classroom
+    // Check if user is the creator of the classroom
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId },
       include: { creator: true },
@@ -147,6 +154,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Assignment deleted successfully' });
   } catch (error) {
     console.error('Error deleting assignment:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

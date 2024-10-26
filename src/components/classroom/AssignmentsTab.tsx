@@ -15,11 +15,12 @@ import { cn } from "@/lib/utils";
 import axios from 'axios';
 import { useToast } from "@/components/ui/use-toast";
 import ConfirmationModal from '@/components/classroom/ConfirmationModal';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 interface Assignment {
   id: number;
   title: string;
-  type: 'theory' | 'lab';
   deadline: string;
   creator: {
     firstName: string;
@@ -58,7 +59,9 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ 
     title: '', 
-    type: 'theory' as 'theory' | 'lab', 
+    description: '',
+    maxMarks: 25,
+    requirements: [] as string[],
     deadline: new Date() 
   });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -78,7 +81,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
       setLocalAssignments(prev => [...prev, createdAssignment]);
     }
     setIsDialogOpen(false);
-    setNewAssignment({ title: '', type: 'theory', deadline: new Date() });
+    setNewAssignment({ title: '', description: '', maxMarks: 25, requirements: [], deadline: new Date() });
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,6 +133,93 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
     } finally {
       setIsDeleteModalOpen(false);
       setAssignmentToDelete(null);
+    }
+  };
+
+  const generateRequirements = async () => {
+    if (!newAssignment.title || !newAssignment.description) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both title and description before generating requirements.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY!);
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        safetySettings: [
+          {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+        ].filter(setting => Object.values(HarmCategory).includes(setting.category)),
+      });
+
+      const chat = model.startChat({
+        history: [],
+        generationConfig: {
+          maxOutputTokens: 8192,
+        },
+      });
+
+      const prompt = `You are an experienced professor creating requirements for an assignment.
+
+Assignment Title: "${newAssignment.title}"
+Assignment Description: "${newAssignment.description}"
+
+Generate 3 specific, measurable requirements for this assignment. Each requirement should:
+1. Be clear and actionable
+2. Include specific criteria for evaluation
+3. Be relevant to the assignment topic
+4. Focus on technical/academic aspects
+5. Each requirement should be a single sentence, within 20 words.
+6. Do not use markdown formatting.
+
+Format each requirement as a bullet point starting with "- ".
+Keep the requirements concise but detailed enough for proper evaluation.`;
+
+      const result = await chat.sendMessage(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      // Convert the bullet points to array
+      const requirements = text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('- '))
+        .map(line => line.substring(2));
+
+      setNewAssignment(prev => ({
+        ...prev,
+        requirements: requirements,
+      }));
+
+      toast({
+        title: "Requirements Generated",
+        description: "AI has generated requirements based on your assignment details.",
+      });
+    } catch (error) {
+      console.error('Error generating requirements:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate requirements. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -193,7 +283,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
         <DialogTrigger asChild>
           <Button className="mt-4">Create New Assignment</Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create New Assignment</DialogTitle>
           </DialogHeader>
@@ -210,23 +300,53 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                   className="col-span-3"
                 />
               </div>
+
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="type" className="text-right">
-                  Type
+                <Label htmlFor="description" className="text-right">
+                  Description
                 </Label>
-                <Select
-                  value={newAssignment.type}
-                  onValueChange={(value) => setNewAssignment({ ...newAssignment, type: value as 'theory' | 'lab' })}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="theory">Theory</SelectItem>
-                    <SelectItem value="lab">Lab</SelectItem>
-                  </SelectContent>
-                </Select>
+                <textarea
+                  id="description"
+                  value={newAssignment.description}
+                  onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
+                  className="col-span-3 min-h-[100px] p-2 rounded-md border"
+                  placeholder="Explain what students need to do..."
+                />
               </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="maxMarks" className="text-right">
+                  Max Marks
+                </Label>
+                <Input
+                  id="maxMarks"
+                  type="number"
+                  value={newAssignment.maxMarks}
+                  onChange={(e) => setNewAssignment({ ...newAssignment, maxMarks: parseInt(e.target.value) })}
+                  className="col-span-3"
+                  min={0}
+                />
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="requirements" className="text-right">
+                  Requirements
+                </Label>
+                <div className="col-span-3 p-2 rounded-md border bg-muted min-h-[100px]">
+                  {newAssignment.requirements.length === 0 ? (
+                    <p className="text-muted-foreground">
+                      Requirements will be generated by AI after clicking Next...
+                    </p>
+                  ) : (
+                    <ul className="list-disc pl-4">
+                      {newAssignment.requirements.map((req, index) => (
+                        <li key={index}>{req}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="deadline" className="text-right">
                   Deadline
@@ -320,8 +440,21 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                 </div>
               </div>
             </div>
-            <div className="flex justify-end">
-              <Button type="submit">Create Assignment</Button>
+            <div className="flex justify-end gap-2">
+              <Button 
+                type="button" 
+                variant="secondary"
+                onClick={generateRequirements}
+                disabled={!newAssignment.title || !newAssignment.description}
+              >
+                Generate Requirements
+              </Button>
+              <Button 
+                type="submit"
+                disabled={!newAssignment.title || !newAssignment.description || newAssignment.requirements.length === 0}
+              >
+                Create Assignment
+              </Button>
             </div>
           </form>
         </DialogContent>

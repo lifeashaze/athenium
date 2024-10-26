@@ -62,17 +62,18 @@ model Membership {
 }
 
 model Assignment {
-  id          Int      @id @default(autoincrement())
-  title       String
-  deadline    DateTime
-  type        String
-  maxMarks    Int      @default(25)  
-  createdAt   DateTime @default(now())
-  creator     User     @relation("AssignmentCreator", fields: [creatorId], references: [id])
-  creatorId   String
-  classroom   Classroom @relation(fields: [classroomId], references: [id])
-  classroomId Int
-  submissions Submission[]
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String   @default("")
+  requirements String[] @default([])
+  deadline     DateTime
+  maxMarks     Int      @default(25)  
+  createdAt    DateTime @default(now())
+  creator      User     @relation("AssignmentCreator", fields: [creatorId], references: [id])
+  creatorId    String
+  classroom    Classroom @relation(fields: [classroomId], references: [id])
+  classroomId  Int
+  submissions  Submission[]
 }
 
 model Submission {
