@@ -98,12 +98,7 @@ export function OnboardingDialog({
         <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
           <div className="flex flex-col sm:flex-row h-full">
             {/* Sidebar */}
-            <div className="w-full sm:w-1/3 bg-black p-4 sm:p-6 text-white">
-              <DialogHeader>
-                <DialogTitle className="text-2xl sm:text-3xl font-bold text-white">
-                  Hello {user.firstName}! 👋
-                </DialogTitle>
-              </DialogHeader>
+            <div className="w-full sm:w-1/3 bg-black p-4 sm:p-6 text-white flex flex-col justify-around">
               <div className="mt-4 sm:mt-8">
                 {steps.map((s, index) => (
                   <div key={index} className={`mb-4 sm:mb-6 ${step === index ? 'opacity-100' : 'opacity-50'}`}>
@@ -127,6 +122,7 @@ export function OnboardingDialog({
                 >
                   {step === 0 && (
                     <div className="space-y-4">
+                      <h1 className="text-2xl font-semibold text-center">Hi {user.firstName}!</h1>
                       <h2 className="text-2xl font-semibold text-center">We&apos;re excited to have you here.</h2>
                       <p className="text-gray-600">Welcome to Athenium, your comprehensive academic management system. We&apos;re excited to help enhance your educational journey! ✨</p>
                       <p className="text-gray-600">In the next steps, we&apos;ll ask for some basic information and your academic details. This will help us:</p>
@@ -146,24 +142,42 @@ export function OnboardingDialog({
                           <label className="block text-sm font-medium">Roll Number</label>
                           <Input
                             value={userDetails.rollNo || ''}
-                            onChange={(e) => setUserDetails({ ...userDetails, rollNo: e.target.value })}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                              setUserDetails({ ...userDetails, rollNo: value });
+                            }}
                             placeholder="Enter your Roll Number"
+                            type="text" // Keep as text to allow empty string
+                            inputMode="numeric" // Shows numeric keyboard on mobile
+                            pattern="[0-9]*" // HTML5 validation for numbers only
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium">SRN</label>
                           <Input
                             value={userDetails.srn || ''}
-                            onChange={(e) => setUserDetails({ ...userDetails, srn: e.target.value })}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '');
+                              setUserDetails({ ...userDetails, srn: value });
+                            }}
                             placeholder="Enter your SRN"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium">PRN</label>
                           <Input
                             value={userDetails.prn || ''}
-                            onChange={(e) => setUserDetails({ ...userDetails, prn: e.target.value })}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '');
+                              setUserDetails({ ...userDetails, prn: value });
+                            }}
                             placeholder="Enter your PRN"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                           />
                         </div>
                       </div>

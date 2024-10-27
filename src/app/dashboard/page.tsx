@@ -25,6 +25,7 @@ import { OnboardingDialog } from '@/components/OnboardingDialog'
 import ReactConfetti from 'react-confetti'
 import { useWindowSize } from 'react-use'
 import { motion, AnimatePresence } from 'framer-motion' // npm install framer-motion
+import { DashboardAnalytics } from '@/components/DashboardAnalytics'
 
 interface Classroom {
   id: number
@@ -568,6 +569,11 @@ const DashboardPage = () => {
                     className="pl-10 pr-4 py-2 w-64"
                   />
                 </div>
+              </div>
+              
+              {/* Add this before the classrooms grid */}
+              <div className="mb-8">
+                <DashboardAnalytics />
               </div>
               
               {filteredClassrooms.length === 0 ? (

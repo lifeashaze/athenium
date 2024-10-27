@@ -39,11 +39,11 @@ function getRemainingTime(dueDate: string) {
   const now = new Date()
   const due = new Date(dueDate)
   const diff = due.getTime() - now.getTime()
-  
+
   if (diff <= 0) {
     return 'Submission closed'
   }
-  
+
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
   return `${days}d ${hours}h remaining`
@@ -57,12 +57,12 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
   onDeleteAssignment,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newAssignment, setNewAssignment] = useState({ 
-    title: '', 
+  const [newAssignment, setNewAssignment] = useState({
+    title: '',
     description: '',
     maxMarks: 25,
     requirements: [] as string[],
-    deadline: new Date() 
+    deadline: new Date()
   });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
@@ -111,11 +111,11 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
 
   const handleDeleteConfirm = async () => {
     if (!assignmentToDelete) return;
-  
+
     try {
       const success = await onDeleteAssignment(assignmentToDelete.id);
       if (success) {
-        setLocalAssignments(prevAssignments => 
+        setLocalAssignments(prevAssignments =>
           prevAssignments.filter(a => a.id !== assignmentToDelete.id)
         );
         toast({
@@ -148,7 +148,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
 
     try {
       const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY!);
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: 'gemini-1.5-flash',
         safetySettings: [
           {
@@ -196,7 +196,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
       const result = await chat.sendMessage(prompt);
       const response = await result.response;
       const text = response.text();
-      
+
       // Convert the bullet points to array
       const requirements = text
         .split('\n')
@@ -242,18 +242,6 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
         <div className="grid gap-4">
           {localAssignments.map((assignment) => (
             <Card key={assignment.id} className="mb-4">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {assignment.title}
-                </CardTitle>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={() => handleDeleteClick(assignment)}
-                >
-                  Delete
-                </Button>
-              </CardHeader>
               <CardContent className="flex items-center justify-between p-4">
                 <div>
                   <h3 className="text-lg font-semibold">{assignment.title}</h3>
@@ -273,6 +261,13 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
                       <BarChart className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteClick(assignment)}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -365,7 +360,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
                         {format(newAssignment.deadline, "PPP")}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent 
+                    <PopoverContent
                       className="w-auto p-0 z-[1000]"
                       align="start"
                     >
@@ -378,7 +373,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
                             const newDate = new Date(date);
                             newDate.setHours(newAssignment.deadline.getHours());
                             newDate.setMinutes(newAssignment.deadline.getMinutes());
-                            
+
                             setNewAssignment(prev => ({
                               ...prev,
                               deadline: newDate
@@ -441,15 +436,15 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 variant="secondary"
                 onClick={generateRequirements}
                 disabled={!newAssignment.title || !newAssignment.description}
               >
                 Generate Requirements
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 disabled={!newAssignment.title || !newAssignment.description || newAssignment.requirements.length === 0}
               >
