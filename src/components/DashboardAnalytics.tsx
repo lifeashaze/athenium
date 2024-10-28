@@ -3,31 +3,56 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from "recharts"
 
-// Mock data for recent assignments
+// Mock data for recent assignments - more descriptive titles and realistic scoring patterns
 const recentAssignments = [
-  { id: 1, title: "Data Structures Quiz", marks: 22, maxMarks: 25, date: "2024-03-15" },
-  { id: 2, title: "Algorithm Analysis", marks: 18, maxMarks: 20, date: "2024-03-12" },
-  { id: 3, title: "Database Design", marks: 23, maxMarks: 25, date: "2024-03-10" },
-  { id: 4, title: "Network Protocols", marks: 17, maxMarks: 20, date: "2024-03-08" },
+  { 
+    id: 1, 
+    title: "Binary Trees & Heap Implementation", 
+    marks: 87, 
+    maxMarks: 100, 
+    date: "2024-03-15" 
+  },
+  { 
+    id: 2, 
+    title: "Time Complexity Analysis Lab", 
+    marks: 92, 
+    maxMarks: 100, 
+    date: "2024-03-12" 
+  },
+  { 
+    id: 3, 
+    title: "SQL Query Optimization Project", 
+    marks: 78, 
+    maxMarks: 100, 
+    date: "2024-03-10" 
+  },
+  { 
+    id: 4, 
+    title: "TCP/IP Protocol Implementation", 
+    marks: 85, 
+    maxMarks: 100, 
+    date: "2024-03-08" 
+  },
 ]
 
-// Mock data for attendance
+// Mock data for attendance - more realistic fluctuations
 const attendanceData = [
-  { month: "Jan", percentage: 92 },
-  { month: "Feb", percentage: 88 },
-  { month: "Mar", percentage: 95 },
-  { month: "Apr", percentage: 90 },
-  { month: "May", percentage: 85 },
-  { month: "Jun", percentage: 92 },
+  { month: "Jan", percentage: 96 },
+  { month: "Feb", percentage: 92 },
+  { month: "Mar", percentage: 88 },
+  { month: "Apr", percentage: 94 },
+  { month: "May", percentage: 91 },
+  { month: "Jun", percentage: 89 },
 ]
 
-// Mock data for subject-wise performance
+// Mock data for subject-wise performance - more subjects and realistic distribution
 const subjectPerformance = [
   { subject: "Data Structures", score: 85 },
-  { subject: "Algorithms", score: 78 },
-  { subject: "Database", score: 92 },
-  { subject: "Networks", score: 88 },
-  { subject: "OS", score: 75 },
+  { subject: "Algorithms", score: 82 },
+  { subject: "Database Systems", score: 88 },
+  { subject: "Computer Networks", score: 84 },
+  { subject: "Operating Systems", score: 79 },
+  { subject: "Web Development", score: 90 },
 ]
 
 export function DashboardAnalytics() {
