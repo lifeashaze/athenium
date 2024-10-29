@@ -104,7 +104,6 @@ export function DashboardAnalytics() {
         </CardContent>
       </Card>
 
-      {/* Subject Performance Card */}
       <Card className="col-span-1">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Subject Performance</CardTitle>
