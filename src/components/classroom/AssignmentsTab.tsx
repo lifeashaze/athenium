@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from "next/link";
-import { FileText, ExternalLink, BarChart } from "lucide-react";
+import { FileText, ExternalLink, BarChart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -68,6 +68,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
   const { toast } = useToast();
   const [localAssignments, setLocalAssignments] = useState(assignments);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Update local assignments when props change
   useEffect(() => {
@@ -146,6 +148,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
       return;
     }
 
+    setIsGenerating(true);
     try {
       const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY!);
       const model = genAI.getGenerativeModel({
@@ -208,6 +211,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
         ...prev,
         requirements: requirements,
       }));
+      setCurrentStep(2);
 
       toast({
         title: "Requirements Generated",
@@ -220,6 +224,8 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
         description: "Failed to generate requirements. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -280,176 +286,193 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
         </DialogTrigger>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Create New Assignment</DialogTitle>
+            <DialogTitle>Create New Assignment - Step {currentStep} of 2</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateAssignment}>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="title" className="text-right">
-                  Title
-                </Label>
-                <Input
-                  id="title"
-                  value={newAssignment.title}
-                  onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-                  className="col-span-3"
-                />
-              </div>
+              {currentStep === 1 ? (
+                // Step 1: Basic Details
+                <>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="title" className="text-right">Title</Label>
+                    <Input
+                      id="title"
+                      value={newAssignment.title}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">
-                  Description
-                </Label>
-                <textarea
-                  id="description"
-                  value={newAssignment.description}
-                  onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
-                  className="col-span-3 min-h-[100px] p-2 rounded-md border"
-                  placeholder="Explain what students need to do..."
-                />
-              </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="description" className="text-right">Description</Label>
+                    <textarea
+                      id="description"
+                      value={newAssignment.description}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
+                      className="col-span-3 min-h-[100px] p-2 rounded-md border"
+                      placeholder="Explain what students need to do..."
+                    />
+                  </div>
 
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="maxMarks" className="text-right">
-                  Max Marks
-                </Label>
-                <Input
-                  id="maxMarks"
-                  type="number"
-                  value={newAssignment.maxMarks}
-                  onChange={(e) => setNewAssignment({ ...newAssignment, maxMarks: parseInt(e.target.value) })}
-                  className="col-span-3"
-                  min={0}
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="requirements" className="text-right">
-                  Requirements
-                </Label>
-                <div className="col-span-3 p-2 rounded-md border bg-muted min-h-[100px]">
-                  {newAssignment.requirements.length === 0 ? (
-                    <p className="text-muted-foreground">
-                      Requirements will be generated by AI after clicking Next...
-                    </p>
-                  ) : (
-                    <ul className="list-disc pl-4">
-                      {newAssignment.requirements.map((req, index) => (
-                        <li key={index}>{req}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="deadline" className="text-right">
-                  Deadline
-                </Label>
-                <div className="col-span-3 flex gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "justify-start text-left font-normal flex-1",
-                          !newAssignment.deadline && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(newAssignment.deadline, "PPP")}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto p-0 z-[1000]"
-                      align="start"
-                    >
-                      <CalendarComponent
-                        mode="single"
-                        selected={newAssignment.deadline}
-                        onSelect={(date) => {
-                          if (date) {
-                            // Create a new date that preserves the current time
-                            const newDate = new Date(date);
-                            newDate.setHours(newAssignment.deadline.getHours());
-                            newDate.setMinutes(newAssignment.deadline.getMinutes());
-
-                            setNewAssignment(prev => ({
-                              ...prev,
-                              deadline: newDate
-                            }));
-                          }
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "justify-start text-left font-normal w-[120px]",
-                          !newAssignment.deadline && "text-muted-foreground"
-                        )}
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        {format(newAssignment.deadline, "HH:mm")}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-4">
-                      <div className="flex gap-2">
-                        <Select
-                          value={newAssignment.deadline.getHours().toString()}
-                          onValueChange={(value) => handleTimeChange(parseInt(value), newAssignment.deadline.getMinutes())}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="maxMarks" className="text-right">Max Marks</Label>
+                    <Input
+                      id="maxMarks"
+                      type="number"
+                      value={newAssignment.maxMarks}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, maxMarks: parseInt(e.target.value) })}
+                      className="col-span-3"
+                      min={0}
+                    />
+                  </div>
+                </>
+              ) : (
+                // Step 2: Requirements and Deadline
+                <>
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <Label className="text-lg font-semibold">Generated Requirements</Label>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={generateRequirements}
+                          disabled={isGenerating}
                         >
-                          <SelectTrigger className="w-[70px]">
-                            <SelectValue placeholder="HH" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from({ length: 24 }, (_, i) => (
-                              <SelectItem key={i} value={i.toString().padStart(2, '0')}>
-                                {i.toString().padStart(2, '0')}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={newAssignment.deadline.getMinutes().toString()}
-                          onValueChange={(value) => handleTimeChange(newAssignment.deadline.getHours(), parseInt(value))}
-                        >
-                          <SelectTrigger className="w-[70px]">
-                            <SelectValue placeholder="MM" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from({ length: 60 }, (_, i) => (
-                              <SelectItem key={i} value={i.toString().padStart(2, '0')}>
-                                {i.toString().padStart(2, '0')}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Regenerating...
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="mr-2 h-4 w-4" />
+                              Regenerate
+                            </>
+                          )}
+                        </Button>
                       </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={generateRequirements}
-                disabled={!newAssignment.title || !newAssignment.description}
-              >
-                Generate Requirements
-              </Button>
-              <Button
-                type="submit"
-                disabled={!newAssignment.title || !newAssignment.description || newAssignment.requirements.length === 0}
-              >
-                Create Assignment
-              </Button>
+                      <div className="space-y-3">
+                        {newAssignment.requirements.map((req, index) => (
+                          <div key={index} className="space-y-2">
+                            <Label className="text-sm text-muted-foreground">
+                              Requirement {index + 1}
+                            </Label>
+                            <textarea
+                              value={req}
+                              onChange={(e) => {
+                                const newReqs = [...newAssignment.requirements];
+                                newReqs[index] = e.target.value;
+                                setNewAssignment(prev => ({ ...prev, requirements: newReqs }));
+                              }}
+                              className="w-full min-h-[80px] p-3 rounded-md border resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-lg font-semibold">Submission Deadline</Label>
+                      <div className="flex flex-col gap-4 sm:flex-row">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "justify-start text-left font-normal w-full sm:w-[240px]",
+                                !newAssignment.deadline && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarDays className="mr-2 h-4 w-4" />
+                              {format(newAssignment.deadline, "PPP")}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto p-0 z-[1000]"
+                            align="start"
+                          >
+                            <CalendarComponent
+                              mode="single"
+                              selected={newAssignment.deadline}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const newDate = new Date(date);
+                                  newDate.setHours(newAssignment.deadline.getHours());
+                                  newDate.setMinutes(newAssignment.deadline.getMinutes());
+                                  setNewAssignment(prev => ({
+                                    ...prev,
+                                    deadline: newDate
+                                  }));
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "justify-start text-left font-normal w-full sm:w-[140px]",
+                                !newAssignment.deadline && "text-muted-foreground"
+                              )}
+                            >
+                              <Clock className="mr-2 h-4 w-4" />
+                              {format(newAssignment.deadline, "HH:mm")}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-4">
+                            <div className="flex gap-2">
+                              <Select
+                                value={newAssignment.deadline.getHours().toString()}
+                                onValueChange={(value) => handleTimeChange(parseInt(value), newAssignment.deadline.getMinutes())}
+                              >
+                                <SelectTrigger className="w-[70px]">
+                                  <SelectValue placeholder="HH" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 24 }, (_, i) => (
+                                    <SelectItem key={i} value={i.toString().padStart(2, '0')}>
+                                      {i.toString().padStart(2, '0')}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Select
+                                value={newAssignment.deadline.getMinutes().toString()}
+                                onValueChange={(value) => handleTimeChange(newAssignment.deadline.getHours(), parseInt(value))}
+                              >
+                                <SelectTrigger className="w-[70px]">
+                                  <SelectValue placeholder="MM" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 60 }, (_, i) => (
+                                    <SelectItem key={i} value={i.toString().padStart(2, '0')}>
+                                      {i.toString().padStart(2, '0')}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 mt-6">
+                    <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
+                      Back
+                    </Button>
+                    <Button type="submit">
+                      Create Assignment
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </form>
         </DialogContent>

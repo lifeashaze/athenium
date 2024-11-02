@@ -87,6 +87,7 @@ const DashboardPage = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const { width, height } = useWindowSize();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -124,6 +125,13 @@ const DashboardPage = () => {
 
     fetchAllData();
   }, [user]);
+
+  useEffect(() => {
+    // Prefetch classroom routes
+    classrooms.forEach((classroom) => {
+      router.prefetch(`/classroom/${classroom.id}`);
+    });
+  }, [classrooms, router]);
 
   const handleOnboardingSubmit = async () => {
     try {
@@ -354,6 +362,11 @@ const DashboardPage = () => {
     }
   }
 
+  const handleClassroomNavigation = (classroomId: number) => {
+    setIsNavigating(true);
+    router.push(`/classroom/${classroomId}`);
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -387,7 +400,7 @@ const DashboardPage = () => {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  {["🎉", "📚", "✨", "🚀", "🎓"].map((emoji, i) => (
+                  {["", "📚", "✨", "🚀", "🎓"].map((emoji, i) => (
                     <motion.span
                       key={i}
                       className="text-3xl"
@@ -607,10 +620,18 @@ const DashboardPage = () => {
                         <div className="flex justify-between items-center">
                           <Button 
                             variant="outline" 
-                            onClick={() => router.push(`/classroom/${classroom.id}`)}
+                            onClick={() => handleClassroomNavigation(classroom.id)}
                             className="w-full mr-2"
+                            disabled={isNavigating}
                           >
-                            View
+                            {isNavigating ? (
+                              <span className="flex items-center">
+                                <span className="animate-spin mr-2">⏳</span>
+                                Loading...
+                              </span>
+                            ) : (
+                              'View'
+                            )}
                           </Button>
                           <Button
                             variant="destructive"
