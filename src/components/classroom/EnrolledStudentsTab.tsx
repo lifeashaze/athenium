@@ -52,7 +52,10 @@ export const EnrolledStudentsTab: React.FC<EnrolledStudentsTabProps> = ({
   onPageChange
 }) => {
   console.log('EnrolledStudentsTab received the following props:', { members, currentPage, totalPages, itemsPerPage, onPageChange });
-  const paginatedMembers = members.slice(
+  // Filter out professors from the members list
+  const studentMembers = members.filter(member => member.role === 'student');
+  
+  const paginatedMembers = studentMembers.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -66,7 +69,7 @@ export const EnrolledStudentsTab: React.FC<EnrolledStudentsTabProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {members.length > 0 ? (
+        {studentMembers.length > 0 ? (
           <>
             <div className="rounded-md border overflow-hidden">
               <Table>
@@ -94,7 +97,7 @@ export const EnrolledStudentsTab: React.FC<EnrolledStudentsTabProps> = ({
             </div>
             <div className="flex flex-col md:flex-row justify-between items-center mt-4 space-y-4 md:space-y-0">
               <div className="text-sm text-muted-foreground">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, members.length)} of {members.length} members
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, studentMembers.length)} of {studentMembers.length} members
               </div>
               <div className="space-x-2">
                 <Button

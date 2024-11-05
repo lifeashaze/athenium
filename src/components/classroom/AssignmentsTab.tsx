@@ -288,7 +288,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
           <DialogHeader>
             <DialogTitle>Create New Assignment - Step {currentStep} of 2</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreateAssignment}>
+          <form onSubmit={handleCreateAssignment} className="space-y-4">
             <div className="grid gap-4 py-4">
               {currentStep === 1 ? (
                 // Step 1: Basic Details
@@ -331,27 +331,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
                 <>
                   <div className="space-y-6">
                     <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <Label className="text-lg font-semibold">Generated Requirements</Label>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={generateRequirements}
-                          disabled={isGenerating}
-                        >
-                          {isGenerating ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Regenerating...
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="mr-2 h-4 w-4" />
-                              Regenerate
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                      <Label className="text-lg font-semibold">Generated Requirements</Label>
                       <div className="space-y-3">
                         {newAssignment.requirements.map((req, index) => (
                           <div key={index} className="space-y-2">
@@ -462,15 +442,42 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
                       </div>
                     </div>
                   </div>
+                </>
+              )}
+            </div>
 
-                  <div className="flex justify-end gap-2 mt-6">
-                    <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
-                      Back
-                    </Button>
-                    <Button type="submit">
-                      Create Assignment
-                    </Button>
-                  </div>
+            <div className="flex justify-end gap-2 mt-6">
+              {currentStep === 1 ? (
+                <Button 
+                  type="button" 
+                  onClick={async () => {
+                    setIsGenerating(true);
+                    await generateRequirements();
+                    setIsGenerating(false);
+                  }}
+                  disabled={!newAssignment.title || !newAssignment.description || isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Next"
+                  )}
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setCurrentStep(1)}
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit">
+                    Create Assignment
+                  </Button>
                 </>
               )}
             </div>
