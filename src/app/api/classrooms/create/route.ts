@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
 import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
+
+function generateClassroomCode(): string {
+  const allowedCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return Array.from(
+    { length: 6 },
+    () => allowedCharacters.charAt(Math.floor(Math.random() * allowedCharacters.length))
+  ).join('');
+}
 
 export async function POST(req: NextRequest) {
   console.log('Received request at /api/classrooms/create');
@@ -30,11 +37,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    let classroomCode: string = generateClassroomCode();
+    let isCodeUnique = false;
+    while (!isCodeUnique) {
+      if (!isCodeUnique) {
+        const existingClassroom = await prisma.classroom.findUnique({
+          where: { code: classroomCode },
+        });
+        if (!existingClassroom) {
+          isCodeUnique = true;
+        } else {
+          classroomCode = generateClassroomCode();
+        }
+      }
+    }
+
     const classroom = await prisma.classroom.create({
       data: {
         name: courseName,
-        code: uuidv4(),
-        inviteLink: `https://athenium.com/join/${uuidv4()}`,
+        code: classroomCode,
+        inviteLink: `https://athenium.com/join/${classroomCode}`,
         year,
         division,
         courseCode,

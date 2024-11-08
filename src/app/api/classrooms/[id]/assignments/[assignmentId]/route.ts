@@ -15,8 +15,8 @@ export async function GET(
   }
 
   try {
-    const classroomId = parseInt(params.id);
-    const assignmentId = parseInt(params.assignmentId);
+    const classroomId = params.id;
+    const assignmentId = params.assignmentId;
 
     // Check if user is a member of the classroom
     const membership = await prisma.membership.findUnique({
@@ -82,8 +82,8 @@ export async function PUT(
   }
 
   try {
-    const classroomId = parseInt(params.id);
-    const assignmentId = parseInt(params.assignmentId);
+    const classroomId = params.id;
+    const assignmentId = params.assignmentId;
     const { title, deadline, description, maxMarks, requirements } = await req.json();
 
     // Check if user is the creator of the classroom
@@ -128,8 +128,8 @@ export async function DELETE(
   }
 
   try {
-    const classroomId = parseInt(params.id);
-    const assignmentId = parseInt(params.assignmentId);
+    const classroomId = params.id;
+    const assignmentId = params.assignmentId;
 
     // Check if user is the creator of the classroom
     const classroom = await prisma.classroom.findUnique({

@@ -12,10 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
-    const classroomId = parseInt(params.id, 10);
-    if (isNaN(classroomId)) {
-      return NextResponse.json({ error: 'Invalid classroom ID' }, { status: 400 });
-    }
+    const classroomId = params.id;
 
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId },
@@ -88,10 +85,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   try {
-    const classroomId = parseInt(params.id, 10);
-    if (isNaN(classroomId)) {
-      return NextResponse.json({ error: 'Invalid classroom ID' }, { status: 400 });
-    }
+    const classroomId = params.id;
 
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId },

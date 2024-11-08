@@ -15,7 +15,7 @@ export async function GET(
   }
 
   try {
-    const classroomId = parseInt(params.id);
+    const classroomId = params.id;
 
     // Check if user is a member of the classroom
     const membership = await prisma.membership.findUnique({
@@ -83,7 +83,7 @@ export async function POST(
   }
 
   try {
-    const classroomId = parseInt(params.id);
+    const classroomId = params.id;
     const { title, deadline, description, maxMarks, requirements } = await req.json();
 
     // Check if user is a member of the classroom

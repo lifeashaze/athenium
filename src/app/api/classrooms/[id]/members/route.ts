@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const classroomId = parseInt(params.id);
+    const classroomId = params.id;
     const members = await prisma.membership.findMany({
       where: { classroomId },
       include: {

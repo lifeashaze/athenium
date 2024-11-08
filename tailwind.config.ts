@@ -28,9 +28,9 @@ const config: Config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#9966CC", 
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
-        'primary-hover': "#B48DDB",
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
@@ -91,7 +91,5 @@ const config: Config = {
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config
-
-
 
 export default config

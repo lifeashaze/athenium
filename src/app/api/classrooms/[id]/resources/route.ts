@@ -16,11 +16,11 @@ if (process.env.NODE_ENV === 'production') {
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const classroomId = parseInt(params.id);
+    const classroomId = params.id;
     const resources = await prisma.resource.findMany({
       where: { classroomId },
       orderBy: { uploadedAt: 'desc' },
-      include: { uploader: true }, // Include uploader details
+      include: { uploader: true },
     });
 
     return NextResponse.json(resources);
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   try {
-    const classroomId = parseInt(params.id);
+    const classroomId = params.id;
     const formData = await req.formData();
     const file = formData.get('file') as File;
 
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       data: {
         title: file.name,
         url: fileUrl,
-        uploaderId: userId, // Changed from uploadedBy to uploaderId
+        uploaderId: userId,
         classroomId,
       },
     });

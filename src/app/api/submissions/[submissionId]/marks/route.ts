@@ -22,10 +22,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid marks value" }, { status: 400 });
     }
 
-    const submissionId = parseInt(params.submissionId);
-    if (isNaN(submissionId)) {
-      return NextResponse.json({ error: "Invalid submission ID" }, { status: 400 });
-    }
+    const submissionId = params.submissionId;
 
     // Get the submission and check if the user is the assignment creator
     const submission = await prisma.submission.findUnique({

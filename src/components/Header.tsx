@@ -46,7 +46,7 @@ export function Header() {
           </button>
           <button 
             onClick={handleSignUp}
-            className="bg-primary text-black px-5 py-2 rounded-md text-xs font-semibold transition-colors hover:bg-primary-hover flex items-center h-[26px] "
+            className="bg-primary text-white px-5 py-2 rounded-md text-xs font-semibold transition-colors hover:bg-primary-hover flex items-center h-[26px] "
            >
             Get Started <Play fill='#6A0DAD' color="#6A0DAD" size={6} className="ml-1"/>
            </button>

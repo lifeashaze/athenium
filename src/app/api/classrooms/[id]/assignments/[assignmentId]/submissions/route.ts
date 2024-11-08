@@ -10,12 +10,12 @@ export async function GET(
     console.log('Received params:', params);
   
     try {
-      const classroomId = parseInt(params.id);
-      const assignmentId = parseInt(params.assignmentId);
+      const classroomId = params.id;
+      const assignmentId = params.assignmentId;
   
-      console.log('Parsed IDs:', { classroomId, assignmentId });
+      console.log('Using IDs:', { classroomId, assignmentId });
   
-      if (isNaN(classroomId) || isNaN(assignmentId)) {
+      if (!classroomId || !assignmentId) {
         console.log('Invalid IDs:', { classroomId, assignmentId });
         return NextResponse.json({ error: 'Invalid classroom or assignment ID' }, { status: 400 });
       }

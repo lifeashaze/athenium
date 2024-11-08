@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   try {
-    const classroomId = parseInt(params.id);
+    const classroomId = params.id;
     const result = await prisma.$transaction(
       updates.map((update: { userId: string; status: 'present' | 'absent' }) =>
         prisma.attendance.upsert({

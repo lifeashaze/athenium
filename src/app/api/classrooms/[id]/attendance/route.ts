@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 
   try {
-    const classroomId = parseInt(params.id);
+    const classroomId = params.id;
     const attendance = await prisma.attendance.findMany({
       where: {
         classroomId,
@@ -40,7 +40,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   try {
-    const classroomId = parseInt(params.id);
+    const classroomId = params.id;
     const result = await prisma.$transaction(
       attendance.map((record: { userId: string; isPresent: boolean }) =>
         prisma.attendance.upsert({

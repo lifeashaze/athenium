@@ -55,7 +55,7 @@ export async function POST(
     const existingSubmission = await prisma.submission.findFirst({
       where: {
         userId: userId,
-        assignmentId: parseInt(params.assignmentId),
+        assignmentId: params.assignmentId,
       },
     });
 
@@ -71,7 +71,7 @@ export async function POST(
       submission = await prisma.submission.create({
         data: {
           userId: userId,
-          assignmentId: parseInt(params.assignmentId),
+          assignmentId: params.assignmentId,
           content: fileUrl,
         },
       });
