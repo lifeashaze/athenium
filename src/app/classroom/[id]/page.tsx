@@ -175,10 +175,13 @@ const ClassroomPage = () => {
     }
   };
 
-  const handleUploadResource = async (file: File) => {
+  const handleUploadResource = async (file: File, parentId?: string) => {
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
+    if (parentId) {
+      formData.append('parentId', parentId);
+    }
 
     try {
       const response = await axios.post(`/api/classrooms/${params.id}/resources`, formData, {

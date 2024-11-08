@@ -39,13 +39,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const classroomId = params.id;
     const formData = await req.formData();
     const file = formData.get('file') as File;
+    const category = formData.get('parentId') as string | null;
+    const customFileName = formData.get('fileName') as string;
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
-
-    const buffer = await file.arrayBuffer();
-    const fileName = `${Date.now()}-${file.name}`;
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${customFileName}.${fileExtension}`;
 
     // Check if S3 bucket name is set
     const bucketName = process.env.AWS_S3_BUCKET_NAME;
@@ -65,20 +66,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await s3Client.send(new PutObjectCommand({
       Bucket: bucketName,
       Key: fileName,
-      Body: Buffer.from(buffer),
+      Body: Buffer.from(await file.arrayBuffer()),
       ContentType: file.type,
     }));
 
     const fileUrl = `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
 
-    // Save resource info to database
+    // Save resource info to database with custom title
     const resource = await prisma.resource.create({
       data: {
-        title: file.name,
+        title: customFileName,
         url: fileUrl,
         uploaderId: userId,
         classroomId,
+        category: category || null,
       },
+      include: {
+        uploader: true,
+      }
     });
 
     return NextResponse.json(resource);

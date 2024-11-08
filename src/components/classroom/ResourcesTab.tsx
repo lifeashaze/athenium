@@ -9,6 +9,7 @@ import * as pdfjs from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import XLSX from 'xlsx';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Ensure the worker is loaded
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -22,12 +23,13 @@ interface Resource {
   fileType: string;
   fileSize: string;
   content?: string;
+  category?: string;
 }
 
 interface ResourcesTabProps {
   resources: Resource[];
   isUploading: boolean;
-  onUpload: (file: File) => Promise<void>;
+  onUpload: (file: File, parentId?: string) => Promise<void>;
   onDelete?: (resourceId: number) => Promise<void>;
 }
 
@@ -98,11 +100,24 @@ const getFileType = (url: string): string => {
   }
 };
 
+const RESOURCE_CATEGORIES = [
+  { value: "unit-1", label: "Unit 1" },
+  { value: "unit-2", label: "Unit 2" },
+  { value: "unit-3", label: "Unit 3" },
+  { value: "unit-4", label: "Unit 4" },
+  { value: "unit-5", label: "Unit 5" },
+  { value: "unit-6", label: "Unit 6" },
+  { value: "extra", label: "Extra/Misc" }
+];
+
 export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploading, onUpload, onDelete }) => {
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [chatResource, setChatResource] = useState<Resource | null>(null);
   const [documentContent, setDocumentContent] = useState<string | null>(null);
   const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
 
   console.log('ResourcesTab rendered with resources:', resources);
 
@@ -111,6 +126,32 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploadi
     const content = await extractContent(resource.url, fileType);
     setDocumentContent(content);
   };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setUploadDialogOpen(true);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (selectedFile) {
+      await onUpload(selectedFile, selectedParentId === "none" ? undefined : selectedParentId || undefined);
+      setUploadDialogOpen(false);
+      setSelectedFile(null);
+      setSelectedParentId(null);
+    }
+  };
+
+  const groupedResources = resources.reduce((acc, resource) => {
+    const category = resource.category || 'uncategorized';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(resource);
+    return acc;
+  }, {} as Record<string, Resource[]>);
 
   return (
     <Card>
@@ -125,40 +166,58 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploadi
           </div>
         ) : (
           <div className="grid gap-4">
-            {resources.map((resource) => {
-              const fileType = getFileType(resource.url);
-              return (
-                <Card key={resource.id}>
-                  <CardContent className="flex items-center justify-between p-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">{resource.title}</h3>
-                      <p className="text-sm text-muted-foreground">Date: {new Date(resource.uploadedAt).toLocaleString()}</p>
-                      <p className="text-sm text-muted-foreground">File Type: {fileType}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button onClick={() => {
-                        setSelectedResource(resource);
-                        handleResourceSelection(resource);
-                      }}>View Resource</Button>
-                      <Button onClick={() => {
-                        setChatResource(resource);
-                        handleResourceSelection(resource);
-                      }}>
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Chat
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        size="icon"
-                        onClick={() => setResourceToDelete(resource)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {Object.entries(groupedResources).map(([category, categoryResources]) => (
+              <div key={category} className="mb-6">
+                <h2 className="text-xl font-semibold mb-4">
+                  {RESOURCE_CATEGORIES.find(c => c.value === category)?.label || 'Uncategorized'}
+                </h2>
+                <div className="grid gap-4">
+                  {categoryResources.map((resource) => {
+                    const fileType = getFileType(resource.url);
+                    return (
+                      <Card key={resource.id}>
+                        <CardContent className="flex items-center justify-between p-4">
+                          <div>
+                            <h3 className="text-lg font-semibold">{resource.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Date: {new Date(resource.uploadedAt).toLocaleString()}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              File Type: {fileType}
+                            </p>
+                            {resource.category && (
+                              <p className="text-sm text-muted-foreground">
+                                Category: {RESOURCE_CATEGORIES.find(c => c.value === resource.category)?.label || resource.category}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button onClick={() => {
+                              setSelectedResource(resource);
+                              handleResourceSelection(resource);
+                            }}>View Resource</Button>
+                            <Button onClick={() => {
+                              setChatResource(resource);
+                              handleResourceSelection(resource);
+                            }}>
+                              <MessageCircle className="mr-2 h-4 w-4" />
+                              Chat
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="icon"
+                              onClick={() => setResourceToDelete(resource)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
         <div className="mt-4 flex justify-center">
@@ -179,12 +238,51 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploadi
             id="fileInput"
             type="file"
             className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onUpload(file);
-            }}
+            onChange={handleFileSelect}
           />
         </div>
+
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload Resource</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-2">Selected File:</p>
+                <p className="text-sm text-muted-foreground">{selectedFile?.name}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-2">Category:</p>
+                <Select value={selectedParentId || undefined} onValueChange={setSelectedParentId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESOURCE_CATEGORIES.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => {
+                  setUploadDialogOpen(false);
+                  setSelectedFile(null);
+                  setSelectedParentId(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpload} disabled={isUploading}>
+                  {isUploading ? 'Uploading...' : 'Upload'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <AlertDialog open={!!resourceToDelete} onOpenChange={(open: any) => !open && setResourceToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>

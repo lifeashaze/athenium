@@ -109,6 +109,7 @@ model Resource {
   uploadedAt  DateTime @default(now())
   classroom   Classroom @relation(fields: [classroomId], references: [id])
   classroomId String
+  category    String?  
 }
 
 model Notification {
