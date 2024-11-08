@@ -73,6 +73,16 @@ interface Assignment {
   maxMarks?: number;
 }
 
+const getPreviewUrl = (submissionUrl: string) => {
+  const fileExtension = submissionUrl.split('.').pop()?.toLowerCase();
+  const officeExtensions = ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
+  
+  if (officeExtensions.includes(fileExtension || '')) {
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(submissionUrl)}`;
+  }
+  return `${submissionUrl}#toolbar=0`;
+};
+
 const EvaluationClient = () => {
   const params = useParams();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -441,7 +451,7 @@ const EvaluationClient = () => {
 
                       {/* Submission View */}
                       <iframe
-                        src={`${selectedSubmission?.content}#toolbar=0`}
+                        src={selectedSubmission?.content ? getPreviewUrl(selectedSubmission.content) : ''}
                         className="flex-grow w-full rounded-lg border shadow-sm"
                         title={`Submission by ${selectedSubmission?.user.firstName}`}
                       />

@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChatWindow } from './ChatWindow';
 import * as pdfjs from 'pdfjs-dist';
+import mammoth from 'mammoth';
+import XLSX from 'xlsx';
 
 // Ensure the worker is loaded
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -18,6 +20,7 @@ interface Resource {
   uploaderId: string;
   fileType: string;
   fileSize: string;
+  content?: string;
 }
 
 interface ResourcesTabProps {
@@ -26,48 +29,84 @@ interface ResourcesTabProps {
   onUpload: (file: File) => Promise<void>;
 }
 
+const getPreviewUrl = (url: string) => {
+  const fileExtension = url.split('.').pop()?.toLowerCase();
+  const officeExtensions = ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
+  
+  if (officeExtensions.includes(fileExtension || '')) {
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+  }
+  return `${url}#toolbar=0`;
+};
+
+const extractContent = async (url: string, fileType: string): Promise<string | null> => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    switch (fileType) {
+      case 'pdf':
+        const pdf = await pdfjs.getDocument(url).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += pageText + '\n';
+        }
+        return fullText;
+
+      case 'word':
+        const arrayBuffer = await blob.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return result.value;
+
+      case 'excel':
+        const data = await blob.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        let excelText = '';
+        workbook.SheetNames.forEach(sheetName => {
+          const sheet = workbook.Sheets[sheetName];
+          excelText += `Sheet: ${sheetName}\n${XLSX.utils.sheet_to_txt(sheet)}\n\n`;
+        });
+        return excelText;
+
+      default:
+        return null;
+    }
+  } catch (error) {
+    console.error('Error extracting content:', error);
+    return null;
+  }
+};
+
+const getFileType = (url: string): string => {
+  const extension = url.split('.').pop()?.toLowerCase();
+  switch (extension) {
+    case 'pdf':
+      return 'pdf';
+    case 'doc':
+    case 'docx':
+      return 'word';
+    case 'xls':
+    case 'xlsx':
+      return 'excel';
+    default:
+      return 'unknown';
+  }
+};
+
 export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploading, onUpload }) => {
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [chatResource, setChatResource] = useState<Resource | null>(null);
-  const [pdfContent, setPdfContent] = useState<string | null>(null);
+  const [documentContent, setDocumentContent] = useState<string | null>(null);
 
   console.log('ResourcesTab rendered with resources:', resources);
 
-  const getFileType = (url: string): string => {
-    const extension = url.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf':
-        return 'pdf';
-      case 'doc':
-      case 'docx':
-        return 'word';
-      case 'xls':
-      case 'xlsx':
-        return 'excel';
-      case 'ppt':
-      case 'pptx':
-        return 'powerpoint';
-      default:
-        return 'unknown';
-    }
-  };
-
-  const extractPdfContent = async (pdfUrl: string) => {
-    try {
-      const pdf = await pdfjs.getDocument(pdfUrl).promise;
-      let fullText = '';
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(' ');
-        fullText += pageText + '\n';
-      }
-
-      setPdfContent(fullText);
-    } catch (error) {
-      setPdfContent(null);
-    }
+  const handleResourceSelection = async (resource: Resource) => {
+    const fileType = getFileType(resource.url);
+    const content = await extractContent(resource.url, fileType);
+    setDocumentContent(content);
   };
 
   return (
@@ -96,15 +135,11 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploadi
                     <div className="flex space-x-2">
                       <Button onClick={() => {
                         setSelectedResource(resource);
-                        if (fileType === 'pdf') {
-                          extractPdfContent(resource.url);
-                        }
+                        handleResourceSelection(resource);
                       }}>View Resource</Button>
                       <Button onClick={() => {
                         setChatResource(resource);
-                        if (fileType === 'pdf') {
-                          extractPdfContent(resource.url);
-                        }
+                        handleResourceSelection(resource);
                       }}>
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Chat
@@ -166,7 +201,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploadi
           </div>
           <div className="w-full h-[70vh]">
             <iframe
-              src={selectedResource?.url}
+              src={selectedResource ? getPreviewUrl(selectedResource.url) : ''}
               className="w-full h-full border-0"
               title={selectedResource?.title}
             />
@@ -187,7 +222,10 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploadi
             </Button>
           </DialogHeader>
           <div className="w-full h-[70vh]">
-            {chatResource && <ChatWindow pdfUrl={chatResource.url} pdfContent={pdfContent} />}
+            {chatResource && <ChatWindow 
+              pdfUrl={chatResource.url} 
+              pdfContent={documentContent} 
+            />}
           </div>
         </DialogContent>
       </Dialog>

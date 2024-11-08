@@ -39,6 +39,17 @@ interface Assignment {
   }>;
 }
 
+
+const getPreviewUrl = (submissionUrl: string) => {
+  const fileExtension = submissionUrl.split('.').pop()?.toLowerCase();
+  const officeExtensions = ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
+  
+  if (officeExtensions.includes(fileExtension || '')) {
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(submissionUrl)}`;
+  }
+  return `${submissionUrl}#toolbar=0`;
+};
+
 const AssignmentPage = () => {
   const params = useParams();
   const router = useRouter();
@@ -280,7 +291,7 @@ const AssignmentPage = () => {
               <CardContent className="p-0 h-[calc(100%-4rem)]">
                 {submissionUrl ? (
                   <iframe
-                    src={`${submissionUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                    src={getPreviewUrl(submissionUrl)}
                     className="w-full h-full border-0 rounded-b-md bg-white"
                     title="Submission Preview"
                   />
