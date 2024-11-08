@@ -43,7 +43,7 @@ export default function Home() {
             variants={fadeInFromTop}
             >
 
-            <section className="text-center mb-24">
+            <section className="text-center mb-20">
               <h1 className="text-primary text-4xl md:text-6xl font-semibold mb-3">
               Transform learning 
               </h1>
