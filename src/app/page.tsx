@@ -7,6 +7,7 @@ import { CheckCircle, Users, Calendar, BarChart2, BookOpen, Zap, Shield, Clock, 
 import Image from 'next/image';
 import placeholder from '../components/img/placeholder.png';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 const fadeInFromTop = {
   hidden: { opacity: 0, y: -30 },
@@ -19,13 +20,19 @@ const fadeInFromBottom = {
 };
 
 export default function Home() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <>
       <div >
         <div >
           <motion.header
             initial="hidden"
-            animate="visible"
+            animate={isMounted ? "visible" : "hidden"}
             variants={fadeInFromTop}
             >
           <Header />
@@ -39,7 +46,7 @@ export default function Home() {
             <motion.section
             className="container mx-auto px-4 py-16"
             initial="hidden"
-            animate="visible"
+            animate={isMounted ? "visible" : "hidden"}
             variants={fadeInFromTop}
             >
 
@@ -71,7 +78,7 @@ export default function Home() {
             <motion.section
                 className="flex justify-center items-center"
                 initial="hidden"
-                animate="visible"
+                animate={isMounted ? "visible" : "hidden"}
                 variants={fadeInFromBottom}
                 >
 
