@@ -207,6 +207,16 @@ const ClassroomPage = () => {
     }
   };
 
+  const handleDeleteResource = async (resourceId: number): Promise<void> => {
+    try {
+      await axios.delete(`/api/classrooms/${params.id}/resources/${resourceId}`);
+      setResources(prevResources => prevResources.filter(r => r.id !== resourceId));
+    } catch (error) {
+      console.error('Failed to delete resource:', error);
+      setError('Failed to delete resource. Please try again.');
+    }
+  };
+
   const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
 
   if (!isUserLoaded || isLoading) {
@@ -284,6 +294,7 @@ const ClassroomPage = () => {
             resources={resources as any}
             isUploading={isUploading}
             onUpload={handleUploadResource}
+            onDelete={handleDeleteResource}
           />
         </TabsContent>
         <TabsContent value="grades">

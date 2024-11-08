@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from "next/link";
-import { Book, Loader2, X, FileIcon, MessageCircle } from "lucide-react";
+import { Book, Loader2, X, FileIcon, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,6 +8,7 @@ import { ChatWindow } from './ChatWindow';
 import * as pdfjs from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import XLSX from 'xlsx';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Ensure the worker is loaded
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -27,6 +28,7 @@ interface ResourcesTabProps {
   resources: Resource[];
   isUploading: boolean;
   onUpload: (file: File) => Promise<void>;
+  onDelete?: (resourceId: number) => Promise<void>;
 }
 
 const getPreviewUrl = (url: string) => {
@@ -96,10 +98,11 @@ const getFileType = (url: string): string => {
   }
 };
 
-export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploading, onUpload }) => {
+export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploading, onUpload, onDelete }) => {
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [chatResource, setChatResource] = useState<Resource | null>(null);
   const [documentContent, setDocumentContent] = useState<string | null>(null);
+  const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
 
   console.log('ResourcesTab rendered with resources:', resources);
 
@@ -144,6 +147,13 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploadi
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Chat
                       </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        onClick={() => setResourceToDelete(resource)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -175,6 +185,30 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ resources, isUploadi
             }}
           />
         </div>
+        <AlertDialog open={!!resourceToDelete} onOpenChange={(open: any) => !open && setResourceToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete &quot;{resourceToDelete?.title}&quot;. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (resourceToDelete && onDelete) {
+                    await onDelete(resourceToDelete.id);
+                    setResourceToDelete(null);
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
 
       <Dialog open={!!selectedResource} onOpenChange={(open) => {
