@@ -1,3 +1,4 @@
+"use client";
 import { Header } from "@/components/Header";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -5,15 +6,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Users, Calendar, BarChart2, BookOpen, Zap, Shield, Clock, Globe,ChevronRight } from "lucide-react";
 import Image from 'next/image';
 import placeholder from '../components/img/placeholder.png';
+import { motion } from 'framer-motion';
+
+const fadeInFromTop = {
+  hidden: { opacity: 0, y: -30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: 'easeOut'  } },
+};
+
+const fadeInFromBottom = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8,ease: 'easeOut'  } },
+};
 
 export default function Home() {
   return (
     <>
       <div >
         <div >
+          <motion.header
+            initial="hidden"
+            animate="visible"
+            variants={fadeInFromTop}
+            >
           <Header />
+          </motion.header>
+
+          
           <main className="container mx-auto px-4 py-16">
+
             {/* Hero Section */}
+
+            <motion.section
+            className="container mx-auto px-4 py-16"
+            initial="hidden"
+            animate="visible"
+            variants={fadeInFromTop}
+            >
+
             <section className="text-center mb-24">
               <h1 className="text-primary text-4xl md:text-6xl font-semibold mb-3">
               Transform learning 
@@ -35,8 +64,18 @@ export default function Home() {
                 
               </div>
             </section>
+            </motion.section>
 
             {/* Dashboard Flex Section */}
+
+            <motion.section
+                className="flex justify-center items-center"
+                initial="hidden"
+                animate="visible"
+                variants={fadeInFromBottom}
+                >
+
+      
             <section className="flex justify-center items-center ">
             <Image
                 src={placeholder}
@@ -46,6 +85,7 @@ export default function Home() {
             />
 
             </section>
+            </motion.section>
 
             {/* How It Works Section */}
             <section className="mb-24">
