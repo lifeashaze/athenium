@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { format, parseISO, isPast } from "date-fns"
 import { useEffect, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
+import { Clock, ChevronRight } from "lucide-react"
 
 // Update type to match Prisma schema
 type Assignment = {
@@ -51,12 +51,16 @@ const Page = () => {
     }
   }, [userId])
 
-  // Separate pending and submitted assignments
-  const { pendingAssignments, recentSubmissions } = assignments.reduce(
+  // Updated reducer to separate into three categories
+  const { pendingAssignments, overdueAssignments, recentSubmissions } = assignments.reduce(
     (acc, assignment) => {
       const hasSubmission = assignment.submissions.length > 0
+      const isOverdue = isPast(parseISO(assignment.deadline))
+
       if (hasSubmission) {
         acc.recentSubmissions.push(assignment)
+      } else if (isOverdue) {
+        acc.overdueAssignments.push(assignment)
       } else {
         acc.pendingAssignments.push(assignment)
       }
@@ -64,8 +68,14 @@ const Page = () => {
     },
     { 
       pendingAssignments: [] as Assignment[], 
+      overdueAssignments: [] as Assignment[],
       recentSubmissions: [] as Assignment[] 
     }
+  )
+
+  // Sort overdue assignments by most overdue first
+  const sortedOverdueAssignments = overdueAssignments.sort((a, b) => 
+    new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
   )
 
   // Sort pending assignments by earliest deadline
@@ -101,33 +111,85 @@ const Page = () => {
       {loading ? (
         <p>Loading assignments...</p>
       ) : (
-        <>
+        <div className="space-y-8">
           {/* Pending Assignments Section */}
-          <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Pending Assignments</h2>
-            <div className="space-y-4">
+          <section aria-labelledby="pending-assignments">
+            <h2 id="pending-assignments" className="text-2xl font-bold mb-4">Pending Assignments</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sortedPendingAssignments.length === 0 ? (
                 <p className="text-muted-foreground">No pending assignments</p>
               ) : (
                 sortedPendingAssignments.map((assignment) => (
-                  <Card key={assignment.id}>
-                    <CardHeader>
+                  <Card key={assignment.id} className="overflow-hidden flex flex-col h-[200px]">
+                    <CardHeader className="pb-2 flex-none">
                       <div className="flex justify-between items-start">
-                        <CardTitle>{assignment.title}</CardTitle>
-                        <Badge 
-                          variant={isPast(parseISO(assignment.deadline)) ? "destructive" : "secondary"}
-                        >
+                        <div>
+                          <CardTitle className="text-lg line-clamp-1">{assignment.title}</CardTitle>
+                          <CardDescription className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                            {assignment.classroom.courseName}
+                          </CardDescription>
+                        </div>
+                        <Badge variant={isPast(parseISO(assignment.deadline)) ? "destructive" : "secondary"}>
                           {getDeadlineStatus(assignment.deadline)}
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600">{assignment.classroom.courseName}</p>
-                      <p className="text-sm text-gray-500">Due: {formatDeadline(assignment.deadline)}</p>
-                      <Separator className="my-2" />
-                      <div className="flex justify-end">
-                        <Button onClick={() => router.push(`/classroom/${assignment.classroom.id}/assignment/${assignment.id}`)}>
-                          Open Assignment
+                    <CardContent className="flex flex-col flex-1 justify-between">
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <Clock className="h-4 w-4 mr-1" />
+                        Due: {formatDeadline(assignment.deadline)}
+                      </div>
+                      <div className="mt-auto pt-2">
+                        <Button 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => router.push(`/classroom/${assignment.classroom.id}/assignment/${assignment.id}`)}
+                        >
+                          Submit Assignment
+                          <ChevronRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* Overdue Assignments Section */}
+          <section aria-labelledby="overdue-assignments">
+            <h2 id="overdue-assignments" className="text-2xl font-bold mb-4">Overdue Assignments</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sortedOverdueAssignments.length === 0 ? (
+                <p className="text-muted-foreground">No overdue assignments</p>
+              ) : (
+                sortedOverdueAssignments.map((assignment) => (
+                  <Card key={assignment.id} className="overflow-hidden flex flex-col h-[200px]">
+                    <CardHeader className="pb-2 flex-none">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg line-clamp-1">{assignment.title}</CardTitle>
+                          <CardDescription className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                            {assignment.classroom.courseName}
+                          </CardDescription>
+                        </div>
+                        <Badge variant="destructive">Overdue</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col flex-1 justify-between">
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <Clock className="h-4 w-4 mr-1" />
+                        Due: {formatDeadline(assignment.deadline)}
+                      </div>
+                      <div className="mt-auto pt-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => router.push(`/classroom/${assignment.classroom.id}/assignment/${assignment.id}`)}
+                        >
+                          Request Extension
+                          <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
                       </div>
                     </CardContent>
@@ -138,30 +200,39 @@ const Page = () => {
           </section>
 
           {/* Recent Submissions Section */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Recent Submissions</h2>
-            <div className="space-y-4">
+          <section aria-labelledby="recent-submissions">
+            <h2 id="recent-submissions" className="text-2xl font-bold mb-4">Recent Submissions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sortedRecentSubmissions.length === 0 ? (
                 <p className="text-muted-foreground">No recent submissions</p>
               ) : (
                 sortedRecentSubmissions.map((assignment) => (
-                  <Card key={assignment.id}>
-                    <CardHeader>
-                      <CardTitle>{assignment.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600">{assignment.classroom.courseName}</p>
-                      <p className="text-sm text-gray-500">
-                        Submitted: {formatDeadline(assignment.submissions[0].submittedAt)}
-                      </p>
-                      <Separator className="my-2" />
-                      <div className="flex justify-between items-center">
+                  <Card key={assignment.id} className="overflow-hidden flex flex-col h-[200px]">
+                    <CardHeader className="pb-2 flex-none">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg line-clamp-1">{assignment.title}</CardTitle>
+                          <CardDescription className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                            {assignment.classroom.courseName}
+                          </CardDescription>
+                        </div>
                         <Badge variant="secondary">Submitted</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col flex-1 justify-between">
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <Clock className="h-4 w-4 mr-1" />
+                        Submitted: {formatDeadline(assignment.submissions[0].submittedAt)}
+                      </div>
+                      <div className="mt-auto pt-2">
                         <Button 
-                          variant="outline"
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
                           onClick={() => router.push(`/classroom/${assignment.classroom.id}/assignment/${assignment.id}`)}
                         >
                           View Submission
+                          <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
                       </div>
                     </CardContent>
@@ -170,7 +241,7 @@ const Page = () => {
               )}
             </div>
           </section>
-        </>
+        </div>
       )}
     </div>
   )
