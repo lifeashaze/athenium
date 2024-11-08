@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Book, FileText, FileSpreadsheet, FileImage, File, Video, ChevronRight, Loader2, Upload, Trash2, ChevronDown, Search, Download } from 'lucide-react'
+import { Book, FileText, FileSpreadsheet, FileImage, File, Video, ChevronRight, Loader2, Upload, Trash2, ChevronDown, Search, Download, FolderOpen } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -146,9 +146,6 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
         
         setResources(resourcesData)
         setClassroomTitle(classroomData.title)
-        if (resourcesData.length > 0) {
-          setSelectedResource(resourcesData[0])
-        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load resources')
       } finally {
@@ -227,6 +224,12 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
     try {
       await axios.delete(`/api/classrooms/${params.id}/resources/${resourceId}`);
       setResources(prev => prev.filter(r => r.id !== resourceId));
+      
+      // Clear the selected resource if it's the one being deleted
+      if (selectedResource?.id === resourceId) {
+        setSelectedResource(null);
+      }
+      
       setResourceToDelete(null);
     } catch (error) {
       console.error('Failed to delete resource:', error);
@@ -291,6 +294,14 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
               </div>
             ) : error ? (
               <div className="text-red-500 text-sm py-4">{error}</div>
+            ) : resources.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                <FolderOpen className="h-12 w-12 text-muted-foreground opacity-50 mb-4" />
+                <p className="text-sm text-muted-foreground mb-2">No resources available yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Check back later for course materials.
+                </p>
+              </div>
             ) : (
               <nav className="grid items-start gap-2 mt-4">
                 {Object.entries(organizedResources())
@@ -436,9 +447,20 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
               ) : error ? (
                 <div className="text-red-500">{error}</div>
               ) : !selectedResource ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Select a resource to view</p>
+                <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center h-[calc(100vh-16rem)]">
+                  <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-xl font-semibold mb-2">Course Materials</h3>
+                  <p className="text-sm max-w-sm text-muted-foreground">
+                    Select a resource from the sidebar to view course materials and other learning resources shared by your instructor.
+                  </p>
+                  <div className="mt-6 flex flex-col items-center gap-2 text-sm">
+                    <p className="font-medium">Quick Tips:</p>
+                    <ul className="list-disc text-left text-muted-foreground">
+                      <li>Use the search bar to find specific materials</li>
+                      <li>Click on any file to preview it</li>
+                      <li>Use the download button to save files for offline access</li>
+                    </ul>
+                  </div>
                 </div>
               ) : (
                 <div className="w-full h-[calc(100vh-8rem)]">
