@@ -16,6 +16,7 @@ import { ResourcesTab } from '@/components/classroom/ResourcesTab';
 import { EnrolledStudentsTab } from '@/components/classroom/EnrolledStudentsTab';
 import { Progress } from "@/components/ui/progress"
 import { CalendarDays, Users, BookOpen, Code } from 'lucide-react';
+import { GradesTab } from '@/components/classroom/GradesTab';
 
 interface Classroom {
   id: number;
@@ -43,6 +44,7 @@ interface Assignment {
   title: string;
   type: 'theory' | 'lab';
   deadline: string;
+  maxMarks: number;
   creator: {
     firstName: string;
   };
@@ -67,6 +69,17 @@ interface Member {
   prn: string | null;
 }
 
+interface Submission {
+  id: string;
+  marks: number;
+  submittedAt: string;
+  assignment: {
+    id: string;
+    title: string;
+    maxMarks: number;
+  };
+}
+
 function getProgress(startDate: string, endDate: string) {
   const start = new Date(startDate).getTime()
   const end = new Date(endDate).getTime()
@@ -88,6 +101,7 @@ const ClassroomPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
 
   const fetchClassroomData = useCallback(async () => {
     if (!params.id) return;
@@ -143,14 +157,26 @@ const ClassroomPage = () => {
     }
   }, [params.id]);
 
+  const fetchSubmissions = useCallback(async () => {
+    if (!params.id) return;
+    try {
+      const response = await axios.get(`/api/classrooms/${params.id}/submissions`);
+      setSubmissions(response.data);
+    } catch (error) {
+      console.error('Failed to fetch submissions:', error);
+      setError('Failed to load submissions. Please try again later.');
+    }
+  }, [params.id]);
+
   useEffect(() => {
     if (isUserLoaded && user && params.id) {
       fetchClassroomData();
       fetchAssignments();
       fetchResources();
       fetchMembers();
+      fetchSubmissions();
     }
-  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchResources, fetchMembers]);
+  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchResources, fetchMembers, fetchSubmissions]);
 
   const handleCreateAssignment = async (newAssignment: any): Promise<Assignment | null> => {
     try {
@@ -301,14 +327,11 @@ const ClassroomPage = () => {
           />
         </TabsContent>
         <TabsContent value="grades">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-10">
-              <h3 className="text-lg font-semibold mb-2">No Grades Available</h3>
-              <p className="text-sm text-gray-500 text-center max-w-sm">
-                There are no grades to display at this time. Grades will appear here once assignments have been graded.
-              </p>
-            </CardContent>
-          </Card>
+          <GradesTab 
+            submissions={submissions}
+            assignments={assignments}
+            userId={user.id}
+          />
         </TabsContent>
         <TabsContent value="code-execution">
           <CodeExecution />

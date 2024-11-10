@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { FileText, Download } from "lucide-react"
 
 interface Assignment {
+  maxMarks: ReactNode;
   id: number;
   title: string;
   type: 'theory' | 'lab';
@@ -36,6 +37,7 @@ interface Assignment {
   submissions: Array<{
     id: number;
     content: string;
+    marks: number;
   }>;
 }
 
@@ -59,6 +61,7 @@ const AssignmentPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [submissionUrl, setSubmissionUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [marks, setMarks] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -69,6 +72,7 @@ const AssignmentPage = () => {
         setAssignment(response.data);
         if (response.data.submissions.length > 0) {
           setSubmissionUrl(response.data.submissions[0].content);
+          setMarks(response.data.submissions[0].marks);
         }
       } catch (error) {
         console.error('Failed to fetch assignment:', error);
@@ -128,6 +132,10 @@ const AssignmentPage = () => {
       setIsUploading(false);
     }
   }, [file, params.id, params.assignmentID, router, isDeadlinePassed]);
+
+  const isSubmissionLocked = useCallback(() => {
+    return isDeadlinePassed() || marks !== null;
+  }, [marks, isDeadlinePassed]);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -192,10 +200,18 @@ const AssignmentPage = () => {
                     <h3 className="text-lg font-semibold mb-2">Submission Status</h3>
                     <div className="flex items-center space-x-2">
                       {submissionUrl ? (
-                        <>
-                          <Check className="text-green-500" />
-                          <span className="text-green-500">Submitted</span>
-                        </>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Check className="text-green-500" />
+                            <span className="text-green-500">Submitted</span>
+                          </div>
+                          {marks !== null && (
+                            <div className="text-sm">
+                              <span className="font-medium">Marks: </span>
+                              <span>{marks} / {assignment?.maxMarks}</span>
+                            </div>
+                          )}
+                        </div>
                       ) : isDeadlinePassed() ? (
                         <>
                           <X className="text-red-500" />
@@ -209,7 +225,7 @@ const AssignmentPage = () => {
                       )}
                     </div>
                   </div>
-                  {!isDeadlinePassed() && (
+                  {!isSubmissionLocked() && (
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <Label htmlFor="file-upload" className="block text-lg font-semibold mb-2">
                         Upload Submission
@@ -248,6 +264,15 @@ const AssignmentPage = () => {
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Error</AlertTitle>
                       <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  {marks !== null && !isDeadlinePassed() && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Submission Locked</AlertTitle>
+                      <AlertDescription>
+                        Your submission has been graded and cannot be modified. If you need to make changes, please contact your professor.
+                      </AlertDescription>
                     </Alert>
                   )}
                 </div>
