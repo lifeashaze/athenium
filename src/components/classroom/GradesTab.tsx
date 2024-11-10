@@ -123,7 +123,7 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
                     {formatDate(assignment.date)}
                   </p>
                 </div>
-                <Badge variant={assignment.score >= 70 ? "default" : "destructive"}>
+                <Badge variant={assignment.score >= 70 ? "blue" : "amber"}>
                   {assignment.score}%
                 </Badge>
               </div>
@@ -144,8 +144,8 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
                 <p className="text-sm font-medium text-muted-foreground">Average Score</p>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold">{averageScore}%</span>
-                  <Badge variant={averageScore >= 70 ? "default" : "destructive"}>
-                    {averageScore >= 70 ? "Good Standing" : "Needs Improvement"}
+                  <Badge variant={averageScore >= 70 ? "blue" : "amber"}>
+                    {averageScore >= 70 ? "Good Standing" : "Needs Attention"}
                   </Badge>
                 </div>
               </div>
@@ -175,8 +175,8 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
                   <span className="text-lg font-semibold">
                     {isImproving ? "Improving ↗" : "Declining ↘"}
                   </span>
-                  <Badge variant={isImproving ? "default" : "destructive"}>
-                    {isImproving ? "Keep it up!" : "Focus needed"}
+                  <Badge variant={isImproving ? "blue" : "amber"}>
+                    {isImproving ? "Keep it up!" : "Room to grow"}
                   </Badge>
                 </div>
               </div>
