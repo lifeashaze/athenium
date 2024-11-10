@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 
 interface Submission {
   marks: number;
@@ -18,82 +19,87 @@ interface GradesTabProps {
   userId: string;
 }
 
-export function GradesTab({ submissions, assignments, userId }: GradesTabProps) {
+export function GradesTab({ submissions = [], assignments = [], userId }: GradesTabProps) {
   const gradedSubmissions = submissions.filter((sub: Submission) => sub.marks > 0);
-  const pendingSubmissions = submissions.filter((sub: Submission) => sub.marks === 0);
-
-  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
 
   const chartData = gradedSubmissions
     .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime())
-    .map((submission, index) => ({
-      x: index + 1,
-      y: Math.round((submission.marks / submission.assignment.maxMarks) * 100),
-      name: submission.assignment.title.length > 20 
-        ? submission.assignment.title.substring(0, 20) + '...'
-        : submission.assignment.title,
-      fullTitle: submission.assignment.title,
-      date: new Date(submission.submittedAt).toLocaleDateString(),
-      color: colors[index % colors.length]
+    .map((submission) => ({
+      date: submission.submittedAt,
+      score: Math.round((submission.marks / submission.assignment.maxMarks) * 100),
+      name: submission.assignment.title
     }));
+
+  // Calculate statistics
+  const averageScore = Math.round(
+    chartData.reduce((acc, curr) => acc + curr.score, 0) / chartData.length || 0
+  );
+  const highestScore = chartData.length ? Math.max(...chartData.map(item => item.score)) : 0;
+  const lowestScore = chartData.length ? Math.min(...chartData.map(item => item.score)) : 0;
+  const recentTrend = chartData.slice(-3).map(item => item.score);
+  const isImproving = recentTrend.length >= 2 && recentTrend[recentTrend.length - 1] > recentTrend[0];
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Assignment Scores</CardTitle>
+          <CardTitle>Academic Progress</CardTitle>
         </CardHeader>
         <CardContent className="h-[400px]">
           {gradedSubmissions.length > 0 ? (
-            <div className="flex flex-col h-full">
-              <ResponsiveContainer width="100%" height="80%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    type="number" 
-                    dataKey="x" 
-                    domain={[0, Math.max(assignments.length, 10)]}
-                  />
-                  <YAxis type="number" dataKey="y" domain={[0, 100]} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-white p-2 rounded-lg shadow border">
-                            <p className="font-medium">{data.fullTitle}</p>
-                            <p className="text-sm text-muted-foreground">Score: {data.y}%</p>
-                            <p className="text-sm text-muted-foreground">Date: {data.date}</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  {chartData.map((data, index) => (
-                    <Scatter
-                      key={index}
-                      data={[data]}
-                      fill={data.color}
-                    >
-                      <circle r={12} fill={data.color} />
-                    </Scatter>
-                  ))}
-                </ScatterChart>
-              </ResponsiveContainer>
-              <div className="flex flex-wrap gap-2 justify-center mt-4">
-                {chartData.map((entry, index) => (
-                  <Badge 
-                    key={index}
-                    variant="secondary"
-                    className="cursor-pointer hover:opacity-80"
-                    style={{ backgroundColor: entry.color + '20', color: entry.color }}
-                  >
-                    {entry.name}: {entry.y}%
-                  </Badge>
-                ))}
-              </div>
-            </div>
+            <ChartContainer config={{ score: { label: "Score (%)", color: "hsl(220, 90%, 56%)" }}} className="h-full w-full">
+              <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 20, bottom: 40, left: 40 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatDate}
+                  label={{ value: "Assignment Date", position: "bottom", offset: 20 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  label={{ value: "Score (%)", angle: -90, position: "insideLeft", offset: 10 }}
+                />
+                <ChartTooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-background border rounded-lg p-3 shadow-lg">
+                          <p className="font-semibold">{payload[0].payload.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(payload[0].payload.date)}
+                          </p>
+                          <p className="font-bold text-primary">
+                            Score: {payload[0].value}%
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke="hsl(220, 90%, 56%)"
+                  strokeWidth={3}
+                  dot={{ r: 6, fill: "hsl(220, 90%, 56%)" }}
+                />
+              </LineChart>
+            </ChartContainer>
           ) : (
             <div className="flex items-center justify-center h-full">
               <p className="text-muted-foreground">No graded assignments yet</p>
@@ -102,7 +108,92 @@ export function GradesTab({ submissions, assignments, userId }: GradesTabProps) 
         </CardContent>
       </Card>
 
-      {/* Rest of the cards remain the same ... */}
+      {/* Recent Assignments List */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Recent Assignments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {chartData.slice(-5).reverse().map((assignment, index) => (
+              <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
+                <div>
+                  <p className="font-medium">{assignment.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(assignment.date)}
+                  </p>
+                </div>
+                <Badge variant={assignment.score >= 70 ? "default" : "destructive"}>
+                  {assignment.score}%
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Academic Summary Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Performance Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Average Score</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold">{averageScore}%</span>
+                  <Badge variant={averageScore >= 70 ? "default" : "destructive"}>
+                    {averageScore >= 70 ? "Good Standing" : "Needs Improvement"}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Highest Score</p>
+                  <p className="text-xl font-semibold">{highestScore}%</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Lowest Score</p>
+                  <p className="text-xl font-semibold">{lowestScore}%</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Progress Analysis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Recent Trend</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold">
+                    {isImproving ? "Improving ↗" : "Declining ↘"}
+                  </span>
+                  <Badge variant={isImproving ? "default" : "destructive"}>
+                    {isImproving ? "Keep it up!" : "Focus needed"}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Last 3 Assignments</p>
+                <div className="flex gap-2 mt-2">
+                  {recentTrend.map((score, index) => (
+                    <Badge key={index} variant="outline" className="text-lg">
+                      {score}%
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 } 

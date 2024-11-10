@@ -327,10 +327,10 @@ const ClassroomPage = () => {
           />
         </TabsContent>
         <TabsContent value="grades">
-          <GradesTab 
+          <GradesTab
             submissions={submissions}
             assignments={assignments}
-            userId={user.id}
+            userId={user?.id}
           />
         </TabsContent>
         <TabsContent value="code-execution">
