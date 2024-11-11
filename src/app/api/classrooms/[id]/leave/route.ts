@@ -43,18 +43,6 @@ export async function POST(
       }
     });
 
-    // Create a notification
-    await prisma.notification.create({
-      data: {
-        message: `You left ${classroom.courseName}`,
-        type: 'MEMBERSHIP',
-        users: {
-          connect: { id: userId }
-        },
-        relatedId: params.id
-      }
-    });
-
     return NextResponse.json({ message: 'Successfully left the classroom' });
   } catch (error) {
     console.error('Error leaving classroom:', error);
