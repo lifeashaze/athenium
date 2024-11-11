@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const now = new Date();
     const classrooms = await prisma.classroom.findMany({
       where: {
         OR: [
@@ -24,8 +25,28 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             firstName: true,
+            lastName: true,
             email: true,
           },
+        },
+        assignments: {
+          where: {
+            deadline: {
+              gt: now // Only get assignments that haven't passed deadline
+            },
+            // Exclude assignments that the user has already submitted
+            NOT: {
+              submissions: {
+                some: {
+                  userId: userId
+                }
+              }
+            }
+          },
+          select: {
+            id: true,
+            deadline: true
+          }
         },
         memberships: {
           include: {
@@ -43,7 +64,14 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ classrooms });
+    // Transform the response to include pending assignments count
+    const classroomsWithPendingCount = classrooms.map(classroom => ({
+      ...classroom,
+      pendingAssignments: classroom.assignments.length,
+      assignments: undefined // Remove the assignments array from response
+    }));
+
+    return NextResponse.json({ classrooms: classroomsWithPendingCount });
   } catch (error) {
     console.error('Error fetching classrooms:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

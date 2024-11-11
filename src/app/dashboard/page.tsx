@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Trash2, Plus, UserPlus, Book, Users, Bell, UserCog } from 'lucide-react'
+import { Trash2, Plus, UserPlus, Book, Users, Bell, UserCog, ArrowRight, Info, LogOut } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -25,7 +25,8 @@ import { OnboardingDialog } from '@/components/OnboardingDialog'
 import ReactConfetti from 'react-confetti'
 import { useWindowSize } from 'react-use'
 import { motion, AnimatePresence } from 'framer-motion' // npm install framer-motion
-import { DashboardAnalytics } from '@/components/DashboardAnalytics'
+import { ClassInvitationCard } from '@/components/ClassInvitationCard'
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 
 interface Classroom {
   id: number
@@ -35,6 +36,11 @@ interface Classroom {
   division: string
   courseCode: string
   courseName: string
+  pendingAssignments: number
+  creator?: {
+    firstName: string
+    lastName: string
+  }
 }
 
 interface Notification {
@@ -52,6 +58,19 @@ interface UserDetails {
   prn: string | null
   year: string | null
   division: string | null
+}
+
+interface ClassInvitation {
+  id: string
+  courseName: string
+  courseCode: string
+  year: string
+  division: string
+  professor: {
+    firstName: string
+    lastName: string
+  }
+  memberCount: number
 }
 
 const DashboardPage = () => {
@@ -88,6 +107,8 @@ const DashboardPage = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const { width, height } = useWindowSize();
   const [isNavigating, setIsNavigating] = useState(false);
+  const [classInvitations, setClassInvitations] = useState<ClassInvitation[]>([]);
+  const [classroomToLeave, setClassroomToLeave] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -95,11 +116,12 @@ const DashboardPage = () => {
       
       setIsLoading(true);
       try {
-        // Fetch all data in parallel
-        const [classroomsResponse, notificationsResponse, userDetailsResponse] = await Promise.all([
+        // Update Promise.all to include invitations
+        const [classroomsResponse, notificationsResponse, userDetailsResponse, invitationsResponse] = await Promise.all([
           axios.get('/api/classrooms'),
           axios.get('/api/notifications'),
-          axios.get('/api/user')
+          axios.get('/api/user'),
+          axios.get('/api/classrooms/invitations')
         ]);
 
         // Set classrooms
@@ -115,6 +137,9 @@ const DashboardPage = () => {
           setShowOnboarding(true);
           setUserDetails(details);
         }
+
+        // Set invitations
+        setClassInvitations(invitationsResponse.data.invitations || []);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Unable to load data. Please try again later.');
@@ -179,34 +204,91 @@ const DashboardPage = () => {
     return (
       <div className="min-h-screen bg-gray-100">
         <main>
-          <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="px-4 py-6 sm:px-0">
-              <Skeleton className="h-12 w-3/4 mx-auto mb-8" />
-              <div className="flex justify-end space-x-4 mb-6">
-                <Skeleton className="h-10 w-40" />
-                <Skeleton className="h-10 w-40" />
+              {/* Header Section */}
+              <div className="flex justify-between items-center mb-8">
+                <Skeleton className="h-12 w-64" /> {/* Greeting */}
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-10 w-10 rounded-md" /> {/* Profile button */}
+                  <Skeleton className="h-10 w-10 rounded-md" /> {/* Notifications button */}
+                </div>
               </div>
-              <Skeleton className="h-8 w-64 mb-6" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, index) => (
-                  <Card key={index}>
-                    <CardHeader className="pb-2">
-                      <Skeleton className="h-6 w-3/4" />
-                    </CardHeader>
-                    <CardContent className="pb-4">
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-4 w-1/3" />
-                        <Skeleton className="h-4 w-2/3" />
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-4 mb-6">
+                <Skeleton className="h-10 w-36" /> {/* Create Classroom button */}
+                <Skeleton className="h-10 w-36" /> {/* Join Classroom button */}
+              </div>
+
+              {/* Class Invitations Section */}
+              <div className="mb-6">
+                <Skeleton className="h-8 w-48 mb-3" /> {/* Section title */}
+                <div className="space-y-2">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="flex items-center justify-between p-4 rounded-lg border bg-white">
+                      <div className="flex-1">
+                        <Skeleton className="h-6 w-3/4 mb-2" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-5 w-20" />
+                          <Skeleton className="h-5 w-20" />
+                          <Skeleton className="h-5 w-20" />
+                        </div>
                       </div>
-                    </CardContent>
-                    <div className="px-6 pb-4">
-                      <div className="flex justify-between items-center">
-                        <Skeleton className="h-10 w-3/4" />
-                        <Skeleton className="h-10 w-10" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-9 w-24" />
+                        <Skeleton className="h-9 w-24" />
                       </div>
                     </div>
-                  </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Classrooms Section Header */}
+              <div className="flex justify-between items-center mb-6">
+                <Skeleton className="h-8 w-48" /> {/* Section title */}
+                <Skeleton className="h-10 w-64" /> {/* Search input */}
+              </div>
+
+              {/* Classrooms Grid */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="border rounded-lg p-6 bg-white">
+                    <div className="flex justify-between items-start gap-4 mb-6">
+                      <div className="flex-1">
+                        <Skeleton className="h-7 w-3/4 mb-3" /> {/* Course name */}
+                        <div className="flex gap-2 mb-3">
+                          <Skeleton className="h-5 w-20" /> {/* Badge */}
+                          <Skeleton className="h-5 w-20" /> {/* Badge */}
+                          <Skeleton className="h-5 w-20" /> {/* Badge */}
+                        </div>
+                      </div>
+                      <div className="bg-muted/30 p-3.5 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-11 w-11 rounded-full" />
+                          <div className="flex flex-col gap-1">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-32" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="bg-muted/30 p-4 rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <Skeleton className="h-12 w-12 rounded-full" />
+                          <div className="flex flex-col gap-1">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-6 w-16" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-12 flex-1" /> {/* Enter button */}
+                        <Skeleton className="h-12 w-12" /> {/* Delete button */}
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -317,7 +399,11 @@ const DashboardPage = () => {
   // Add this function to fetch classrooms
   const fetchClassrooms = async () => {
     try {
-      const response = await axios.get('/api/classrooms')
+      const response = await axios.get('/api/classrooms', {
+        params: {
+          includeCounts: true 
+        }
+      })
       return response.data.classrooms
     } catch (error) {
       console.error('Failed to fetch classrooms:', error)
@@ -365,6 +451,64 @@ const DashboardPage = () => {
   const handleClassroomNavigation = (classroomId: number) => {
     setIsNavigating(true);
     router.push(`/classroom/${classroomId}`);
+  };
+
+  const handleAcceptInvitation = async (id: string) => {
+    try {
+      setIsJoining(true);
+      const response = await axios.post('/api/classrooms/join', { id });
+      
+      // Remove the invitation from the list
+      setClassInvitations(prev => prev.filter(invite => invite.id !== id));
+      
+      // Add the new classroom to the list
+      const updatedClassrooms = await fetchClassrooms();
+      setClassrooms(updatedClassrooms);
+
+      toast({
+        title: "Success",
+        description: "Successfully joined the classroom",
+      });
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to join classroom",
+      });
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleDismissInvitation = (id: string | number) => {
+    // Simply remove from local state
+    setClassInvitations(prev => prev.filter(invite => invite.id !== id));
+    toast({
+      title: "Success",
+      description: "Invitation dismissed",
+    });
+  };
+
+  const handleLeaveClassroom = async (classroomId: number) => {
+    try {
+      await axios.post(`/api/classrooms/${classroomId}/leave`);
+      
+      // Remove the classroom from the list
+      setClassrooms(prev => prev.filter(c => c.id !== classroomId));
+      
+      toast({
+        title: "Success",
+        description: "Successfully left the classroom",
+      });
+    } catch (error: any) {
+      console.error('Error leaving classroom:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.response?.data?.error || "Failed to leave classroom",
+      });
+    }
   };
 
   return (
@@ -426,10 +570,10 @@ const DashboardPage = () => {
       </AnimatePresence>
       <div className="min-h-screen bg-gray-100">
         <main>
-          <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="px-4 py-6 sm:px-0">
               <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-4xl font-bold">
                   {(() => {
                     const hour = new Date().getHours()
                     if (hour >= 5 && hour < 12) return "Good Morning"
@@ -502,12 +646,18 @@ const DashboardPage = () => {
                           <SelectItem value="Fourth Year">Fourth Year</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input
-                        type="text"
-                        value={division}
-                        onChange={(e) => setDivision(e.target.value)}
-                        placeholder="Division"
-                      />
+                      <Select onValueChange={setDivision} value={division}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Division" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map((letter) => (
+                            <SelectItem key={letter} value={letter}>
+                              {letter}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Input
                         type="text"
                         value={courseCode}
@@ -570,6 +720,36 @@ const DashboardPage = () => {
                 </Dialog>
               </div>
               
+              {classInvitations.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+                      Class Invitations
+                    </h2>
+                    <TooltipProvider delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent sideOffset={5}>
+                          <p className="text-sm">These are pending invitations from professors to join their classrooms.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <div className="space-y-2">
+                    {classInvitations.map((invitation) => (
+                      <ClassInvitationCard
+                        key={invitation.id}
+                        {...invitation}
+                        onAccept={handleAcceptInvitation}
+                        onDismiss={handleDismissInvitation}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Your Classrooms</h2>
                 <div className="relative">
@@ -584,64 +764,102 @@ const DashboardPage = () => {
                 </div>
               </div>
               
-              {/* Add this before the classrooms grid */}
-              <div className="mb-8">
-                <DashboardAnalytics />
-              </div>
-              
               {filteredClassrooms.length === 0 ? (
                 <p>No classrooms found.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   {filteredClassrooms.map((classroom) => (
-                    <Card key={classroom.id} className="hover:shadow-lg transition-shadow duration-300">
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg font-semibold">{classroom.courseName}</CardTitle>
-                          <Badge variant="secondary" className="text-xs">
-                            {classroom.year}
-                          </Badge>
+                    <Card key={classroom.id} className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/50 max-w-none">
+                      <CardHeader className="pb-4 px-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                          <div className="flex-1 w-full">
+                            <CardTitle className="text-xl font-semibold mb-3 line-clamp-2">
+                              {classroom.courseName}
+                            </CardTitle>
+                            <div className="flex flex-wrap items-center gap-2.5 mb-3">
+                              <Badge variant="default" className="px-3 py-1 text-sm">
+                                {classroom.courseCode}
+                              </Badge>
+                              <Badge variant="secondary" className="px-3 py-1 text-sm">
+                                {classroom.year}
+                              </Badge>
+                              <Badge variant="outline" className="px-3 py-1 text-sm">
+                                Div {classroom.division}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 bg-muted/30 p-3.5 rounded-lg w-full sm:w-auto">
+                            <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <Users className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm text-muted-foreground">Taught by</span>
+                              <span className="text-sm font-medium">
+                                Prof. {classroom.creator?.firstName} {classroom.creator?.lastName}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="pb-4">
-                        <div className="space-y-2">
-                          <p className="text-sm text-gray-600 flex items-center">
-                            <Book className="inline mr-2 h-4 w-4" />{classroom.courseCode}
-                          </p>
-                          <p className="text-sm text-gray-600 flex items-center">
-                            <Users className="inline mr-2 h-4 w-4" />{classroom.division}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-2 flex items-center">
-                            <span className="font-medium mr-1">Code:</span> {classroom.code}
-                          </p>
+
+                      <CardContent className="pb-5 px-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-4 bg-muted/30 px-5 py-3 rounded-lg flex-1">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                              classroom.pendingAssignments > 0 ? 'bg-red-100' : 'bg-green-100'
+                            }`}>
+                              <Book className={`h-6 w-6 ${
+                                classroom.pendingAssignments > 0 ? 'text-red-600' : 'text-green-600'
+                              }`} />
+                            </div>
+                            <div>
+                              <div className="text-sm text-muted-foreground">Pending Assignments</div>
+                              <div className={`text-2xl font-semibold ${
+                                classroom.pendingAssignments > 0 ? 'text-red-600' : 'text-green-600'
+                              }`}>
+                                {classroom.pendingAssignments}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </CardContent>
-                      <div className="px-6 pb-4">
-                        <div className="flex justify-between items-center">
+
+                        <div className="flex items-center gap-3">
                           <Button 
-                            variant="outline" 
+                            variant="default" 
                             onClick={() => handleClassroomNavigation(classroom.id)}
-                            className="w-full mr-2"
+                            className="flex-1 h-12"
                             disabled={isNavigating}
                           >
                             {isNavigating ? (
-                              <span className="flex items-center">
-                                <span className="animate-spin mr-2">⏳</span>
+                              <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
                                 Loading...
                               </span>
                             ) : (
-                              'View'
+                              <span className="flex items-center justify-center gap-2 text-base">
+                                Enter Classroom
+                                <ArrowRight className="h-5 w-5" />
+                              </span>
                             )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setClassroomToLeave(classroom.id)}
+                            className="h-12 w-12"
+                          >
+                            <LogOut className="h-5 w-5" />
                           </Button>
                           <Button
                             variant="destructive"
                             size="icon"
                             onClick={() => deleteClassroom(classroom.id)}
+                            className="hover:bg-destructive/90 h-12 w-12"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
                           </Button>
                         </div>
-                      </div>
+                      </CardContent>
                     </Card>
                   ))}
                 </div>
@@ -650,6 +868,28 @@ const DashboardPage = () => {
           </div>
         </main>
       </div>
+      <Dialog open={classroomToLeave !== null} onOpenChange={() => setClassroomToLeave(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Leave Classroom</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to leave this classroom? You'll need a new invitation to rejoin.</p>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setClassroomToLeave(null)}>Cancel</Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                if (classroomToLeave) {
+                  handleLeaveClassroom(classroomToLeave);
+                  setClassroomToLeave(null);
+                }
+              }}
+            >
+              Leave Classroom
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

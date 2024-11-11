@@ -14,22 +14,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { code } = await req.json();
-
-  if (!code || typeof code !== 'string') {
-    console.log('Invalid request: Missing or invalid code');
-    return NextResponse.json({ error: 'Invalid request: Missing or invalid code' }, { status: 400 });
-  }
+  const body = await req.json();
+  // Handle both direct classroom ID and invite code
+  const classroomId = body.id;
+  const code = body.code;
 
   try {
-    const classroom = await prisma.classroom.findUnique({ where: { code } });
+    let classroom;
+    
+    if (classroomId) {
+      // Direct join via classroom ID
+      classroom = await prisma.classroom.findUnique({ where: { id: classroomId } });
+    } else if (code) {
+      // Join via invite code
+      classroom = await prisma.classroom.findUnique({ where: { code } });
+    } else {
+      console.log('Invalid request: Missing classroom ID or code');
+      return NextResponse.json({ error: 'Invalid request: Missing classroom ID or code' }, { status: 400 });
+    }
 
     if (!classroom) {
       console.log('Classroom not found');
       return NextResponse.json({ error: 'Classroom not found' }, { status: 404 });
     }
 
-    // Check if the user is already a member of the classroom
+    // Check if the user is already a member
     const existingMembership = await prisma.membership.findUnique({
       where: {
         userId_classroomId: {
