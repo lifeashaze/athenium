@@ -9,24 +9,20 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Trash2, Plus, UserPlus, Book, Users, Bell, UserCog, ArrowRight, Info, LogOut } from 'lucide-react'
+import { Trash2, Plus, UserPlus, Book, Users, Bell, UserCog, ArrowRight, Info, LogOut, FileText } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Search } from 'lucide-react'
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { OnboardingDialog } from '@/components/OnboardingDialog'
 import ReactConfetti from 'react-confetti'
 import { useWindowSize } from 'react-use'
 import { motion, AnimatePresence } from 'framer-motion' // npm install framer-motion
 import { ClassInvitationCard } from '@/components/ClassInvitationCard'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
+import { NotificationDropdown } from '@/components/NotificationDropdown'
+
 
 interface Classroom {
   id: number
@@ -43,15 +39,6 @@ interface Classroom {
   }
 }
 
-interface Notification {
-  id: number
-  message: string
-  type: 'ASSIGNMENT' | 'ATTENDANCE' | 'MEMBERSHIP' | 'RESOURCE' | 'GENERAL'
-  createdAt: string
-  read: boolean
-}
-
-// Add interface for user details
 interface UserDetails {
   rollNo: string | null
   srn: string | null
@@ -93,8 +80,6 @@ const DashboardPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userDetails, setUserDetails] = useState<UserDetails>({
     rollNo: '',
@@ -116,20 +101,15 @@ const DashboardPage = () => {
       
       setIsLoading(true);
       try {
-        // Update Promise.all to include invitations
-        const [classroomsResponse, notificationsResponse, userDetailsResponse, invitationsResponse] = await Promise.all([
+        // Update Promise.all to include mock notifications
+        const [classroomsResponse, userDetailsResponse, invitationsResponse] = await Promise.all([
           axios.get('/api/classrooms'),
-          axios.get('/api/notifications'),
           axios.get('/api/user'),
           axios.get('/api/classrooms/invitations')
         ]);
 
         // Set classrooms
         setClassrooms(classroomsResponse.data.classrooms || []);
-
-        // Set notifications
-        setNotifications(notificationsResponse.data.notifications || []);
-        setUnreadCount(notificationsResponse.data.notifications.filter((n: Notification) => !n.read).length);
 
         // Check user details
         const details = userDetailsResponse.data;
@@ -436,18 +416,6 @@ const DashboardPage = () => {
     (classroom.division?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   );
 
-  const markAsRead = async (notificationId: number) => {
-    try {
-      await axios.post(`/api/notifications/${notificationId}/read`)
-      setNotifications(notifications.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
-      ))
-      setUnreadCount(prev => prev - 1)
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
-    }
-  }
-
   const handleClassroomNavigation = (classroomId: number) => {
     setIsNavigating(true);
     router.push(`/classroom/${classroomId}`);
@@ -591,38 +559,7 @@ const DashboardPage = () => {
                   >
                     <UserCog className="h-4 w-4" />
                   </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="relative">
-                        <Bell className="h-4 w-4" />
-                        {unreadCount > 0 && (
-                          <span className="absolute top-0 right-0 -mt-1 -mr-1 px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                            {unreadCount}
-                          </span>
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-80">
-                      {notifications.length === 0 ? (
-                        <DropdownMenuItem>No notifications</DropdownMenuItem>
-                      ) : (
-                        notifications.map((notification) => (
-                          <DropdownMenuItem 
-                            key={notification.id} 
-                            className="flex flex-col items-start"
-                            onClick={() => markAsRead(notification.id)}
-                          >
-                            <span className={`text-sm ${notification.read ? 'text-gray-500' : 'font-semibold'}`}>
-                              {notification.message}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {new Date(notification.createdAt).toLocaleString()}
-                            </span>
-                          </DropdownMenuItem>
-                        ))
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <NotificationDropdown userId={user?.id} />
                 </div>
               </div>
               <div className="flex justify-end space-x-4 mb-6">

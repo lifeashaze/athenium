@@ -11,8 +11,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const notificationId = parseInt(params.id, 10)
-  if (isNaN(notificationId)) {
+  const notificationId = params.id
+  if (!notificationId) {
     return NextResponse.json({ error: 'Invalid notification ID' }, { status: 400 })
   }
 

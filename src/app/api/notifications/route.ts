@@ -27,11 +27,17 @@ export async function GET(req: NextRequest) {
           }
         }
       },
+      select: {
+        id: true,
+        message: true,
+        type: true,
+        createdAt: true,
+        read: true
+      },
       orderBy: {
         createdAt: 'desc'
       }
     });
-
 
     return NextResponse.json({ notifications });
   } catch (error) {
