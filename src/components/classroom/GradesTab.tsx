@@ -31,11 +31,11 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
     }));
 
   // Calculate statistics
-  const averageScore = Math.round(
-    chartData.reduce((acc, curr) => acc + curr.score, 0) / chartData.length || 0
-  );
-  const highestScore = chartData.length ? Math.max(...chartData.map(item => item.score)) : 0;
-  const lowestScore = chartData.length ? Math.min(...chartData.map(item => item.score)) : 0;
+  const averageScore = chartData.length ? Math.round(
+    chartData.reduce((acc, curr) => acc + curr.score, 0) / chartData.length
+  ) : null;
+  const highestScore = chartData.length ? Math.max(...chartData.map(item => item.score)) : null;
+  const lowestScore = chartData.length ? Math.min(...chartData.map(item => item.score)) : null;
   const recentTrend = chartData.slice(-3).map(item => item.score);
   const isImproving = recentTrend.length >= 2 && recentTrend[recentTrend.length - 1] > recentTrend[0];
 
@@ -114,21 +114,25 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
           <CardTitle>Recent Assignments</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {chartData.slice(-5).reverse().map((assignment, index) => (
-              <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                <div>
-                  <p className="font-medium">{assignment.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(assignment.date)}
-                  </p>
+          {chartData.length > 0 ? (
+            <div className="space-y-2">
+              {chartData.slice(-5).reverse().map((assignment, index) => (
+                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
+                  <div>
+                    <p className="font-medium">{assignment.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(assignment.date)}
+                    </p>
+                  </div>
+                  <Badge variant={assignment.score >= 70 ? "blue" : "amber"}>
+                    {assignment.score}%
+                  </Badge>
                 </div>
-                <Badge variant={assignment.score >= 70 ? "blue" : "amber"}>
-                  {assignment.score}%
-                </Badge>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No graded assignments available</p>
+          )}
         </CardContent>
       </Card>
 
@@ -139,27 +143,31 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
             <CardTitle>Performance Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Average Score</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold">{averageScore}%</span>
-                  <Badge variant={averageScore >= 70 ? "blue" : "amber"}>
-                    {averageScore >= 70 ? "Good Standing" : "Needs Attention"}
-                  </Badge>
+            {chartData.length > 0 ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Average Score</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold">{averageScore ?? 0}%</span>
+                    <Badge variant={averageScore ? (averageScore >= 70 ? "blue" : "amber") : "amber"}>
+                      {averageScore ? (averageScore >= 70 ? "Good Standing" : "Needs Attention") : "No Data"}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Highest Score</p>
+                    <p className="text-xl font-semibold">{highestScore}%</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Lowest Score</p>
+                    <p className="text-xl font-semibold">{lowestScore}%</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Highest Score</p>
-                  <p className="text-xl font-semibold">{highestScore}%</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Lowest Score</p>
-                  <p className="text-xl font-semibold">{lowestScore}%</p>
-                </div>
-              </div>
-            </div>
+            ) : (
+              <p className="text-muted-foreground">No graded assignments available</p>
+            )}
           </CardContent>
         </Card>
 
@@ -168,29 +176,43 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
             <CardTitle>Progress Analysis</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Recent Trend</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold">
-                    {isImproving ? "Improving ↗" : "Declining ↘"}
-                  </span>
-                  <Badge variant={isImproving ? "blue" : "amber"}>
-                    {isImproving ? "Keep it up!" : "Room to grow"}
-                  </Badge>
+            {chartData.length > 0 ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Recent Trend</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-semibold">
+                      {recentTrend.length >= 2 ? (
+                        isImproving ? "Improving ↗" : "Declining ↘"
+                      ) : (
+                        "Not enough data"
+                      )}
+                    </span>
+                    {recentTrend.length >= 2 && (
+                      <Badge variant={isImproving ? "blue" : "amber"}>
+                        {isImproving ? "Keep it up!" : "Room to grow"}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
+                {recentTrend.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Last {recentTrend.length} Assignment{recentTrend.length > 1 ? 's' : ''}
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      {recentTrend.map((score, index) => (
+                        <Badge key={index} variant="outline" className="text-lg">
+                          {score}%
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Last 3 Assignments</p>
-                <div className="flex gap-2 mt-2">
-                  {recentTrend.map((score, index) => (
-                    <Badge key={index} variant="outline" className="text-lg">
-                      {score}%
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
+            ) : (
+              <p className="text-muted-foreground">No graded assignments available</p>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -9,8 +9,6 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -18,24 +16,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { FileText, Download } from "lucide-react"
 
 interface Assignment {
-  maxMarks: ReactNode;
-  id: number;
+  id: string;
   title: string;
-  type: 'theory' | 'lab';
-  deadline: string;
   description: string;
-  points: number;
+  maxMarks: number;
   requirements: string[];
+  deadline: string;
   classroom: {
-    id: number;
+    id: string;
     name: string;
     creator: {
-      email: ReactNode;
-      name: string;
+      name: ReactNode;
+      firstName: string;
+      lastName: string;
+      email: string;
     };
   };
   submissions: Array<{
-    id: number;
+    id: string;
     content: string;
     marks: number;
   }>;
@@ -70,9 +68,11 @@ const AssignmentPage = () => {
         const url = `/api/classrooms/${params.id}/assignments/${params.assignmentID}`;
         const response = await axios.get<Assignment>(url);
         setAssignment(response.data);
-        if (response.data.submissions.length > 0) {
-          setSubmissionUrl(response.data.submissions[0].content);
-          setMarks(response.data.submissions[0].marks);
+        
+        const userSubmission = response.data.submissions[0];
+        if (userSubmission) {
+          setSubmissionUrl(userSubmission.content);
+          setMarks(userSubmission.marks);
         }
       } catch (error) {
         console.error('Failed to fetch assignment:', error);
@@ -134,7 +134,7 @@ const AssignmentPage = () => {
   }, [file, params.id, params.assignmentID, router, isDeadlinePassed]);
 
   const isSubmissionLocked = useCallback(() => {
-    return isDeadlinePassed() || marks !== null;
+    return isDeadlinePassed() || (marks !== null && marks > 0);
   }, [marks, isDeadlinePassed]);
 
   if (isLoading) return <p>Loading...</p>;
@@ -205,7 +205,7 @@ const AssignmentPage = () => {
                             <Check className="text-green-500" />
                             <span className="text-green-500">Submitted</span>
                           </div>
-                          {marks !== null && (
+                          {isSubmissionLocked() && marks !== null && (
                             <div className="text-sm">
                               <span className="font-medium">Marks: </span>
                               <span>{marks} / {assignment?.maxMarks}</span>
@@ -266,7 +266,7 @@ const AssignmentPage = () => {
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
-                  {marks !== null && !isDeadlinePassed() && (
+                  {isSubmissionLocked() && (
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Submission Locked</AlertTitle>

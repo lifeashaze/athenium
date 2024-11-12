@@ -4,72 +4,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string, assignmentId: string } }
-) {
-  const { userId } = getAuth(req);
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const classroomId = params.id;
-    const assignmentId = params.assignmentId;
-
-    // Check if user is a member of the classroom
-    const membership = await prisma.membership.findUnique({
-      where: {
-        userId_classroomId: {
-          userId: userId,
-          classroomId: classroomId,
-        },
-      },
-    });
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const assignment = await prisma.assignment.findUnique({
-      where: {
-        id: assignmentId,
-        classroomId: classroomId,
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            firstName: true,
-          },
-        },
-        submissions: true,
-        classroom: {
-          select: {
-            id: true,
-            name: true,
-            creator: {
-              select: {
-                id: true,
-                email: true,
-              }
-            }
-          },
-        },
-      },
-    });
-
-    if (!assignment) {
-      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(assignment);
-  } catch (error) {
-    console.error('Error fetching assignment:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
 
 export async function PUT(
   req: NextRequest,
@@ -155,5 +90,66 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting assignment:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string; assignmentId: string } }
+) {
+  const { userId } = getAuth(req);
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    // Verify that we have the assignment ID
+    if (!params.assignmentId) {
+      return NextResponse.json({ error: 'Assignment ID is required' }, { status: 400 });
+    }
+
+    const assignment = await prisma.assignment.findUnique({
+      where: {
+        id: params.assignmentId,
+      },
+      include: {
+        classroom: {
+          select: {
+            id: true,
+            name: true,
+            creator: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
+        submissions: {
+          where: {
+            userId: userId,
+          },
+          select: {
+            id: true,
+            content: true,
+            marks: true,
+          },
+        },
+      },
+    });
+
+    if (!assignment) {
+      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(assignment);
+  } catch (error) {
+    console.error('Error fetching assignment:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }

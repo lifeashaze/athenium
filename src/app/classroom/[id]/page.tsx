@@ -17,6 +17,7 @@ import { EnrolledStudentsTab } from '@/components/classroom/EnrolledStudentsTab'
 import { Progress } from "@/components/ui/progress"
 import { CalendarDays, Users, BookOpen, Code } from 'lucide-react';
 import { GradesTab } from '@/components/classroom/GradesTab';
+import { Resend } from 'resend';
 
 interface Classroom {
   id: number;
@@ -189,6 +190,18 @@ const ClassroomPage = () => {
       const updatedAssignments = [...assignmentsRef.current, createdAssignment];
       setAssignments(updatedAssignments);
       assignmentsRef.current = updatedAssignments;
+
+      try {
+        await axios.post(`/api/classrooms/${params.id}/notify`, {
+          assignmentTitle: newAssignment.title,
+          assignmentDeadline: formattedDeadline,
+          description: newAssignment.description,
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notifications:', emailError);
+        // Don't throw error here - assignment was created successfully
+      }
+
       return createdAssignment;
     } catch (error) {
       console.error('Failed to create assignment:', error);
