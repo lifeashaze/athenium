@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import CodeExecution from '@/components/CodeExecution';
 import { AssignmentsTab } from '@/components/classroom/AssignmentsTab';
-import { ResourcesTab } from '@/components/classroom/ResourcesTab';
 import { EnrolledStudentsTab } from '@/components/classroom/EnrolledStudentsTab';
 import { Progress } from "@/components/ui/progress"
 import { CalendarDays, Users, BookOpen, Code } from 'lucide-react';
@@ -97,11 +96,9 @@ const ClassroomPage = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const assignmentsRef = useRef<Assignment[]>([]);
-  const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isUploading, setIsUploading] = useState(false);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
   const fetchClassroomData = useCallback(async () => {
@@ -135,16 +132,6 @@ const ClassroomPage = () => {
     }
   }, [params.id]);
 
-  const fetchResources = useCallback(async () => {
-    if (!params.id) return;
-    try {
-      const response = await axios.get(`/api/classrooms/${params.id}/resources`);
-      setResources(response.data);
-    } catch (error) {
-      console.error('Failed to fetch resources:', error);
-      setError('Failed to load resources. Please try again later.');
-    }
-  }, [params.id]);
 
   const fetchMembers = useCallback(async () => {
     if (!params.id) return;
@@ -173,11 +160,10 @@ const ClassroomPage = () => {
     if (isUserLoaded && user && params.id) {
       fetchClassroomData();
       fetchAssignments();
-      fetchResources();
       fetchMembers();
       fetchSubmissions();
     }
-  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchResources, fetchMembers, fetchSubmissions]);
+  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchMembers, fetchSubmissions]);
 
   const handleCreateAssignment = async (newAssignment: any): Promise<Assignment | null> => {
     try {
@@ -214,26 +200,6 @@ const ClassroomPage = () => {
     }
   };
 
-  const handleUploadResource = async (file: File, parentId?: string) => {
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    if (parentId) {
-      formData.append('parentId', parentId);
-    }
-
-    try {
-      const response = await axios.post(`/api/classrooms/${params.id}/resources`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setResources(prevResources => [...prevResources, response.data]);
-    } catch (error) {
-      console.error('Failed to upload resource:', error);
-      setError('Failed to upload resource. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const handleDeleteAssignment = async (assignmentId: number): Promise<boolean> => {
     try {
@@ -246,16 +212,6 @@ const ClassroomPage = () => {
       console.error('Failed to delete assignment:', error);
       setError('Failed to delete assignment. Please try again.');
       return false;
-    }
-  };
-
-  const handleDeleteResource = async (resourceId: number): Promise<void> => {
-    try {
-      await axios.delete(`/api/classrooms/${params.id}/resources/${resourceId}`);
-      setResources(prevResources => prevResources.filter(r => r.id !== resourceId));
-    } catch (error) {
-      console.error('Failed to delete resource:', error);
-      setError('Failed to delete resource. Please try again.');
     }
   };
 
@@ -317,7 +273,6 @@ const ClassroomPage = () => {
       <Tabs defaultValue="assignments" className="mb-8">
         <TabsList className="flex flex-wrap justify-center md:justify-around gap-2 mb-8">
           <TabsTrigger value="assignments" className="flex-grow sm:flex-grow-0">Assignments</TabsTrigger>
-          <TabsTrigger value="resources" className="flex-grow sm:flex-grow-0">Resources</TabsTrigger>
           <TabsTrigger value="grades" className="flex-grow sm:flex-grow-0">Grades</TabsTrigger>
           <TabsTrigger value="code-execution" className="flex-grow sm:flex-grow-0">Code Execution</TabsTrigger>
           <TabsTrigger value="enrolled-students" className="flex-grow sm:flex-grow-0">Students</TabsTrigger>
@@ -329,14 +284,6 @@ const ClassroomPage = () => {
             userRole={(user as any)?.role}
             onCreateAssignment={handleCreateAssignment}
             onDeleteAssignment={handleDeleteAssignment}
-          />
-        </TabsContent>
-        <TabsContent value="resources">
-          <ResourcesTab
-            resources={resources as any}
-            isUploading={isUploading}
-            onUpload={handleUploadResource}
-            onDelete={handleDeleteResource}
           />
         </TabsContent>
         <TabsContent value="grades">

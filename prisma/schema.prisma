@@ -21,6 +21,7 @@ model User {
   srn        String?     @unique
   prn        String?     @unique
   officeHours String?
+  notes       Note[]
   memberships    Membership[]
   classroomsCreated Classroom[] @relation("ClassroomCreator")
   assignmentsCreated Assignment[] @relation("AssignmentCreator")
@@ -51,6 +52,22 @@ model Classroom {
   assignments Assignment[]
   attendances Attendance[]
   resources   Resource[]
+  notes       Note[]
+}
+
+model Note {
+  id          String    @id @default(cuid())
+  title       String
+  content     String    @db.Text    // Using Text type for longer content
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tags        String[]  // For storing classroom titles and custom tags
+  isFavorite  Boolean   @default(false)
+  isArchived  Boolean   @default(false)
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  classroom   Classroom? @relation(fields: [classroomId], references: [id])
+  classroomId String?
 }
 
 model Membership {
