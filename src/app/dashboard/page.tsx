@@ -536,36 +536,102 @@ const DashboardPage = () => {
           </>
         )}
       </AnimatePresence>
-      <div className="min-h-screen bg-gray-100">
-        <main>
-          <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="px-4 py-6 sm:px-0">
-              <div className="flex justify-between items-center mb-8">
-                <h1 className="text-4xl font-bold">
+      
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <main className="py-8">
+          <div className="container max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Header Section - Redesigned */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
+              <div>
+                <h1 className="text-2xl font-medium text-gray-900 dark:text-gray-100">
                   {(() => {
                     const hour = new Date().getHours()
                     if (hour >= 5 && hour < 12) return "Good Morning"
                     if (hour >= 12 && hour < 18) return "Good Afternoon"
-                    if ((hour >= 18 && hour < 23)) return "Good Evening"
-                    return "Happy Late Night "
-                  })()}, {user?.firstName}
+                    return "Good Evening"
+                  })()},
+                  <span className="font-semibold ml-1">{user?.firstName}</span>
                 </h1>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => setShowOnboarding(true)}
-                    title="Update Profile Details"
-                  >
-                    <UserCog className="h-4 w-4" />
-                  </Button>
-                  <NotificationDropdown userId={user?.id} />
-                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Manage your classrooms and assignments
+                </p>
               </div>
-              <div className="flex justify-end space-x-4 mb-6">
+              <div className="flex items-center gap-3">
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setShowOnboarding(true)}
+                        className="h-9 w-9"
+                      >
+                        <UserCog className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Update Profile</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <NotificationDropdown userId={user?.id} />
+              </div>
+            </div>
+
+            {/* Action Bar - Redesigned */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search classrooms..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-full sm:w-[300px] h-9"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Join
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Join Classroom</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <Input
+                        type="text"
+                        value={joinCode}
+                        onChange={(e) => {
+                          setJoinCode(e.target.value)
+                          setJoinError(null)
+                        }}
+                        placeholder="Classroom Code"
+                      />
+                      {joinError && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{joinError}</AlertDescription>
+                        </Alert>
+                      )}
+                      <Button 
+                        onClick={joinClassroom} 
+                        className="w-full"
+                        disabled={isJoining}
+                      >
+                        {isJoining ? 'Joining...' : 'Join Classroom'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button><Plus className="mr-2 h-4 w-4" /> Create Classroom</Button>
+                    <Button size="sm" className="h-9">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create
+                    </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -622,181 +688,159 @@ const DashboardPage = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
-                <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline"><UserPlus className="mr-2 h-4 w-4" /> Join Classroom</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Join Classroom</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <Input
-                        type="text"
-                        value={joinCode}
-                        onChange={(e) => {
-                          setJoinCode(e.target.value)
-                          setJoinError(null)
-                        }}
-                        placeholder="Classroom Code"
-                      />
-                      {joinError && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{joinError}</AlertDescription>
-                        </Alert>
-                      )}
-                      <Button 
-                        onClick={joinClassroom} 
-                        className="w-full"
-                        disabled={isJoining}
-                      >
-                        {isJoining ? 'Joining...' : 'Join Classroom'}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
               </div>
-              
-              {classInvitations.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">
-                      Class Invitations
-                    </h2>
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-gray-400" />
-                        </TooltipTrigger>
-                        <TooltipContent sideOffset={5}>
-                          <p className="text-sm">These are pending invitations from professors to join their classrooms.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div className="space-y-2">
-                    {classInvitations.map((invitation) => (
-                      <ClassInvitationCard
-                        key={invitation.id}
-                        {...invitation}
-                        onAccept={handleAcceptInvitation}
-                        onDismiss={handleDismissInvitation}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+            </div>
 
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Your Classrooms</h2>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search classrooms..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 w-64"
-                  />
+            {/* Class Invitations Section - Redesigned */}
+            {classInvitations.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Pending Invitations
+                  </h2>
+                  <Badge variant="secondary" className="rounded-full">
+                    {classInvitations.length}
+                  </Badge>
                 </div>
+                <div className="space-y-2">
+                  {classInvitations.map((invitation) => (
+                    <ClassInvitationCard
+                      key={invitation.id}
+                      {...invitation}
+                      onAccept={handleAcceptInvitation}
+                      onDismiss={handleDismissInvitation}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Classrooms Section - Redesigned */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Your Classrooms
+                </h2>
+                <Badge variant="secondary" className="rounded-full">
+                  {filteredClassrooms.length}
+                </Badge>
               </div>
               
               {filteredClassrooms.length === 0 ? (
-                <p>No classrooms found.</p>
+                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg">
+                  <Book className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                    No classrooms found
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create or join a classroom to get started
+                  </p>
+                </div>
               ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {filteredClassrooms.map((classroom) => (
-                    <Card key={classroom.id} className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/50 max-w-none">
-                      <CardHeader className="pb-4 px-6">
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                          <div className="flex-1 w-full">
-                            <CardTitle className="text-xl font-semibold mb-3 line-clamp-2">
-                              {classroom.courseName}
-                            </CardTitle>
-                            <div className="flex flex-wrap items-center gap-2.5 mb-3">
-                              <Badge variant="default" className="px-3 py-1 text-sm">
+                    <Card 
+                      key={classroom.id} 
+                      className="group hover:shadow-md transition-all duration-300 overflow-hidden bg-white dark:bg-gray-800"
+                    >
+                      <div className="relative p-4">
+                        {/* Top Section */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-xs font-medium text-muted-foreground">
                                 {classroom.courseCode}
-                              </Badge>
-                              <Badge variant="secondary" className="px-3 py-1 text-sm">
-                                {classroom.year}
-                              </Badge>
-                              <Badge variant="outline" className="px-3 py-1 text-sm">
-                                Div {classroom.division}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 bg-muted/30 p-3.5 rounded-lg w-full sm:w-auto">
-                            <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <Users className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm text-muted-foreground">Taught by</span>
-                              <span className="text-sm font-medium">
-                                Prof. {classroom.creator?.firstName} {classroom.creator?.lastName}
                               </span>
                             </div>
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
+                              {classroom.courseName}
+                            </h3>
                           </div>
-                        </div>
-                      </CardHeader>
-
-                      <CardContent className="pb-5 px-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-4 bg-muted/30 px-5 py-3 rounded-lg flex-1">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
-                              classroom.pendingAssignments > 0 ? 'bg-red-100' : 'bg-green-100'
-                            }`}>
-                              <Book className={`h-6 w-6 ${
-                                classroom.pendingAssignments > 0 ? 'text-red-600' : 'text-green-600'
-                              }`} />
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Pending Assignments</div>
-                              <div className={`text-2xl font-semibold ${
-                                classroom.pendingAssignments > 0 ? 'text-red-600' : 'text-green-600'
-                              }`}>
-                                {classroom.pendingAssignments}
-                              </div>
-                            </div>
+                          <div className="flex flex-col gap-1.5">
+                            <Badge variant="outline" className="text-xs px-2 py-0.5">
+                              {classroom.year}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                              Div {classroom.division}
+                            </Badge>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        {/* Professor & Assignment Info */}
+                        <div className="flex items-center justify-between mb-3 p-2.5 bg-muted/30 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <UserCog className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs text-muted-foreground">Professor</p>
+                              <p className="text-sm font-medium truncate">
+                                {classroom.creator?.firstName} {classroom.creator?.lastName}
+                              </p>
+                            </div>
+                          </div>
+                          <div className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                            classroom.pendingAssignments > 0 
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' 
+                              : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          }`}>
+                            {classroom.pendingAssignments} Due
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2">
                           <Button 
                             variant="default" 
                             onClick={() => handleClassroomNavigation(classroom.id)}
-                            className="flex-1 h-12"
+                            className="flex-1 h-9 text-sm bg-primary hover:bg-primary/90"
                             disabled={isNavigating}
                           >
                             {isNavigating ? (
-                              <span className="flex items-center justify-center gap-2">
+                              <span className="flex items-center justify-center gap-1.5">
                                 <span className="animate-spin">⏳</span>
                                 Loading...
                               </span>
                             ) : (
-                              <span className="flex items-center justify-center gap-2 text-base">
-                                Enter Classroom
-                                <ArrowRight className="h-5 w-5" />
+                              <span className="flex items-center justify-center gap-1.5">
+                                Enter
+                                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                               </span>
                             )}
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setClassroomToLeave(classroom.id)}
-                            className="h-12 w-12"
-                          >
-                            <LogOut className="h-5 w-5" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => deleteClassroom(classroom.id)}
-                            className="hover:bg-destructive/90 h-12 w-12"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
+                          <TooltipProvider delayDuration={0}>
+                            <div className="flex gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setClassroomToLeave(classroom.id)}
+                                    className="h-9 w-9 hover:bg-muted"
+                                  >
+                                    <LogOut className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">Leave Classroom</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => deleteClassroom(classroom.id)}
+                                    className="h-9 w-9 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">Delete Classroom</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
                         </div>
-                      </CardContent>
+                      </div>
                     </Card>
                   ))}
                 </div>
@@ -805,6 +849,7 @@ const DashboardPage = () => {
           </div>
         </main>
       </div>
+
       <Dialog open={classroomToLeave !== null} onOpenChange={() => setClassroomToLeave(null)}>
         <DialogContent>
           <DialogHeader>
