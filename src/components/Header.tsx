@@ -23,7 +23,8 @@ export function Header() {
             athenium
           </Link>
         </div>
-        <div className='text-xs text-[#696969] font-semibold flex justify-between space-x-7'>
+        <div className="flex flex-grow justify-center">
+        <div className='text-xs text-[#696969] font-semibold flex justify-between space-x-7 '>
         <Link href="" >
             about
           </Link>
@@ -36,6 +37,7 @@ export function Header() {
           
           </Link>
         </div>
+        </div>
         <div className='space-x-3 flex items-center'>
         <SignedOut>
           <button
@@ -46,7 +48,7 @@ export function Header() {
           </button>
           <button 
             onClick={handleSignUp}
-            className="bg-primary text-white px-5 py-2 rounded-md text-xs font-semibold transition-colors hover:bg-primary-hover flex items-center h-[26px] "
+            className="bg-[#9966CC] text-black px-5 py-2 rounded-md text-xs font-semibold transition-colors hover:bg-primary-hover flex items-center h-[26px] "
            >
             Get Started <Play fill='#6A0DAD' color="#6A0DAD" size={6} className="ml-1"/>
            </button>
@@ -54,7 +56,7 @@ export function Header() {
         </div>
 
         <SignedIn> 
-          <div className='flex gap-5'>
+          <div className='flex gap-3'>
           <Link href="/dashboard"
             className="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-800 focus:bg-gray-800 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200 dark:focus:bg-gray-200"
           >
