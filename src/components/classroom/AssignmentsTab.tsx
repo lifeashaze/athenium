@@ -49,6 +49,13 @@ function getRemainingTime(dueDate: string) {
   return `${days}d ${hours}h remaining`
 }
 
+const getDefaultDeadline = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 7); // Add 7 days
+  date.setHours(23, 59, 0, 0); // Set to 11:59 PM
+  return date;
+};
+
 export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
   assignments,
   classroomId,
@@ -62,7 +69,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
     description: '',
     maxMarks: 25,
     requirements: [] as string[],
-    deadline: new Date()
+    deadline: getDefaultDeadline()
   });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
@@ -83,7 +90,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
       setLocalAssignments(prev => [...prev, createdAssignment]);
     }
     setIsDialogOpen(false);
-    setNewAssignment({ title: '', description: '', maxMarks: 25, requirements: [], deadline: new Date() });
+    setNewAssignment({ title: '', description: '', maxMarks: 25, requirements: [], deadline: getDefaultDeadline() });
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {

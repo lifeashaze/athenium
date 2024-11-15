@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { format, parseISO, isPast } from "date-fns"
 import { useEffect, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
-import { Clock, ChevronRight } from "lucide-react"
+import { Clock, ChevronRight, CheckCircle2, AlertCircle, FileCheck } from "lucide-react"
 
 // Update type to match Prisma schema
 type Assignment = {
@@ -83,12 +83,12 @@ const Page = () => {
     new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
   )
 
-  // Sort submitted assignments by most recent submission and take only 2
+  // Sort submitted assignments by most recent submission and take only 6
   const sortedRecentSubmissions = recentSubmissions
     .sort((a, b) => 
       new Date(b.submissions[0].submittedAt).getTime() - new Date(a.submissions[0].submittedAt).getTime()
     )
-    .slice(0, 2)
+    .slice(0, 6)
 
   const formatDeadline = (deadline: string) => {
     const date = parseISO(deadline)
@@ -117,7 +117,13 @@ const Page = () => {
             <h2 id="pending-assignments" className="text-2xl font-bold mb-4">Pending Assignments</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sortedPendingAssignments.length === 0 ? (
-                <p className="text-muted-foreground">No pending assignments</p>
+                <Card className="col-span-full p-6 text-center">
+                  <div className="flex flex-col items-center">
+                    <CheckCircle2 className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-2 font-medium">You&apos;re all caught up!</p>
+                    <p className="text-sm text-muted-foreground">There are no pending assignments at the moment. Check back later for new assignments.</p>
+                  </div>
+                </Card>
               ) : (
                 sortedPendingAssignments.map((assignment) => (
                   <Card key={assignment.id} className="overflow-hidden flex flex-col h-[200px]">
@@ -161,7 +167,13 @@ const Page = () => {
             <h2 id="overdue-assignments" className="text-2xl font-bold mb-4">Overdue Assignments</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sortedOverdueAssignments.length === 0 ? (
-                <p className="text-muted-foreground">No overdue assignments</p>
+                <Card className="col-span-full p-6 text-center">
+                  <div className="flex flex-col items-center">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-2 font-medium">Great job staying on track!</p>
+                    <p className="text-sm text-muted-foreground">You have no overdue assignments. Keep up the good work!</p>
+                  </div>
+                </Card>
               ) : (
                 sortedOverdueAssignments.map((assignment) => (
                   <Card key={assignment.id} className="overflow-hidden flex flex-col h-[200px]">
@@ -204,7 +216,13 @@ const Page = () => {
             <h2 id="recent-submissions" className="text-2xl font-bold mb-4">Recent Submissions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sortedRecentSubmissions.length === 0 ? (
-                <p className="text-muted-foreground">No recent submissions</p>
+                <Card className="col-span-full p-6 text-center">
+                  <div className="flex flex-col items-center">
+                    <FileCheck className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-2 font-medium">No submissions yet</p>
+                    <p className="text-sm text-muted-foreground">Once you submit your assignments, they will appear here. Check your pending assignments to get started!</p>
+                  </div>
+                </Card>
               ) : (
                 sortedRecentSubmissions.map((assignment) => (
                   <Card key={assignment.id} className="overflow-hidden flex flex-col h-[200px]">

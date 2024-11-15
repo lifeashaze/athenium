@@ -39,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const classroomId = params.id;
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const category = formData.get('parentId') as string | null;
+    const parentId = formData.get('parentId') as string | null;
     const customFileName = formData.get('fileName') as string;
 
     if (!file) {
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         url: fileUrl,
         uploaderId: userId,
         classroomId,
-        category: category || null,
+        category: parentId || null
       },
       include: {
         uploader: true,
