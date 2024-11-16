@@ -32,7 +32,7 @@ export async function POST(
       });
       
       return resend.emails.send({
-        from: 'delivered@resend.dev',
+        from: 'Classroom <classroom@athenium.abh1shek.xyz>',
         to: member.user.email,
         subject: `New Assignment: ${assignmentTitle}`,
         html: `
@@ -48,7 +48,7 @@ export async function POST(
                   line-height: 1.6;
                   margin: 0;
                   padding: 0;
-                  background-color: #f9fafb;
+                  background-color: #fafafa;
                 }
                 .container {
                   max-width: 600px;
@@ -57,7 +57,7 @@ export async function POST(
                   background-color: #ffffff;
                 }
                 .header {
-                  background-color: #4f46e5;
+                  background-color: #000000;
                   color: white;
                   padding: 20px;
                   text-align: center;
@@ -67,54 +67,57 @@ export async function POST(
                   padding: 20px;
                   background-color: white;
                   border-radius: 0 0 8px 8px;
-                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
                 }
                 .assignment-title {
-                  color: #1f2937;
+                  color: #000000;
                   font-size: 24px;
                   font-weight: bold;
                   margin-bottom: 16px;
                 }
                 .deadline {
-                  background-color: #f3f4f6;
+                  background-color: #fafafa;
                   padding: 12px;
                   border-radius: 6px;
                   margin-bottom: 16px;
+                  border: 1px solid #eaeaea;
                 }
                 .deadline-label {
-                  color: #4b5563;
-                  font-weight: 600;
+                  color: #666666;
+                  font-weight: 500;
                   display: block;
                   margin-bottom: 4px;
                 }
                 .deadline-time {
-                  color: #dc2626;
+                  color: #000000;
                   font-weight: bold;
                 }
                 .description {
-                  color: #4b5563;
-                  background-color: #f9fafb;
+                  color: #444444;
+                  background-color: #fafafa;
                   padding: 16px;
                   border-radius: 6px;
                   margin-bottom: 20px;
+                  border: 1px solid #eaeaea;
                 }
                 .button {
                   display: inline-block;
                   padding: 12px 24px;
-                  background-color: #4f46e5;
+                  background-color: #000000;
                   color: white;
                   text-decoration: none;
                   border-radius: 6px;
-                  font-weight: 600;
+                  font-weight: 500;
                   margin-top: 16px;
+                  transition: background-color 0.2s ease;
                 }
                 .button:hover {
-                  background-color: #4338ca;
+                  background-color: #333333;
                 }
                 .footer {
                   text-align: center;
                   margin-top: 20px;
-                  color: #6b7280;
+                  color: #666666;
                   font-size: 14px;
                 }
                 .icon {
@@ -144,10 +147,6 @@ export async function POST(
                     <strong>Assignment Details:</strong><br>
                     ${description}
                   </div>
-                  
-                  <a href="${process.env.NEXT_PUBLIC_APP_URL}/assignments" class="button">
-                    View Assignment
-                  </a>
                   
                   <div class="footer">
                     <p>This is an automated message from your classroom management system.</p>
