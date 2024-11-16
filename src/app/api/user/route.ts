@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
         srn: true,
         prn: true,
         officeHours: true,
+        role: true,
       },
     })
 

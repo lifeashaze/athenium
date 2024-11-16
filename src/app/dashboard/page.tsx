@@ -61,7 +61,7 @@ interface ClassInvitation {
 }
 
 const DashboardPage = () => {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const { toast } = useToast();
   const router = useRouter();
   const [joinCode, setJoinCode] = useState<string>('');
@@ -94,6 +94,9 @@ const DashboardPage = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [classInvitations, setClassInvitations] = useState<ClassInvitation[]>([]);
   const [classroomToLeave, setClassroomToLeave] = useState<number | null>(null);
+  const [classroomToDelete, setClassroomToDelete] = useState<number | null>(null);
+  const [showFinalDeleteConfirm, setShowFinalDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -159,8 +162,24 @@ const DashboardPage = () => {
     }
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+  
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return <div>Please sign in to access the dashboard.</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center text-gray-600 dark:text-gray-300">
+          Please sign in to access the dashboard.
+        </div>
+      </div>
+    );
   }
 
   // Add this before the loading check
@@ -391,24 +410,30 @@ const DashboardPage = () => {
     }
   }
 
-  const deleteClassroom = async (classroomId: number) => {
+  const handleDeleteClassroom = async () => {
+    if (!classroomToDelete) return;
+    
     try {
-      await axios.delete(`/api/classrooms/${classroomId}`)
-      setClassrooms(classrooms.filter(classroom => classroom.id !== classroomId))
+      await axios.delete(`/api/classrooms/${classroomToDelete}`);
+      setClassrooms(classrooms.filter(classroom => classroom.id !== classroomToDelete));
       toast({
         variant: "default",
         title: "Success",
         description: "Classroom deleted successfully",
-      })
+      });
     } catch (error) {
-      console.error('Failed to delete classroom:', error)
+      console.error('Failed to delete classroom:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to delete classroom",
-      })
+      });
+    } finally {
+      setClassroomToDelete(null);
+      setShowFinalDeleteConfirm(false);
+      setDeleteConfirmText('');  // Clear the confirmation text
     }
-  }
+  };
 
   const filteredClassrooms = classrooms.filter(classroom =>
     (classroom.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
@@ -817,9 +842,9 @@ const DashboardPage = () => {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => setClassroomToLeave(classroom.id)}
-                                    className="h-9 w-9 hover:bg-muted"
+                                    className="h-9 w-9 hover:bg-red-50 dark:hover:bg-red-900/20"
                                   >
-                                    <LogOut className="h-4 w-4 text-muted-foreground" />
+                                    <LogOut className="h-4 w-4 text-red-500" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom">Leave Classroom</TooltipContent>
@@ -829,7 +854,7 @@ const DashboardPage = () => {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => deleteClassroom(classroom.id)}
+                                    onClick={() => setClassroomToDelete(classroom.id)}
                                     className="h-9 w-9 hover:bg-red-50 dark:hover:bg-red-900/20"
                                   >
                                     <Trash2 className="h-4 w-4 text-red-500" />
@@ -868,6 +893,79 @@ const DashboardPage = () => {
               }}
             >
               Leave Classroom
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={classroomToDelete !== null} onOpenChange={() => setClassroomToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Classroom</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-200 rounded-lg">
+              <Info className="h-5 w-5 flex-shrink-0" />
+              <p className="text-sm">This action will permanently delete the classroom and all its data.</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete this classroom? This will remove all assignments, submissions, and student data.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setClassroomToDelete(null)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowFinalDeleteConfirm(true)}
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showFinalDeleteConfirm} onOpenChange={setShowFinalDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600 dark:text-red-400">
+              Are you absolutely sure?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="font-semibold">
+              This action cannot be undone. This will permanently delete the classroom and all associated data.
+            </p>
+            <div className="p-3 bg-red-50 dark:bg-red-950/50 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">
+                Please type <span className="font-mono font-bold">
+                  {classrooms.find(c => c.id === classroomToDelete)?.courseName}
+                </span> to confirm.
+              </p>
+              <Input 
+                className="mt-2"
+                placeholder="Type the course name to confirm"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => {
+              setShowFinalDeleteConfirm(false);
+              setClassroomToDelete(null);
+              setDeleteConfirmText('');  // Clear the input when canceling
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              id="final-delete-button"
+              variant="destructive" 
+              onClick={handleDeleteClassroom}
+              disabled={deleteConfirmText.toLowerCase() !== (classrooms.find(c => c.id === classroomToDelete)?.courseName || '').toLowerCase()}
+            >
+              Delete Classroom
             </Button>
           </div>
         </DialogContent>

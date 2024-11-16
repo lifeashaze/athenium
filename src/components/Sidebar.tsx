@@ -28,14 +28,6 @@ export function SidebarDemo() {
         <IconFiles className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
-
-    {
-      label: "Analytics",
-      href: "/analytics",
-      icon: (
-        <IconChartBar className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-      ),
-    },
     // New User Settings link
     {
       label: "User Settings",

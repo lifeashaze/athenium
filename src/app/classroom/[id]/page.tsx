@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
-import { ClipLoader } from 'react-spinners';
+import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,10 +13,8 @@ import { Badge } from "@/components/ui/badge"
 import CodeExecution from '@/components/CodeExecution';
 import { AssignmentsTab } from '@/components/classroom/AssignmentsTab';
 import { EnrolledStudentsTab } from '@/components/classroom/EnrolledStudentsTab';
-import { Progress } from "@/components/ui/progress"
-import { CalendarDays, Users, BookOpen, Code } from 'lucide-react';
+import { Users, BookOpen } from 'lucide-react';
 import { GradesTab } from '@/components/classroom/GradesTab';
-import { Resend } from 'resend';
 
 interface Classroom {
   id: number;
@@ -36,7 +34,7 @@ interface User {
   id: string;
   firstName: string;
   email: string;
-  role: string;
+  role: "STUDENT" | "PROFESSOR" | "ADMIN";
 }
 
 interface Assignment {
@@ -45,6 +43,8 @@ interface Assignment {
   type: 'theory' | 'lab';
   deadline: string;
   maxMarks: number;
+  description?: string;
+  requirements?: string[];
   creator: {
     firstName: string;
   };
@@ -71,8 +71,11 @@ interface Member {
 
 interface Submission {
   id: string;
+  submittedAt: Date | string;
+  content: string;
+  userId: string;
+  assignmentId: string;
   marks: number;
-  submittedAt: string;
   assignment: {
     id: string;
     title: string;
@@ -80,17 +83,12 @@ interface Submission {
   };
 }
 
-function getProgress(startDate: string, endDate: string) {
-  const start = new Date(startDate).getTime()
-  const end = new Date(endDate).getTime()
-  const now = new Date().getTime()
-  return Math.round(((now - start) / (end - start)) * 100)
-}
 
 const ITEMS_PER_PAGE = 10;
 
 const ClassroomPage = () => {
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user: clerkUser, isLoaded: isUserLoaded } = useUser();
+  const [dbUser, setDbUser] = useState<User | null>(null);
   const params = useParams();
   const [classroom, setClassroom] = useState<Classroom | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -100,6 +98,8 @@ const ClassroomPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(true);
 
   const fetchClassroomData = useCallback(async () => {
     if (!params.id) return;
@@ -107,10 +107,6 @@ const ClassroomPage = () => {
     try {
       const response = await axios.get(`/api/classrooms/${params.id}`);
       setClassroom(response.data.classroom);
-
-      // Log classroom and creator details
-      console.log('Fetched classroom data:', response.data.classroom);
-      console.log('Creator details:', response.data.classroom.creator);
 
     } catch (err) {
       console.error('Failed to fetch classroom data:', err);
@@ -123,12 +119,19 @@ const ClassroomPage = () => {
   const fetchAssignments = useCallback(async () => {
     if (!params.id) return;
     try {
-      const response = await axios.get(`/api/classrooms/${params.id}/assignments`);
+      setIsLoadingAssignments(true);
+      const response = await axios.get(`/api/classrooms/${params.id}/assignments`, {
+        params: {
+          includeSubmissions: true
+        }
+      });
       setAssignments(response.data);
       assignmentsRef.current = response.data;
     } catch (error) {
       console.error('Failed to fetch assignments:', error);
       setError('Failed to load assignments. Please try again later.');
+    } finally {
+      setIsLoadingAssignments(false);
     }
   }, [params.id]);
 
@@ -137,7 +140,6 @@ const ClassroomPage = () => {
     if (!params.id) return;
     try {
       const response = await axios.get(`/api/classrooms/${params.id}/members`);
-      console.log('Fetched members:', response.data);
       setMembers(response.data);
     } catch (error) {
       console.error('Failed to fetch members:', error);
@@ -156,37 +158,51 @@ const ClassroomPage = () => {
     }
   }, [params.id]);
 
+  const fetchUserData = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/user');
+      console.log('User data from DB:', response.data);
+      setDbUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    }
+  }, []);
+
   useEffect(() => {
-    if (isUserLoaded && user && params.id) {
+    if (isUserLoaded && clerkUser) {
+      fetchUserData();
+    }
+  }, [isUserLoaded, clerkUser, fetchUserData]);
+
+  useEffect(() => {
+    if (isUserLoaded && clerkUser && params.id) {
       fetchClassroomData();
       fetchAssignments();
       fetchMembers();
       fetchSubmissions();
     }
-  }, [isUserLoaded, user, params.id, fetchClassroomData, fetchAssignments, fetchMembers, fetchSubmissions]);
+  }, [isUserLoaded, clerkUser, params.id, fetchClassroomData, fetchAssignments, fetchMembers, fetchSubmissions]);
 
   const handleCreateAssignment = async (newAssignment: any): Promise<Assignment | null> => {
     try {
+      setIsCreatingAssignment(true);
+      
       const formattedDeadline = newAssignment.deadline.toISOString();
       const response = await axios.post(`/api/classrooms/${params.id}/assignments`, {
         ...newAssignment,
         deadline: formattedDeadline,
       });
       const createdAssignment = response.data;
+      
       const updatedAssignments = [...assignmentsRef.current, createdAssignment];
       setAssignments(updatedAssignments);
       assignmentsRef.current = updatedAssignments;
 
-      try {
-        await axios.post(`/api/classrooms/${params.id}/notify`, {
-          assignmentTitle: newAssignment.title,
-          assignmentDeadline: formattedDeadline,
-          description: newAssignment.description,
-        });
-      } catch (emailError) {
-        console.error('Failed to send email notifications:', emailError);
-        // Don't throw error here - assignment was created successfully
-      }
+      await axios.post(`/api/classrooms/${params.id}/notify`, {
+        assignmentTitle: newAssignment.title,
+        assignmentDeadline: formattedDeadline,
+        description: newAssignment.description,
+      });
 
       return createdAssignment;
     } catch (error) {
@@ -197,6 +213,8 @@ const ClassroomPage = () => {
         setError('An unexpected error occurred. Please try again.');
       }
       return null;
+    } finally {
+      setIsCreatingAssignment(false);
     }
   };
 
@@ -215,17 +233,58 @@ const ClassroomPage = () => {
     }
   };
 
+  const handleUpdateAssignment = async (assignmentId: number, updatedData: Partial<Assignment>): Promise<boolean> => {
+    try {
+      const formattedData = {
+        ...updatedData,
+        deadline: updatedData.deadline 
+          ? (typeof updatedData.deadline === 'string' 
+              ? updatedData.deadline 
+              : new Date(updatedData.deadline).toISOString())
+          : new Date().toISOString()
+      };
+
+      await axios.put(`/api/classrooms/${params.id}/assignments/${assignmentId}`, formattedData);
+      
+      const updatedAssignments = assignmentsRef.current.map(assignment => 
+        assignment.id === assignmentId 
+          ? { ...assignment, ...updatedData, deadline: formattedData.deadline }
+          : assignment
+      );
+      
+      setAssignments(updatedAssignments);
+      assignmentsRef.current = updatedAssignments;
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to update assignment:', error);
+      setError('Failed to update assignment. Please try again.');
+      return false;
+    }
+  };
+
   const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
 
   if (!isUserLoaded || isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <ClipLoader size={50} color={"#123abc"} loading={true} />
+      <div className="container mx-auto p-6 max-w-7xl">
+        <Skeleton className="h-[200px] w-full mb-8 rounded-lg" />
+        <div className="space-y-2 mb-8">
+          <Skeleton className="h-10 w-[200px]" />
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+            <Skeleton className="h-[100px] rounded-lg" />
+            <Skeleton className="h-[100px] rounded-lg" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-[400px] w-full rounded-lg" />
+        </div>
       </div>
     );
   }
 
-  if (!user) return <p className="text-center text-xl mt-10">You need to be logged in</p>;
+  if (!clerkUser) return <p className="text-center text-xl mt-10">You need to be logged in</p>;
 
   if (error) return <p className="text-center text-xl mt-10 text-red-500">{error}</p>;
 
@@ -266,7 +325,6 @@ const ClassroomPage = () => {
               </div>
             </div>
           </div>
-          <p className="text-sm sm:text-base text-muted-foreground">{classroom.courseName}</p>
         </CardContent>
       </Card>
 
@@ -280,17 +338,21 @@ const ClassroomPage = () => {
         <TabsContent value="assignments">
           <AssignmentsTab
             assignments={assignments}
+            submissions={submissions}
             classroomId={params.id as string}
-            userRole={(user as any)?.role}
+            userRole={dbUser?.role}
             onCreateAssignment={handleCreateAssignment}
             onDeleteAssignment={handleDeleteAssignment}
+            onUpdateAssignment={handleUpdateAssignment}
+            isCreatingAssignment={isCreatingAssignment}
+            isLoading={isLoadingAssignments}
           />
         </TabsContent>
         <TabsContent value="grades">
           <GradesTab
             submissions={submissions}
             assignments={assignments}
-            userId={user?.id}
+            userId={clerkUser?.id}
           />
         </TabsContent>
         <TabsContent value="code-execution">

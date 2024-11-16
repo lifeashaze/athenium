@@ -7,7 +7,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   try {
     const classroomId = params.id;
     const members = await prisma.membership.findMany({
-      where: { classroomId },
+      where: { 
+        classroomId,
+        // user: {
+        //   role: 'STUDENT'  // Only fetch students
+        // }
+      },
       include: {
         user: {
           select: {
@@ -19,9 +24,16 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             rollNo: true,
             srn: true,
             prn: true,
+            year: true,
+            division: true,
           },
         },
       },
+      orderBy: {
+        user: {
+          rollNo: 'asc'
+        }
+      }
     });
 
     const formattedMembers = members.map(({ user }) => ({
@@ -29,10 +41,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      role: user.role,
       rollNo: user.rollNo,
       srn: user.srn,
       prn: user.prn,
+      year: user.year,
+      division: user.division,
     }));
 
     return NextResponse.json(formattedMembers);

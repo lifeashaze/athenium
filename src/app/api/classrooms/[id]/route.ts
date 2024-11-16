@@ -100,17 +100,49 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'You are not authorized to delete this classroom' }, { status: 403 });
     }
 
-    // Delete all memberships associated with the classroom
-    await prisma.membership.deleteMany({
-      where: { classroomId: classroomId },
+    // Delete all related records in the correct order to avoid foreign key constraints
+    await prisma.$transaction(async (tx) => {
+      // Delete submissions for all assignments in the classroom
+      await tx.submission.deleteMany({
+        where: {
+          assignment: {
+            classroomId: classroomId
+          }
+        }
+      });
+
+      // Delete assignments
+      await tx.assignment.deleteMany({
+        where: { classroomId: classroomId }
+      });
+
+      // Delete attendances
+      await tx.attendance.deleteMany({
+        where: { classroomId: classroomId }
+      });
+
+      // Delete resources
+      await tx.resource.deleteMany({
+        where: { classroomId: classroomId }
+      });
+
+      // Delete notes
+      await tx.note.deleteMany({
+        where: { classroomId: classroomId }
+      });
+
+      // Delete memberships
+      await tx.membership.deleteMany({
+        where: { classroomId: classroomId }
+      });
+
+      // Finally, delete the classroom
+      await tx.classroom.delete({
+        where: { id: classroomId }
+      });
     });
 
-    // Delete the classroom
-    await prisma.classroom.delete({
-      where: { id: classroomId },
-    });
-
-    return NextResponse.json({ message: 'Classroom deleted successfully' });
+    return NextResponse.json({ message: 'Classroom and all associated data deleted successfully' });
   } catch (error) {
     console.error('Error deleting classroom:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
