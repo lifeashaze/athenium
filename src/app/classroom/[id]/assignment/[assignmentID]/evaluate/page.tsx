@@ -4,10 +4,6 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { Skeleton } from "@/components/ui/skeleton"
-import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { 
   Pagination, 
   PaginationContent, 
-  PaginationEllipsis, 
   PaginationItem, 
   PaginationLink, 
   PaginationNext, 
@@ -97,8 +92,9 @@ const EvaluationClient = () => {
   const [selectedSubmissionIndex, setSelectedSubmissionIndex] = useState<number | null>(null);
   const [modalSearchTerm, setModalSearchTerm] = useState('');
   const [marks, setMarks] = useState<number | null>(null);
-  const [updateStatus, setUpdateStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const { toast } = useToast()
+  const [isSaving, setIsSaving] = useState(false);
+  const [sortedSubmissions, setSortedSubmissions] = useState<Submission[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchAssignmentAndSubmissions();
@@ -120,8 +116,10 @@ const EvaluationClient = () => {
         axios.get(`/api/classrooms/${params.id}/assignments/${params.assignmentID}/submissions`)
       ]);
       setAssignment(assignmentResponse.data);
+      
+      const initialSortedSubmissions = sortModalSubmissions(submissionsResponse.data);
       setSubmissions(submissionsResponse.data);
-      console.log('Fetched submissions:', submissionsResponse.data); // Add this log
+      setSortedSubmissions(initialSortedSubmissions);
     } catch (err) {
       console.error('Failed to fetch assignment or submissions:', err);
       setError('Failed to load assignment or submissions. Please try again later.');
@@ -197,45 +195,77 @@ const EvaluationClient = () => {
     });
   };
 
-  const handleNextSubmission = async () => {
-    if (selectedSubmissionIndex !== null && selectedSubmissionIndex < submissions.length - 1) {
-      // Save current marks before moving to next submission
-      if (selectedSubmission && marks !== null) {
-        await handleMarksUpdate(selectedSubmission.id, marks);
-      }
+  // Helper function to sort submissions (unevaluated first, then by roll number)
+  const sortModalSubmissions = (submissions: Submission[]) => {
+    return submissions.sort((a, b) => {
+      // First, sort by evaluation status (unevaluated first)
+      const aEvaluated = a.marks !== null && a.marks !== undefined && a.marks > 0;
+      const bEvaluated = b.marks !== null && b.marks !== undefined && b.marks > 0;
       
-      // Move to next submission
-      const nextIndex = selectedSubmissionIndex + 1;
-      setSelectedSubmissionIndex(nextIndex);
-      const nextSubmission = submissions[nextIndex];
-      setSelectedSubmission(nextSubmission);
-      setMarks(nextSubmission.marks || null);
+      if (!aEvaluated && bEvaluated) return -1;
+      if (aEvaluated && !bEvaluated) return 1;
+      
+      // If both are evaluated or both are not evaluated, sort by roll number
+      const aRollNo = a.user.rollNo || '';
+      const bRollNo = b.user.rollNo || '';
+      return aRollNo.localeCompare(bRollNo);
+    });
+  };
+
+  const handleNextSubmission = () => {
+    if (selectedSubmissionIndex !== null) {
+      const filteredSubmissions = filterSubmissions(sortedSubmissions, modalSearchTerm);
+      
+      if (selectedSubmissionIndex < filteredSubmissions.length - 1) {
+        const nextIndex = selectedSubmissionIndex + 1;
+        setSelectedSubmissionIndex(nextIndex);
+        setSelectedSubmission(filteredSubmissions[nextIndex]);
+        setMarks(filteredSubmissions[nextIndex].marks || null);
+      }
     }
   };
 
   const handlePreviousSubmission = () => {
     if (selectedSubmissionIndex !== null && selectedSubmissionIndex > 0) {
-      setSelectedSubmissionIndex(selectedSubmissionIndex - 1);
-      setSelectedSubmission(submissions[selectedSubmissionIndex - 1]);
+      const filteredSubmissions = filterSubmissions(sortedSubmissions, modalSearchTerm);
+      
+      const prevIndex = selectedSubmissionIndex - 1;
+      setSelectedSubmissionIndex(prevIndex);
+      setSelectedSubmission(filteredSubmissions[prevIndex]);
+      setMarks(filteredSubmissions[prevIndex].marks || null);
     }
   };
 
   const handleMarksUpdate = async (submissionId: number, marks: number) => {
     try {
-      setUpdateStatus('idle'); // Reset status before update
+      setIsSaving(true);
       await axios.patch(`/api/submissions/${submissionId}/marks`, { marks });
-      // Update the local state
-      setSubmissions(submissions.map(sub => 
+      
+      const updatedSubmissions = submissions.map(sub => 
         sub.id === submissionId ? { ...sub, marks } : sub
-      ));
-      setUpdateStatus('success');
+      );
+      const updatedSortedSubmissions = sortedSubmissions.map(sub => 
+        sub.id === submissionId ? { ...sub, marks } : sub
+      );
+      
+      setSubmissions(updatedSubmissions);
+      setSortedSubmissions(updatedSortedSubmissions);
+      
+      toast({
+        title: "Marks Updated",
+        description: "The marks have been saved successfully.",
+        variant: "default",
+      });
     } catch (error) {
       console.error('Failed to update marks:', error);
-      setUpdateStatus('error');
+      toast({
+        title: "Error",
+        description: "Failed to update marks. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-
-    // Reset status after 3 seconds
-    setTimeout(() => setUpdateStatus('idle'), 3000);
   };
 
   const getEvaluationStatus = (marks: number | null | undefined) => {
@@ -356,9 +386,14 @@ const EvaluationClient = () => {
               <DialogTrigger asChild>
                 <Button
                   onClick={() => {
-                    setSelectedSubmission(submissions[0]);
-                    setSelectedSubmissionIndex(0);
-                    setMarks(submissions[0]?.marks || null);
+                    const filteredSubmissions = filterSubmissions(sortedSubmissions, modalSearchTerm);
+                    const firstUnevaluatedIndex = filteredSubmissions.findIndex(
+                      sub => !sub.marks || sub.marks === 0
+                    );
+                    const initialIndex = firstUnevaluatedIndex !== -1 ? firstUnevaluatedIndex : 0;
+                    setSelectedSubmission(filteredSubmissions[initialIndex]);
+                    setSelectedSubmissionIndex(initialIndex);
+                    setMarks(filteredSubmissions[initialIndex]?.marks || null);
                   }}
                 >
                   Evaluate Submissions
@@ -383,12 +418,7 @@ const EvaluationClient = () => {
                       />
                     </div>
                     <ScrollArea className="h-[calc(100%-60px)]">
-                      {filterSubmissions(submissions, modalSearchTerm)
-                        .sort((a, b) => {
-                          const aRollNo = a.user.rollNo || '';
-                          const bRollNo = b.user.rollNo || '';
-                          return aRollNo.localeCompare(bRollNo);
-                        })
+                      {filterSubmissions(sortedSubmissions, modalSearchTerm)
                         .map((submission, idx) => {
                           const isSelected = selectedSubmission?.id === submission.id;
                           return (
@@ -421,81 +451,58 @@ const EvaluationClient = () => {
                   {/* Main Content */}
                   <div className="flex-1 flex flex-col p-4">
                     {/* Student Info Header */}
-                    <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="flex justify-between items-center mb-4">
                       <div>
-                        <h3 className="font-semibold">Full Name</h3>
-                        <p>{`${selectedSubmission?.user.firstName} ${selectedSubmission?.user.lastName || ''}`}</p>
+                        <h3 className="text-lg font-semibold">{`${selectedSubmission?.user.firstName} ${selectedSubmission?.user.lastName || ''}`}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Submitted: {selectedSubmission && formatDate(selectedSubmission.submittedAt)}
+                        </p>
                       </div>
-                      <div>
-                        <h3 className="font-semibold">Email</h3>
-                        <p>{selectedSubmission?.user.email}</p>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">Roll Number</h3>
-                        <p>{selectedSubmission?.user.rollNo || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">SRN</h3>
-                        <p>{selectedSubmission?.user.srn || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">PRN</h3>
-                        <p>{selectedSubmission?.user.prn || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">Submitted At</h3>
-                        <p>{selectedSubmission && formatDate(selectedSubmission.submittedAt)}</p>
-                      </div>
-                    </div>
 
-                    {/* Marks Input */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <Label htmlFor="marks" className="font-semibold">
-                        Marks (out of {assignment?.maxMarks})
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <Input
-                            id="marks"
-                            type="number"
-                            min="0"
-                            max={assignment?.maxMarks}
-                            value={marks ?? ''}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? null : 
-                                Math.min(
-                                  Math.max(0, parseInt(e.target.value) || 0),
-                                  assignment?.maxMarks || 0
-                                );
-                              setMarks(value);
-                            }}
-                            className="w-20 text-center pr-8"
-                            placeholder="-"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                            / {assignment?.maxMarks}
-                          </span>
+                      {/* Marks Input */}
+                      <div className="flex items-center gap-4">
+                        <Label htmlFor="marks" className="font-semibold">
+                          Marks (out of {assignment?.maxMarks})
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <Input
+                              id="marks"
+                              type="number"
+                              min="0"
+                              max={assignment?.maxMarks}
+                              value={marks ?? ''}
+                              onChange={(e) => {
+                                const value = e.target.value === '' ? null : 
+                                  Math.min(
+                                    Math.max(0, parseInt(e.target.value) || 0),
+                                    assignment?.maxMarks || 0
+                                  );
+                                setMarks(value);
+                              }}
+                              className="w-20 text-center pr-8"
+                              placeholder="-"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                              / {assignment?.maxMarks}
+                            </span>
+                          </div>
+                          <Button 
+                            onClick={() => selectedSubmission && marks !== null && handleMarksUpdate(selectedSubmission.id, marks)}
+                            size="sm"
+                            disabled={marks === null || isSaving}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {isSaving ? (
+                              <>
+                                <span className="animate-spin mr-2">⭮</span>
+                                Saving...
+                              </>
+                            ) : (
+                              'Save'
+                            )}
+                          </Button>
                         </div>
-                        <Button 
-                          onClick={() => selectedSubmission && marks !== null && handleMarksUpdate(selectedSubmission.id, marks)}
-                          size="sm"
-                          disabled={marks === null}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          Save
-                        </Button>
-                        {updateStatus === 'success' && (
-                          <div className="flex items-center text-green-600">
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            <span className="text-sm">Saved</span>
-                          </div>
-                        )}
-                        {updateStatus === 'error' && (
-                          <div className="flex items-center text-red-600">
-                            <XCircle className="w-4 h-4 mr-1" />
-                            <span className="text-sm">Error</span>
-                          </div>
-                        )}
                       </div>
                     </div>
 
@@ -531,6 +538,37 @@ const EvaluationClient = () => {
             </Dialog>
           </div>
 
+          {/* Pagination - Moved here */}
+          <div className="flex justify-center mb-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="cursor-pointer"
+                  />
+                </PaginationItem>
+                {[...Array(totalPages)].map((_, index) => (
+                  <PaginationItem key={index}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(index + 1)}
+                      isActive={currentPage === index + 1}
+                      className="cursor-pointer"
+                    >
+                      {index + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    className="cursor-pointer"
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+
           {/* Table Card */}
           <Card>
             <CardContent className="p-0">
@@ -539,10 +577,10 @@ const EvaluationClient = () => {
                   <TableRow>
                     <TableHead>Roll No.</TableHead>
                     <TableHead>Student Name</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead>Submitted At</TableHead>
                     <TableHead>Marks</TableHead>
                     <TableHead className="w-[50px]">Status</TableHead>
+                    <TableHead className="w-[100px]">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -550,7 +588,6 @@ const EvaluationClient = () => {
                     <TableRow key={submission.id}>
                       <TableCell>{submission.user.rollNo || 'N/A'}</TableCell>
                       <TableCell>{`${submission.user.firstName} ${submission.user.lastName}`}</TableCell>
-                      <TableCell>{submission.user.email}</TableCell>
                       <TableCell>{formatDate(submission.submittedAt)}</TableCell>
                       <TableCell>
                         {submission.marks !== null && submission.marks !== undefined && submission.marks > 0
@@ -564,40 +601,169 @@ const EvaluationClient = () => {
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
                       </TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const submissionIndex = sortedSubmissions.findIndex(
+                                  sub => sub.id === submission.id
+                                );
+                                setSelectedSubmission(submission);
+                                setSelectedSubmissionIndex(submissionIndex);
+                                setMarks(submission.marks || null);
+                                setModalSearchTerm('');
+                              }}
+                            >
+                              View
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-[90vw] w-full max-h-[90vh] h-full p-0">
+                            <DialogHeader className="px-4 py-2 border-b">
+                              <DialogTitle>Submission Details</DialogTitle>
+                            </DialogHeader>
+                            <div className="flex h-[calc(90vh-60px)]">
+                              {/* Left Sidebar - Submission List */}
+                              <div className="w-80 border-r p-4">
+                                <h3 className="font-semibold mb-2">All Submissions</h3>
+                                <div className="relative mb-2">
+                                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                  <Input
+                                    type="text"
+                                    placeholder="Search students"
+                                    value={modalSearchTerm}
+                                    onChange={(e) => setModalSearchTerm(e.target.value)}
+                                    className="pl-8 py-1 text-sm"
+                                  />
+                                </div>
+                                <ScrollArea className="h-[calc(100%-60px)]">
+                                  {filterSubmissions(sortedSubmissions, modalSearchTerm)
+                                    .map((submission, idx) => {
+                                      const isSelected = selectedSubmission?.id === submission.id;
+                                      return (
+                                        <Button
+                                          key={submission.id}
+                                          variant={isSelected ? "secondary" : "ghost"}
+                                          className={`w-full justify-start mb-2 ${isSelected ? 'border-2 border-primary' : ''}`}
+                                          onClick={() => {
+                                            setSelectedSubmission(submission);
+                                            setSelectedSubmissionIndex(idx);
+                                            setMarks(submission.marks || null);
+                                          }}
+                                        >
+                                          <div className="flex items-center w-full">
+                                            <span className="flex-grow text-left">
+                                              {submission.user.rollNo || 'N/A'} - {submission.user.firstName}
+                                            </span>
+                                            {submission.marks !== null && submission.marks !== undefined && submission.marks > 0 ? (
+                                              <CheckCircle className="w-4 h-4 text-green-500 ml-2" />
+                                            ) : (
+                                              <XCircle className="w-4 h-4 text-red-500 ml-2" />
+                                            )}
+                                          </div>
+                                        </Button>
+                                      );
+                                    })}
+                                </ScrollArea>
+                              </div>
+
+                              {/* Main Content */}
+                              <div className="flex-1 flex flex-col p-4">
+                                {/* Student Info Header */}
+                                <div className="flex justify-between items-center mb-4">
+                                  <div>
+                                    <h3 className="text-lg font-semibold">{`${selectedSubmission?.user.firstName} ${selectedSubmission?.user.lastName || ''}`}</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                      Submitted: {selectedSubmission && formatDate(selectedSubmission.submittedAt)}
+                                    </p>
+                                  </div>
+
+                                  {/* Marks Input */}
+                                  <div className="flex items-center gap-4">
+                                    <Label htmlFor="marks" className="font-semibold">
+                                      Marks (out of {assignment?.maxMarks})
+                                    </Label>
+                                    <div className="flex items-center gap-2">
+                                      <div className="relative">
+                                        <Input
+                                          id="marks"
+                                          type="number"
+                                          min="0"
+                                          max={assignment?.maxMarks}
+                                          value={marks ?? ''}
+                                          onChange={(e) => {
+                                            const value = e.target.value === '' ? null : 
+                                              Math.min(
+                                                Math.max(0, parseInt(e.target.value) || 0),
+                                                assignment?.maxMarks || 0
+                                              );
+                                            setMarks(value);
+                                          }}
+                                          className="w-20 text-center pr-8"
+                                          placeholder="-"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                          / {assignment?.maxMarks}
+                                        </span>
+                                      </div>
+                                      <Button 
+                                        onClick={() => selectedSubmission && marks !== null && handleMarksUpdate(selectedSubmission.id, marks)}
+                                        size="sm"
+                                        disabled={marks === null || isSaving}
+                                        className="bg-green-600 hover:bg-green-700"
+                                      >
+                                        {isSaving ? (
+                                          <>
+                                            <span className="animate-spin mr-2">⭮</span>
+                                            Saving...
+                                          </>
+                                        ) : (
+                                          'Save'
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Submission View */}
+                                <iframe
+                                  src={selectedSubmission?.content ? getPreviewUrl(selectedSubmission.content) : ''}
+                                  className="flex-grow w-full rounded-lg border shadow-sm"
+                                  title={`Submission by ${selectedSubmission?.user.firstName}`}
+                                />
+
+                                {/* Navigation Buttons */}
+                                <div className="flex justify-between mt-4">
+                                  <Button
+                                    onClick={handlePreviousSubmission}
+                                    disabled={selectedSubmissionIndex === 0}
+                                    variant="outline"
+                                  >
+                                    <ChevronLeft className="mr-2 h-4 w-4" />
+                                    Previous
+                                  </Button>
+                                  <Button
+                                    onClick={handleNextSubmission}
+                                    disabled={selectedSubmissionIndex === submissions.length - 1}
+                                    variant="outline"
+                                  >
+                                    Next
+                                    <ChevronRight className="ml-2 h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
-
-          {/* Pagination */}
-          <div className="flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  />
-                </PaginationItem>
-                {[...Array(totalPages)].map((_, index) => (
-                  <PaginationItem key={index}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(index + 1)}
-                      isActive={currentPage === index + 1}
-                    >
-                      {index + 1}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
         </div>
       )}
 

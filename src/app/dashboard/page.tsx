@@ -148,7 +148,6 @@ const DashboardPage = () => {
       setShowOnboarding(false);
       
       
-      // Show celebration for 5 seconds
       setTimeout(() => {
         setShowCelebration(false);
       }, 3250);

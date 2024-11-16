@@ -325,6 +325,21 @@ const ClassroomPage = () => {
               </div>
             </div>
           </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full">
+            <Link href={`/classroom/${params.id}/resources`} className="w-full sm:w-auto">
+              <Button className="w-full">
+                <BookOpen className="mr-2 h-4 w-4" />
+                {dbUser?.role === 'PROFESSOR' ? 'Manage Resources' : 'Resources'}
+              </Button>
+            </Link>
+            <Link href={`/classroom/${params.id}/attendance`} className="w-full sm:w-auto">
+              <Button className="w-full">
+                <Users className="mr-2 h-4 w-4" />
+                {dbUser?.role === 'PROFESSOR' ? 'Manage Attendance' : 'Attendance'}
+              </Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
 
@@ -333,7 +348,6 @@ const ClassroomPage = () => {
           <TabsTrigger value="assignments" className="flex-grow sm:flex-grow-0">Assignments</TabsTrigger>
           <TabsTrigger value="grades" className="flex-grow sm:flex-grow-0">Grades</TabsTrigger>
           <TabsTrigger value="code-execution" className="flex-grow sm:flex-grow-0">Code Execution</TabsTrigger>
-          <TabsTrigger value="enrolled-students" className="flex-grow sm:flex-grow-0">Students</TabsTrigger>
         </TabsList>
         <TabsContent value="assignments">
           <AssignmentsTab
@@ -358,24 +372,7 @@ const ClassroomPage = () => {
         <TabsContent value="code-execution">
           <CodeExecution />
         </TabsContent>
-        <TabsContent value="enrolled-students">
-          <EnrolledStudentsTab
-            members={members}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={ITEMS_PER_PAGE}
-            onPageChange={setCurrentPage}
-          />
-        </TabsContent>
       </Tabs>
-
-      <div className="mt-8">
-        <Link href={`/classroom/${params.id}/attendance`}>
-          <Button className="w-full md:w-auto">
-            <Users className="mr-2 h-4 w-4" /> Manage Attendance
-          </Button>
-        </Link>
-      </div>
     </div>
   );
 };

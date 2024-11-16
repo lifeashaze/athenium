@@ -322,23 +322,70 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="mb-4">
-            <CardContent className="flex items-center justify-between p-4">
-              <div className="space-y-2 flex-1">
-                <div className="h-6 w-1/3 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-4 w-1/4 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-4 w-1/5 bg-gray-200 rounded animate-pulse"></div>
+      <div className="space-y-8">
+        {/* Active Assignments Section */}
+        <div>
+          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="relative group">
+                <CardContent className="p-6 h-[300px] flex flex-col justify-between">
+                  {/* Content Section */}
+                  <div>
+                    {/* Header */}
+                    <div className="flex justify-between items-start gap-4 mb-4">
+                      <div className="flex-1">
+                        <div className="h-6 w-3/4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-6 w-1/2 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                      <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="h-4 w-full bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse mb-6"></div>
+
+                    {/* Details */}
+                    <div className="space-y-3">
+                      <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-4 w-1/3 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 pt-4 border-t mt-4">
+                    <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-10 w-10 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-10 w-10 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Past Assignments Section */}
+        <div>
+          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div className="space-y-2">
+            {[1, 2].map((i) => (
+              <div key={i} className="p-4 rounded-lg border">
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <div className="h-5 w-1/3 bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-9 w-24 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-9 w-9 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-9 w-9 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -563,31 +610,34 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
           {/* Active Assignment Cards */}
           {sortedActiveAssignments.map((assignment) => (
             <Card key={assignment.id} className="relative group hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-6 h-[300px] flex flex-col">
-                {/* Status Badges */}
-                <div className="absolute top-4 right-4 flex flex-col gap-2">
-                  {/* Deadline Badge */}
-                  <Badge variant={new Date(assignment.deadline) < new Date() ? "destructive" : "secondary"}>
-                    {new Date(assignment.deadline) < new Date() ? 'Overdue' : 'Due'} {format(new Date(assignment.deadline), 'MMM d')}
-                  </Badge>
-                  
-                  {/* Submission Status */}
-                  {submissions?.some(sub => sub.assignmentId === assignment.id.toString()) && (
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100/80">
-                      Submitted
-                    </Badge>
-                  )}
-                </div>
+              <CardContent className="p-6 h-[300px] flex flex-col justify-between">
+                {/* Content Section */}
+                <div>
+                  {/* Header */}
+                  <div className="flex justify-between items-start gap-4 mb-2">
+                    <h3 className="text-xl font-semibold flex-1 line-clamp-2">{assignment.title}</h3>
+                    
+                    {/* Status Badges */}
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <Badge variant={new Date(assignment.deadline) < new Date() ? "destructive" : "secondary"}>
+                        {new Date(assignment.deadline) < new Date() ? 'Overdue' : 'Due'} {format(new Date(assignment.deadline), 'MMM d')}
+                      </Badge>
+                      
+                      {submissions?.some(sub => sub.assignmentId === assignment.id.toString()) && (
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100/80">
+                          Submitted
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
 
-                {/* Title and Description */}
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-2 line-clamp-2">{assignment.title}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+                  {/* Description */}
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {assignment.description || "No description provided"}
                   </p>
                   
                   {/* Assignment Details */}
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2">
                     <div className="flex items-center text-sm text-muted-foreground">
                       <CalendarDays className="h-4 w-4 mr-2" />
                       {format(new Date(assignment.deadline), 'PPP')}
@@ -599,14 +649,14 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
                     {assignment.maxMarks && (
                       <div className="flex items-center text-sm text-muted-foreground">
                         <BarChart className="h-4 w-4 mr-2" />
-                        {assignment.maxMarks} points
+                        {assignment.maxMarks} marks
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-4 border-t">
+                <div className="flex items-center gap-2 pt-4 border-t mt-4">
                   <Link href={`/classroom/${classroomId}/assignment/${assignment.id}`} className="flex-1">
                     <Button variant="secondary" className="w-full">
                       <ExternalLink className="h-4 w-4 mr-2" />
