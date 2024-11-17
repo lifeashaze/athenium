@@ -226,22 +226,20 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="h-screen overflow-hidden bg-[#FAFAFA]">
-      {/* <Header /> */}
-      
-      <main className="grid grid-cols-1 md:grid-cols-2 h-screen">
+     <div className="min-h-screen bg-[#FAFAFA]"> {/* Changed h-screen to min-h-screen */}
+      <main className="grid grid-cols-1 md:grid-cols-2 min-h-screen"> {/* Changed h-screen to min-h-screen */}
         {/* Content Section */}
         <motion.div 
-          className="flex flex-col justify-center px-8 md:px-16 bg-white"
+          className="flex flex-col justify-center px-4 sm:px-8 md:px-16 bg-white py-8" /* Added py-8 and adjusted padding for mobile */
           initial="hidden"
           animate={isMounted ? "visible" : "hidden"}
           variants={fadeIn}
         >
-          <div className="bg-white/95 backdrop-blur-sm p-8 md:p-12 rounded-lg shadow-sm">
-            <h1 className="font-serif text-7xl md:text-8xl mb-6 text-gray-900 tracking-tight">
+          <div className="bg-white/95 backdrop-blur-sm p-6 sm:p-8 md:p-12 rounded-lg shadow-sm"> {/* Adjusted padding for different screen sizes */}
+            <h1 className="font-serif text-5xl sm:text-7xl md:text-8xl mb-6 text-gray-900 tracking-tight"> {/* Made text more responsive */}
               athenium
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 font-light tracking-wide">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 font-light tracking-wide"> {/* Made text more responsive */}
               elevating academic excellence through intelligent management.
             </p>
             
