@@ -148,3 +148,96 @@ export async function POST(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { userId } = getAuth(req);
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const classroomId = params.id;
+    const { id: assignmentId, title, deadline, description, maxMarks, requirements } = await req.json();
+
+    // Check if user is the creator of the assignment or a teacher
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_classroomId: {
+          userId: userId,
+          classroomId: classroomId,
+        },
+      },
+    });
+
+    const assignment = await prisma.assignment.findUnique({
+      where: { id: assignmentId },
+    });
+
+    if (!membership || (assignment?.creatorId !== userId)) {
+      return NextResponse.json({ error: 'Unauthorized to update this assignment' }, { status: 401 });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Update the assignment
+      const updatedAssignment = await tx.assignment.update({
+        where: { id: assignmentId },
+        data: {
+          title,
+          description,
+          maxMarks,
+          requirements,
+          deadline: new Date(deadline),
+        },
+        include: {
+          creator: {
+            select: {
+              firstName: true,
+            },
+          },
+        },
+      });
+
+      // Get classroom details
+      const classroom = await tx.classroom.findUnique({
+        where: { id: classroomId },
+        select: { name: true }
+      });
+
+      // Get all classroom members
+      const members = await tx.membership.findMany({
+        where: {
+          classroomId: classroomId,
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      // Create notification for the update
+      const notification = await tx.notification.create({
+        data: {
+          message: `Assignment "${title}" has been updated in ${classroom?.name}. New deadline: ${new Date(deadline).toLocaleDateString()}`,
+          type: 'ASSIGNMENT',
+          relatedId: assignmentId,
+          users: {
+            connect: members.map(member => ({ id: member.userId })),
+          },
+        },
+      });
+
+      return { updatedAssignment, notification };
+    });
+
+    return NextResponse.json(result.updatedAssignment);
+  } catch (error) {
+    console.error('Error updating assignment:', error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      return NextResponse.json({ error: 'Invalid assignment data' }, { status: 400 });
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

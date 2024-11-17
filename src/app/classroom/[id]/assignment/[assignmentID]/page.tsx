@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FileText, Download } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Assignment {
   id: string;
@@ -137,7 +138,62 @@ const AssignmentPage = () => {
     return isDeadlinePassed() || (marks !== null && marks > 0);
   }, [marks, isDeadlinePassed]);
 
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return (
+    <div className="min-h-screen bg-gray-100 py-4 sm:py-6 lg:py-8 px-2 sm:px-4 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-4 lg:gap-8">
+          {/* Assignment details skeleton */}
+          <div className="order-2 lg:order-1 h-[60vh] lg:h-[calc(100vh-4rem)]">
+            <Card className="h-full">
+              <CardHeader className="border-b border-gray-200">
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-24" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-32" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-24" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Preview section skeleton */}
+          <div className="order-1 lg:order-2 h-[60vh] lg:h-[calc(100vh-4rem)] lg:sticky lg:top-4">
+            <Card className="h-full">
+              <CardHeader className="border-b border-gray-200 py-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 h-[calc(100%-4rem)]">
+                <div className="h-full flex items-center justify-center">
+                  <Skeleton className="h-full w-full rounded-b-md" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
   if (error) return <p className="text-red-500">{error}</p>;
   if (!assignment) return <p>No assignment found.</p>;
 

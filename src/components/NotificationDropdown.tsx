@@ -105,7 +105,7 @@ export function NotificationDropdown({ userId }: NotificationDropdownProps) {
   return (
     <DropdownMenu open={isOpen} onOpenChange={(open) => {
       setIsOpen(open)
-      if (open && unreadCount > 0) {
+      if (!open && unreadCount > 0) {
         markAllAsRead()
       }
     }}>

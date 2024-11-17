@@ -43,9 +43,9 @@ export function ClassInvitationCard({
     >
       <Card className="w-full bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/50 shadow-sm hover:shadow transition-shadow duration-300">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex-grow">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
                   {courseName}
                 </h3>
@@ -54,10 +54,14 @@ export function ClassInvitationCard({
                 </Badge>
               </div>
               <div className="flex flex-col gap-1 mt-1">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {courseCode} • {year} • Division {division}
+                <div className="text-sm text-gray-600 dark:text-gray-400 flex flex-wrap gap-1">
+                  <span>{courseCode}</span>
+                  <span>•</span>
+                  <span>{year}</span>
+                  <span>•</span>
+                  <span>Division {division}</span>
                 </div>
-                <div className="flex items-center gap-4 text-sm">
+                <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div className="flex items-center text-gray-600 dark:text-gray-400">
                     <Users className="w-3 h-3 mr-1" />
                     <span>{memberCount} joined</span>
@@ -70,7 +74,7 @@ export function ClassInvitationCard({
                 </div>
               </div>
             </div>
-            <div className="flex space-x-2 ml-4">
+            <div className="flex space-x-2 sm:ml-4 justify-end">
               <Button size="sm" variant="ghost" onClick={() => onDismiss(id)}>
                 Dismiss
               </Button>

@@ -5,29 +5,51 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 
 interface Submission {
+  id: string;
+  submittedAt: Date | string;
+  content: string;
+  userId: string;
+  assignmentId: string;
   marks: number;
-  submittedAt: string;
   assignment: {
+    id: string;
     title: string;
     maxMarks: number;
   };
 }
 
+interface Assignment {
+  id: number;
+  title: string;
+  type: 'theory' | 'lab';
+  deadline: string;
+  maxMarks: number;
+  description?: string;
+  requirements?: string[];
+  creator: {
+    firstName: string;
+  };
+}
+
 interface GradesTabProps {
   submissions: Submission[];
-  assignments: any[]; // TODO: Add proper type
+  assignments: Assignment[];
   userId: string;
 }
 
 export function GradesTab({ submissions = [], assignments = [], userId }: GradesTabProps) {
-  const gradedSubmissions = submissions.filter((sub: Submission) => sub.marks > 0);
+  const gradedSubmissions = submissions.filter((sub: Submission) => 
+    sub.marks > 0 && sub.assignment
+  );
 
   const chartData = gradedSubmissions
     .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime())
     .map((submission) => ({
-      date: submission.submittedAt,
-      score: Math.round((submission.marks / submission.assignment.maxMarks) * 100),
-      name: submission.assignment.title
+      date: submission.submittedAt.toString(),
+      score: submission.assignment 
+        ? Math.round((submission.marks / submission.assignment.maxMarks) * 100)
+        : 0,
+      name: submission.assignment?.title || 'Untitled Assignment'
     }));
 
   // Calculate statistics

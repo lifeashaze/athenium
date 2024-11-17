@@ -48,13 +48,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Submission not found" }, { status: 404 });
     }
 
-    // Check if the current user is the classroom creator
-    if (submission.assignment.classroom.creator.id !== userId) {
-      return NextResponse.json({ 
-        error: "Unauthorized - Only classroom creator can grade submissions"
-      }, { status: 403 });
-    }
-
     // Start a transaction to update both submission and create notification
     const [updatedSubmission, notification] = await prisma.$transaction([
       // Update the submission marks
