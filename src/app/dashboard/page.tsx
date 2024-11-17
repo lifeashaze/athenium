@@ -75,6 +75,30 @@ interface Activity {
   }
 }
 
+interface NavigationState {
+  [key: number]: boolean;
+}
+
+const yearAbbreviations: { [key: string]: string } = {
+  'First Year': 'FY',
+  'Second Year': 'SY',
+  'Third Year': 'TY',
+  'Fourth Year': 'LY'  // LY for Last Year
+};
+
+const getYearDivisionDisplay = (year: string, division: string) => {
+  const yearAbbr = yearAbbreviations[year] || year;
+  return `${yearAbbr}-${division}`;
+};
+
+// Add User interface
+interface User {
+  id: string;
+  firstName: string;
+  email: string;
+  role: "STUDENT" | "PROFESSOR" | "ADMIN";
+}
+
 const DashboardPage = () => {
   const { user, isLoaded } = useUser();
   const { toast } = useToast();
@@ -106,13 +130,36 @@ const DashboardPage = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const { width, height } = useWindowSize();
-  const [isNavigating, setIsNavigating] = useState(false);
+  const [navigatingStates, setNavigatingStates] = useState<NavigationState>({});
   const [classInvitations, setClassInvitations] = useState<ClassInvitation[]>([]);
   const [classroomToLeave, setClassroomToLeave] = useState<number | null>(null);
   const [classroomToDelete, setClassroomToDelete] = useState<number | null>(null);
   const [showFinalDeleteConfirm, setShowFinalDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  // Add dbUser state
+  const [dbUser, setDbUser] = useState<User | null>(null);
+
+  // Add fetchUserData function
+  const fetchUserData = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/user');
+      console.log('User data from DB:', response.data);
+      setDbUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    }
+  }, []);
+
+  // Add useEffect for fetching user data
+  useEffect(() => {
+    if (isLoaded && user) {
+      fetchUserData();
+    }
+  }, [isLoaded, user, fetchUserData]);
+
+  // Replace isProfessor check with dbUser check
+  const isProfessor = dbUser?.role === 'PROFESSOR';
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -120,7 +167,6 @@ const DashboardPage = () => {
       
       setIsLoading(true);
       try {
-        // Update Promise.all to include mock notifications
         const [classroomsResponse, userDetailsResponse, invitationsResponse, activitiesResponse] = await Promise.all([
           axios.get('/api/classrooms'),
           axios.get('/api/user'),
@@ -141,6 +187,7 @@ const DashboardPage = () => {
         // Set invitations
         setClassInvitations(invitationsResponse.data.invitations || []);
 
+        // Set real activities
         setRecentActivities(activitiesResponse.data.activities || []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -180,11 +227,11 @@ const DashboardPage = () => {
     }
   };
 
-  if (!isLoaded) {
+  if (!isLoaded || !dbUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-  
+          <Skeleton className="h-12 w-64" />
         </div>
       </div>
     );
@@ -262,7 +309,7 @@ const DashboardPage = () => {
               </div>
 
               {/* Recent Activity Section */}
-              <div className="mb-8">
+              <div>
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     Recent Activity
@@ -273,80 +320,95 @@ const DashboardPage = () => {
                 </div>
 
                 {recentActivities.length === 0 ? (
-                  <Card className="p-6 text-center">
-                    <Clock className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                  <Card className="p-3 text-center">
+                    <Clock className="h-8 w-8 mx-auto text-gray-400 mb-1.5" />
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-0.5">
                       No recent activity
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Your recent classroom activities will appear here
                     </p>
                   </Card>
                 ) : (
-                  <div className="space-y-2">
-                    {recentActivities.map((activity) => (
-                      <Card key={activity.id} className="p-4">
-                        <div className="flex items-start gap-4">
-                          {/* Icon based on activity type */}
-                          <div className={`rounded-full p-2 ${
-                            activity.type === 'attendance' 
-                              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                              : activity.type === 'submission'
-                              ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-                              : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                          }`}>
-                            {activity.type === 'attendance' && <Users className="h-4 w-4" />}
-                            {activity.type === 'submission' && <FileText className="h-4 w-4" />}
-                            {activity.type === 'grade' && <GraduationCap className="h-4 w-4" />}
-                          </div>
+                  <div className="relative">
+                    <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-primary/20 via-primary/50 to-transparent" />
+                    
+                    <div className="space-y-2">
+                      {recentActivities
+                        .slice(0, 5)
+                        .map((activity, index) => (
+                        <div key={activity.id} className="relative">
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="ml-10 relative"
+                          >
+                            <Card className="overflow-hidden">
+                              <div className={`absolute top-0 left-0 w-full h-0.5 ${
+                                activity.type === 'attendance' 
+                                  ? 'bg-blue-500' 
+                                  : activity.type === 'submission'
+                                  ? 'bg-purple-500'
+                                  : 'bg-green-500'
+                              }`} />
+                              
+                              <div className="p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate mb-0.5">
+                                        {activity.title}
+                                      </p>
+                                      {activity.details.classroomName && (
+                                        <p className="text-xs text-muted-foreground truncate">
+                                          {activity.details.classroomName}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      {activity.type === 'grade' && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                                          {activity.details.grade}/{activity.details.maxGrade}
+                                        </Badge>
+                                      )}
+                                      {activity.type === 'submission' && (
+                                        <Badge 
+                                          variant={activity.details.submissionStatus === 'on_time' ? 'secondary' : 'destructive'} 
+                                          className="text-[10px] px-1.5 py-0.5"
+                                        >
+                                          {activity.details.submissionStatus === 'on_time' ? 'On Time' : 'Late'}
+                                        </Badge>
+                                      )}
+                                      {activity.type === 'attendance' && (
+                                        <Badge 
+                                          variant={activity.details.status === 'present' ? 'secondary' : 'destructive'} 
+                                          className="text-[10px] px-1.5 py-0.5"
+                                        >
+                                          {activity.details.status === 'present' ? 'Present' : 'Absent'}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
+                          </motion.div>
 
-                          {/* Activity Details */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {activity.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              {activity.details.classroomName && (
-                                <Badge variant="outline" className="text-xs">
-                                  {activity.details.classroomName}
-                                </Badge>
-                              )}
-                              {activity.type === 'grade' && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {activity.details.grade}/{activity.details.maxGrade} points
-                                </Badge>
-                              )}
-                              {activity.type === 'submission' && (
-                                <Badge 
-                                  variant={activity.details.submissionStatus === 'on_time' ? 'secondary' : 'destructive'} 
-                                  className="text-xs"
-                                >
-                                  {activity.details.submissionStatus === 'on_time' ? 'On Time' : 'Late'}
-                                </Badge>
-                              )}
-                              {activity.type === 'attendance' && (
-                                <Badge 
-                                  variant={activity.details.status === 'present' ? 'secondary' : 'destructive'} 
-                                  className="text-xs"
-                                >
-                                  {activity.details.status === 'present' ? 'Present' : 'Absent'}
-                                </Badge>
-                              )}
+                          <div className="absolute left-2.5 top-3">
+                            <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
+                              activity.type === 'attendance' 
+                                ? 'bg-blue-500' 
+                                : activity.type === 'submission'
+                                ? 'bg-purple-500'
+                                : 'bg-green-500'
+                            }`}>
+                              <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-current" />
                             </div>
                           </div>
-
-                          {/* Timestamp */}
-                          <time className="text-xs text-muted-foreground">
-                            {new Date(activity.date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: 'numeric',
-                              minute: '2-digit'
-                            })}
-                          </time>
                         </div>
-                      </Card>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -550,7 +612,7 @@ const DashboardPage = () => {
   );
 
   const handleClassroomNavigation = (classroomId: number) => {
-    setIsNavigating(true);
+    setNavigatingStates(prev => ({ ...prev, [classroomId]: true }));
     router.push(`/classroom/${classroomId}`);
   };
 
@@ -645,7 +707,7 @@ const DashboardPage = () => {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  {["", "📚", "✨", "🚀", "🎓"].map((emoji, i) => (
+                  {["", "📚", "✨", "", "🎓"].map((emoji, i) => (
                     <motion.span
                       key={i}
                       className="text-3xl"
@@ -706,7 +768,7 @@ const DashboardPage = () => {
               </div>
             </div>
 
-            {/* Action Bar - Redesigned */}
+            {/* Action Bar - Modified for role-based access */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -756,68 +818,71 @@ const DashboardPage = () => {
                   </DialogContent>
                 </Dialog>
                 
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="h-9">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New Classroom</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <Select onValueChange={setYear} value={year}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="First Year">First Year</SelectItem>
-                          <SelectItem value="Second Year">Second Year</SelectItem>
-                          <SelectItem value="Third Year">Third Year</SelectItem>
-                          <SelectItem value="Fourth Year">Fourth Year</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select onValueChange={setDivision} value={division}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Division" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map((letter) => (
-                            <SelectItem key={letter} value={letter}>
-                              {letter}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="text"
-                        value={courseCode}
-                        onChange={(e) => setCourseCode(e.target.value)}
-                        placeholder="Course Code"
-                      />
-                      <Input
-                        type="text"
-                        value={courseName}
-                        onChange={(e) => setCourseName(e.target.value)}
-                        placeholder="Course Name"
-                      />
-                      {createError && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{createError}</AlertDescription>
-                        </Alert>
-                      )}
-                      <Button 
-                        onClick={createClassroom} 
-                        className="w-full"
-                        disabled={isCreating}
-                      >
-                        {isCreating ? 'Creating...' : 'Create Classroom'}
+                {isProfessor && (
+                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="h-9">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create
                       </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Classroom</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <Select onValueChange={setYear} value={year}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(yearAbbreviations).map((yearOption) => (
+                              <SelectItem key={yearOption} value={yearOption}>
+                                {yearOption}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select onValueChange={setDivision} value={division}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Division" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map((letter) => (
+                              <SelectItem key={letter} value={letter}>
+                                {letter}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="text"
+                          value={courseCode}
+                          onChange={(e) => setCourseCode(e.target.value)}
+                          placeholder="Course Code"
+                        />
+                        <Input
+                          type="text"
+                          value={courseName}
+                          onChange={(e) => setCourseName(e.target.value)}
+                          placeholder="Course Name"
+                        />
+                        {createError && (
+                          <Alert variant="destructive">
+                            <AlertDescription>{createError}</AlertDescription>
+                          </Alert>
+                        )}
+                        <Button 
+                          onClick={createClassroom} 
+                          className="w-full"
+                          disabled={isCreating}
+                        >
+                          {isCreating ? 'Creating...' : 'Create Classroom'}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
             </div>
 
@@ -845,8 +910,8 @@ const DashboardPage = () => {
               </div>
             )}
 
-            {/* Classrooms Section - Redesigned */}
-            <div>
+            {/* Classrooms Section - Should come first */}
+            <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
                   Your Classrooms
@@ -887,14 +952,12 @@ const DashboardPage = () => {
                               {classroom.courseName}
                             </h3>
                           </div>
-                          <div className="flex flex-col gap-1.5">
-                            <Badge variant="outline" className="text-xs px-2 py-0.5">
-                              {classroom.year}
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                              Div {classroom.division}
-                            </Badge>
-                          </div>
+                          <Badge 
+                            variant="outline" 
+                            className="text-[10px] px-1.5 py-0 h-5"
+                          >
+                            {getYearDivisionDisplay(classroom.year, classroom.division)}
+                          </Badge>
                         </div>
 
                         {/* Professor & Assignment Info */}
@@ -925,9 +988,9 @@ const DashboardPage = () => {
                             variant="default" 
                             onClick={() => handleClassroomNavigation(classroom.id)}
                             className="flex-1 h-9 text-sm bg-primary hover:bg-primary/90"
-                            disabled={isNavigating}
+                            disabled={navigatingStates[classroom.id]}
                           >
-                            {isNavigating ? (
+                            {navigatingStates[classroom.id] ? (
                               <span className="flex items-center justify-center gap-1.5">
                                 <span className="animate-spin">⏳</span>
                                 Loading...
@@ -941,32 +1004,36 @@ const DashboardPage = () => {
                           </Button>
                           <TooltipProvider delayDuration={0}>
                             <div className="flex gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setClassroomToLeave(classroom.id)}
-                                    className="h-9 w-9 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  >
-                                    <LogOut className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom">Leave Classroom</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setClassroomToDelete(classroom.id)}
-                                    className="h-9 w-9 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom">Delete Classroom</TooltipContent>
-                              </Tooltip>
+                              {!isProfessor && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setClassroomToLeave(classroom.id)}
+                                      className="h-9 w-9 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    >
+                                      <LogOut className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom">Leave Classroom</TooltipContent>
+                                </Tooltip>
+                              )}
+                              {isProfessor && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setClassroomToDelete(classroom.id)}
+                                      className="h-9 w-9 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom">Delete Classroom</TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
                           </TooltipProvider>
                         </div>
@@ -975,6 +1042,241 @@ const DashboardPage = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Activity Section with two columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Recent Activity Column */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Recent Activity
+                  </h2>
+                </div>
+
+                {recentActivities.length === 0 ? (
+                  <Card className="p-3 text-center">
+                    <Clock className="h-8 w-8 mx-auto text-gray-400 mb-1.5" />
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-0.5">
+                      No recent activity
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Your recent classroom activities will appear here
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="relative">
+                    <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-primary/20 via-primary/50 to-transparent" />
+                    
+                    <div className="space-y-2">
+                      {recentActivities
+                        .slice(0, 5)
+                        .map((activity, index) => (
+                        <div key={activity.id} className="relative">
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="ml-10 relative"
+                          >
+                            <Card className="overflow-hidden">
+                              <div className={`absolute top-0 left-0 w-full h-0.5 ${
+                                activity.type === 'attendance' 
+                                  ? 'bg-blue-500' 
+                                  : activity.type === 'submission'
+                                  ? 'bg-purple-500'
+                                  : 'bg-green-500'
+                              }`} />
+                              
+                              <div className="p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate mb-0.5">
+                                        {activity.title}
+                                      </p>
+                                      {activity.details.classroomName && (
+                                        <p className="text-xs text-muted-foreground truncate">
+                                          {activity.details.classroomName}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      {activity.type === 'grade' && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                                          {activity.details.grade}/{activity.details.maxGrade}
+                                        </Badge>
+                                      )}
+                                      {activity.type === 'submission' && (
+                                        <Badge 
+                                          variant={activity.details.submissionStatus === 'on_time' ? 'secondary' : 'destructive'} 
+                                          className="text-[10px] px-1.5 py-0.5"
+                                        >
+                                          {activity.details.submissionStatus === 'on_time' ? 'On Time' : 'Late'}
+                                        </Badge>
+                                      )}
+                                      {activity.type === 'attendance' && (
+                                        <Badge 
+                                          variant={activity.details.status === 'present' ? 'secondary' : 'destructive'} 
+                                          className="text-[10px] px-1.5 py-0.5"
+                                        >
+                                          {activity.details.status === 'present' ? 'Present' : 'Absent'}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
+                          </motion.div>
+
+                          <div className="absolute left-2.5 top-3">
+                            <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
+                              activity.type === 'attendance' 
+                                ? 'bg-blue-500' 
+                                : activity.type === 'submission'
+                                ? 'bg-purple-500'
+                                : 'bg-green-500'
+                            }`}>
+                              <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-current" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Activity Overview Column */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Activity Overview
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Classrooms Card */}
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2.5 rounded-lg">
+                        <Book className="h-5 w-5 text-indigo-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Active Classes
+                        </p>
+                        <p className="text-2xl font-semibold mt-1">
+                          {classrooms.length}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Submissions Card */}
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-purple-100 dark:bg-purple-900/30 p-2.5 rounded-lg">
+                        <FileText className="h-5 w-5 text-purple-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Submissions
+                        </p>
+                        <p className="text-2xl font-semibold mt-1">
+                          {recentActivities.filter(a => a.type === 'submission').length}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Grades Card */}
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-100 dark:bg-green-900/30 p-2.5 rounded-lg">
+                        <GraduationCap className="h-5 w-5 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Grades
+                        </p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-2xl font-semibold mt-1">
+                            {recentActivities.filter(a => a.type === 'grade').length}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {Math.round(recentActivities
+                              .filter(a => a.type === 'grade')
+                              .reduce((acc, curr) => acc + (curr.details.grade! / curr.details.maxGrade!) * 100, 0) / 
+                              recentActivities.filter(a => a.type === 'grade').length || 0
+                            )}% avg
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Attendance Card */}
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 dark:bg-blue-900/30 p-2.5 rounded-lg">
+                        <Users className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Attendance
+                        </p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-2xl font-semibold mt-1">
+                            {recentActivities.filter(a => a.type === 'attendance').length}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {Math.round(recentActivities
+                              .filter(a => a.type === 'attendance')
+                              .filter(a => a.details.status === 'present').length / 
+                              recentActivities.filter(a => a.type === 'attendance').length * 100 || 0
+                            )}% present
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Pending Assignments Card */}
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-100 dark:bg-amber-900/30 p-2.5 rounded-lg">
+                        <Clock className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Pending Work
+                        </p>
+                        <p className="text-2xl font-semibold mt-1">
+                          {classrooms.reduce((acc, curr) => acc + (curr.pendingAssignments || 0), 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Class Invitations Card */}
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-rose-100 dark:bg-rose-900/30 p-2.5 rounded-lg">
+                        <UserPlus className="h-5 w-5 text-rose-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Invitations
+                        </p>
+                        <p className="text-2xl font-semibold mt-1">
+                          {classInvitations.length}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              </div>
             </div>
           </div>
         </main>

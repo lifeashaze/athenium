@@ -15,39 +15,53 @@ export async function GET(req: NextRequest) {
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    // Fetch recent attendances
-    const attendances = await prisma.attendance.findMany({
-      where: {
-        userId,
-        date: { gte: sevenDaysAgo }
-      },
-      include: {
-        classroom: true
-      },
-      orderBy: {
-        date: 'desc'
-      },
-      take: 5
-    })
-
-    // Fetch recent submissions with grades
-    const submissions = await prisma.submission.findMany({
-      where: {
-        userId,
-        submittedAt: { gte: sevenDaysAgo }
-      },
-      include: {
-        assignment: {
-          include: {
-            classroom: true
+    // Fetch all data in parallel
+    const [attendances, submissions] = await Promise.all([
+      // Fetch recent attendances
+      prisma.attendance.findMany({
+        where: {
+          userId,
+          date: { gte: sevenDaysAgo }
+        },
+        include: {
+          classroom: {
+            select: {
+              courseName: true
+            }
           }
-        }
-      },
-      orderBy: {
-        submittedAt: 'desc'
-      },
-      take: 5
-    })
+        },
+        orderBy: {
+          date: 'desc'
+        },
+        take: 10
+      }),
+
+      // Fetch recent submissions with grades
+      prisma.submission.findMany({
+        where: {
+          userId,
+          submittedAt: { gte: sevenDaysAgo }
+        },
+        include: {
+          assignment: {
+            select: {
+              title: true,
+              deadline: true,
+              maxMarks: true,
+              classroom: {
+                select: {
+                  courseName: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          submittedAt: 'desc'
+        },
+        take: 10
+      })
+    ]);
 
     // Transform the data into activities
     const activities = [
@@ -67,7 +81,7 @@ export async function GET(req: NextRequest) {
         title: submission.marks > 0 
           ? `Received grade for ${submission.assignment.title}`
           : `Submitted ${submission.assignment.title}`,
-        date: submission.marks > 0 ? submission.submittedAt : submission.submittedAt,
+        date: submission.submittedAt,
         details: {
           classroomName: submission.assignment.classroom.courseName,
           grade: submission.marks,
@@ -77,9 +91,11 @@ export async function GET(req: NextRequest) {
             : 'late' as const
         }
       }))
-    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    ]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10);
 
-    return NextResponse.json({ activities: activities.slice(0, 10) })
+    return NextResponse.json({ activities })
   } catch (error) {
     console.error('Error fetching activities:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
