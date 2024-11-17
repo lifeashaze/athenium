@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Bento } from "@/components/Bento";
 import { BorderBeam } from "@/components/ui/border-beam";
+import { MarqueeComp } from "@/components/Marquee";
 
 
 
@@ -59,13 +60,13 @@ export default function Home() {
             >
 
             <section className="text-center mb-20">
-              <h1 className="text-[#9966CC] text-4xl md:text-6xl font-semibold mb-3">
+              <h1 className="text-[#9966CC] text-7xl md:text-7xl font-semibold mb-3">
               Transform learning 
               </h1>
-              <h1 className="text-4xl md:text-6xl font-semibold mb-10">
+              <h1 className="text-7xl md:text-7xl font-semibold mb-12">
               Elevate teaching
               </h1>
-              <p className="text-base text-[#696969] md:text-base  mb-8 max-w-xl mx-auto">
+              <p className="text-base text-[#696969] md:text-base  mb-12 max-w-xl mx-auto">
                 athenium is the all-in-one platform that empowers students and educators to streamline coursework, enhance collaboration, and achieve academic excellence.
               </p>
               <div className="flex gap-4 justify-center">
@@ -95,6 +96,7 @@ export default function Home() {
             <div className="relative">
               <BorderBeam
               size={400}
+              borderWidth={2}
               />
             <Image
                 src={placeholder}
@@ -149,7 +151,13 @@ export default function Home() {
             {/* {Marquee Section} */}
 
             <section className="">
-              
+              <h1 className="text-4xl font-bold text-center mb-10">
+              Beyond Boundaries
+              </h1>
+              <p className="text-sm text-[#696969] text-center md:text-sm mb-8 max-w-lg mx-auto ">
+              <span className="text-[#9966CC] font-semibold">athenium</span> is redefining education by unlocking personalized learning, empowering educators, and creating engaging academic journeys. Transforming classrooms, inspiring students, and driving success one click at a time
+              </p>
+              <MarqueeComp/>
             </section>
 
              
@@ -158,12 +166,19 @@ export default function Home() {
             {/* CTA Section */}
             <section className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-6">Ready to Transform Your Academic Experience?</h2>
-              <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Join Athenium today and discover a new way to manage your academic life. Streamline your coursework, collaborate with peers, and achieve your educational goals.
+              <p className="text-lg text-[#696969]  mb-8 max-w-2xl mx-auto">
+                Join athenium today and discover a new way to manage your academic life. Streamline your coursework, collaborate with peers, and achieve your educational goals.
               </p>
-              <Button asChild size="lg">
-                <Link href="/sign-up">Sign Up Now</Link>
-              </Button>
+              <div className="flex gap-4 justify-center">
+                <Button asChild className="font-semibold py-1 text-black bg-[#9966CC]">
+                  <Link href="/sign-up">Get Started</Link>
+                </Button>
+                
+                  <Link href='/about' className=" ml-4 text-sm text-black rounded-md font-semibold flex items-center">
+                  Documentation <ChevronRight size={12} strokeWidth={3} className="mt-1" />
+                  </Link>
+                
+              </div>
             </section>
           </main>
 
