@@ -747,6 +747,9 @@ const DashboardPage = () => {
                   })()},
                   <span className="font-semibold ml-1">{user?.firstName}</span>
                 </h1>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Test data inserted for demonstration purposes
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <TooltipProvider delayDuration={0}>
