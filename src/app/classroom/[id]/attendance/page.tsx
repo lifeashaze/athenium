@@ -68,49 +68,37 @@ const AttendancePage = () => {
   const fetchMembers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`/api/classrooms/${params.id}/members`, {
-        params: {
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-          search: searchQuery
-        }
-      });
+      const response = await axios.get(`/api/classrooms/${params.id}/members`);
       
+      const attendanceResponse = await axios.get(`/api/classrooms/${params.id}/attendance`, {
+        params: { date: format(date, 'yyyy-MM-dd') }
+      });
+
       setMembers(response.data.members || []);
-      setTotalPages(Math.ceil((response.data.total || 0) / ITEMS_PER_PAGE));
+
+      const attendanceData = attendanceResponse.data.reduce((acc: Record<string, AttendanceStatus>, record: AttendanceRecord) => {
+        acc[record.userId] = record.isPresent ? "present" : "absent";
+        return acc;
+      }, {});
+      setAttendance(attendanceData);
+
+      setTotalPages(Math.ceil((response.data.members?.length || 0) / ITEMS_PER_PAGE));
     } catch (error) {
-      console.error('Failed to fetch members:', error);
+      console.error('Failed to fetch data:', error);
       toast({ 
         title: "Error", 
-        description: "Failed to fetch class members.", 
+        description: "Failed to fetch class data.", 
         variant: "destructive" 
       });
       setMembers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [params.id, currentPage, searchQuery]);
-
-  const fetchAttendance = useCallback(async () => {
-    try {
-      const response = await axios.get(`/api/classrooms/${params.id}/attendance`, {
-        params: { date: format(date, 'yyyy-MM-dd') }
-      });
-      const attendanceData = response.data.reduce((acc: Record<string, AttendanceStatus>, record: AttendanceRecord) => {
-        acc[record.userId] = record.isPresent ? "present" : "absent";
-        return acc;
-      }, {});
-      setAttendance(attendanceData);
-    } catch (error) {
-      console.error('Failed to fetch attendance:', error);
-      toast({ title: "Error", description: "Failed to fetch attendance data.", variant: "destructive" });
-    }
   }, [params.id, date]);
 
   useEffect(() => {
     fetchMembers();
-    fetchAttendance();
-  }, [date, params.id, fetchMembers, fetchAttendance]);
+  }, [date, params.id, fetchMembers]);
 
   useEffect(() => {
     const present = Object.values(attendance).filter(status => status === "present").length;

@@ -6,7 +6,7 @@ import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Trash2, Plus, UserPlus, Book, Users, Bell, UserCog, ArrowRight, Info, LogOut, FileText } from 'lucide-react'
@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion' // npm install framer-mo
 import { ClassInvitationCard } from '@/components/ClassInvitationCard'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { NotificationDropdown } from '@/components/NotificationDropdown'
+import { Clock, GraduationCap, CheckCircle2 } from 'lucide-react'
 
 
 interface Classroom {
@@ -58,6 +59,20 @@ interface ClassInvitation {
     lastName: string
   }
   memberCount: number
+}
+
+interface Activity {
+  id: string
+  type: 'attendance' | 'submission' | 'grade'
+  title: string
+  date: Date
+  details: {
+    grade?: number
+    maxGrade?: number
+    classroomName?: string
+    status?: 'present' | 'absent'
+    submissionStatus?: 'on_time' | 'late'
+  }
 }
 
 const DashboardPage = () => {
@@ -97,6 +112,7 @@ const DashboardPage = () => {
   const [classroomToDelete, setClassroomToDelete] = useState<number | null>(null);
   const [showFinalDeleteConfirm, setShowFinalDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -105,10 +121,11 @@ const DashboardPage = () => {
       setIsLoading(true);
       try {
         // Update Promise.all to include mock notifications
-        const [classroomsResponse, userDetailsResponse, invitationsResponse] = await Promise.all([
+        const [classroomsResponse, userDetailsResponse, invitationsResponse, activitiesResponse] = await Promise.all([
           axios.get('/api/classrooms'),
           axios.get('/api/user'),
-          axios.get('/api/classrooms/invitations')
+          axios.get('/api/classrooms/invitations'),
+          axios.get('/api/activities')
         ]);
 
         // Set classrooms
@@ -123,6 +140,8 @@ const DashboardPage = () => {
 
         // Set invitations
         setClassInvitations(invitationsResponse.data.invitations || []);
+
+        setRecentActivities(activitiesResponse.data.activities || []);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Unable to load data. Please try again later.');
@@ -240,6 +259,96 @@ const DashboardPage = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Recent Activity Section */}
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Recent Activity
+                  </h2>
+                  <Badge variant="secondary" className="rounded-full">
+                    {recentActivities.length}
+                  </Badge>
+                </div>
+
+                {recentActivities.length === 0 ? (
+                  <Card className="p-6 text-center">
+                    <Clock className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                      No recent activity
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your recent classroom activities will appear here
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="space-y-2">
+                    {recentActivities.map((activity) => (
+                      <Card key={activity.id} className="p-4">
+                        <div className="flex items-start gap-4">
+                          {/* Icon based on activity type */}
+                          <div className={`rounded-full p-2 ${
+                            activity.type === 'attendance' 
+                              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                              : activity.type === 'submission'
+                              ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+                              : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                          }`}>
+                            {activity.type === 'attendance' && <Users className="h-4 w-4" />}
+                            {activity.type === 'submission' && <FileText className="h-4 w-4" />}
+                            {activity.type === 'grade' && <GraduationCap className="h-4 w-4" />}
+                          </div>
+
+                          {/* Activity Details */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {activity.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              {activity.details.classroomName && (
+                                <Badge variant="outline" className="text-xs">
+                                  {activity.details.classroomName}
+                                </Badge>
+                              )}
+                              {activity.type === 'grade' && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {activity.details.grade}/{activity.details.maxGrade} points
+                                </Badge>
+                              )}
+                              {activity.type === 'submission' && (
+                                <Badge 
+                                  variant={activity.details.submissionStatus === 'on_time' ? 'secondary' : 'destructive'} 
+                                  className="text-xs"
+                                >
+                                  {activity.details.submissionStatus === 'on_time' ? 'On Time' : 'Late'}
+                                </Badge>
+                              )}
+                              {activity.type === 'attendance' && (
+                                <Badge 
+                                  variant={activity.details.status === 'present' ? 'secondary' : 'destructive'} 
+                                  className="text-xs"
+                                >
+                                  {activity.details.status === 'present' ? 'Present' : 'Absent'}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Timestamp */}
+                          <time className="text-xs text-muted-foreground">
+                            {new Date(activity.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </time>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Classrooms Section Header */}

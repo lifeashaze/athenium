@@ -2,8 +2,7 @@
 import { Header } from "@/components/Header";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Users, Calendar, BarChart2, BookOpen, Zap, Shield, Clock, Globe,ChevronRight } from "lucide-react";
+import { CheckCircle, Users, BookOpen,ChevronRight } from "lucide-react";
 import Image from 'next/image';
 import placeholder from '../components/img/placeholder.png';
 import { motion } from 'framer-motion';

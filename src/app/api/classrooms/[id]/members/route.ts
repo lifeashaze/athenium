@@ -6,12 +6,13 @@ const prisma = new PrismaClient();
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const classroomId = params.id;
+
     const members = await prisma.membership.findMany({
       where: { 
         classroomId,
-        // user: {
-        //   role: 'STUDENT'  // Only fetch students
-        // }
+        user: {
+          role: 'STUDENT'
+        }
       },
       include: {
         user: {
@@ -48,7 +49,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       division: user.division,
     }));
 
-    return NextResponse.json(formattedMembers);
+    return NextResponse.json({
+      members: formattedMembers
+    });
   } catch (error) {
     console.error('Failed to fetch members:', error);
     return NextResponse.json({ error: 'Failed to fetch members' }, { status: 500 });
