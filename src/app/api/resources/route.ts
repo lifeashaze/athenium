@@ -16,12 +16,11 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 export async function GET(req: NextRequest) {
-  // Get the action and classroomId from the URL
   const { searchParams } = new URL(req.url);
   const action = searchParams.get('action');
   const classroomId = searchParams.get('classroomId');
+  const step = searchParams.get('step');
 
-  // If action is download, handle zip file creation
   if (action === 'download' && classroomId) {
     try {
       const { userId } = getAuth(req);
@@ -29,7 +28,28 @@ export async function GET(req: NextRequest) {
         return new NextResponse("Unauthorized", { status: 401 });
       }
 
-      // Get all resources for the classroom
+      // Step 1: Fetch resources
+      if (step === 'prepare') {
+        const resources = await prisma.resource.findMany({
+          where: {
+            classroomId: classroomId,
+            classroom: {
+              memberships: {
+                some: {
+                  userId: userId
+                }
+              }
+            }
+          },
+        });
+        
+        return NextResponse.json({ 
+          status: 'prepared', 
+          count: resources.length 
+        });
+      }
+
+      // Step 2: Create and return zip file
       const resources = await prisma.resource.findMany({
         where: {
           classroomId: classroomId,
@@ -43,8 +63,8 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      // Create zip file
       const zip = new JSZip();
+      let downloadedCount = 0;
 
       // Download and add each file to the zip
       await Promise.all(
@@ -54,24 +74,29 @@ export async function GET(req: NextRequest) {
               responseType: 'arraybuffer',
             });
             
-            // Get file extension from URL
             const extension = resource.url.split('.').pop();
-            // Add file to zip
             zip.file(`${resource.title}.${extension}`, response.data);
+            downloadedCount++;
           } catch (error) {
             console.error(`Failed to download file: ${resource.title}`, error);
           }
         })
       );
 
-      // Generate zip file
-      const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
+      const zipContent = await zip.generateAsync({ 
+        type: 'nodebuffer',
+        compression: "DEFLATE",
+        compressionOptions: {
+          level: 5
+        }
+      });
 
-      // Send response
       return new NextResponse(zipContent, {
         headers: {
           'Content-Type': 'application/zip',
           'Content-Disposition': `attachment; filename="classroom-resources.zip"`,
+          'X-Total-Files': resources.length.toString(),
+          'X-Downloaded-Files': downloadedCount.toString(),
         },
       });
     } catch (error) {
