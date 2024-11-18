@@ -855,7 +855,7 @@ const DashboardPage = () => {
           <DialogHeader>
             <DialogTitle>Leave Classroom</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to leave this classroom? You'll need a new invitation to rejoin.</p>
+          <p>Are you sure you want to leave this classroom? You&apos;ll need a new invitation to rejoin.</p>
           <div className="flex justify-end gap-3 mt-4">
             <Button variant="outline" onClick={() => setClassroomToLeave(null)}>Cancel</Button>
             <Button 
