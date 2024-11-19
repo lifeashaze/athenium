@@ -10,9 +10,13 @@ import { ThemeProvider } from '@/components/theme-provider'
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isPublicPage = ['/', '/about', '/sign-in', '/sign-up', '/verify-email-address']
+  const isPublicPage = 
+  ['/', '/about'].includes(pathname) || 
+  pathname.startsWith('/sign-in') || 
+  pathname.startsWith('/sign-up') || 
+  pathname.startsWith('/verify-email')
 
-  if (isPublicPage.includes(pathname)) {
+if (isPublicPage) {
     return <>{children}</>
   }
 
