@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
 
 interface PistonResponse {
   language: string;
@@ -223,12 +224,12 @@ int main() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
-          <Card>
+          <Card className="bg-card">
             <CardHeader>
               <CardTitle className="text-sm font-medium">Code Editor</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[40vh] border rounded">
+              <div className="h-[40vh] border border-border rounded-md">
                 <Editor
                   height="100%"
                   defaultLanguage={selectedLanguage.id}
@@ -239,6 +240,7 @@ int main() {
                     minimap: { enabled: false },
                     fontSize: 14,
                     automaticLayout: true,
+                    theme: 'vs-dark',
                   }}
                 />
               </div>
@@ -261,9 +263,12 @@ int main() {
                       {testResults.map((result, index) => (
                         <div
                           key={index}
-                          className={`p-2 rounded-md flex items-center justify-between ${
-                            result.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}
+                          className={cn(
+                            "p-2 rounded-md flex items-center justify-between",
+                            result.passed 
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                              : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                          )}
                         >
                           <span className="text-sm font-medium">Test {index + 1}</span>
                           {result.passed ? (
@@ -292,9 +297,11 @@ int main() {
                 </TabsContent>
                 <TabsContent value="cases">
                   {testCases.filter(tc => !tc.isHidden).map((tc, index) => (
-                    <div key={index} className="mb-2">
-                      <p><strong>Input:</strong> {tc.input}</p>
-                      <p><strong>Expected Output:</strong> {tc.expectedOutput}</p>
+                    <div key={index} className="p-4 rounded-lg border border-border bg-card">
+                      <p className="text-sm font-semibold">Test Case {index + 1}:</p>
+                      <p className="text-sm"><strong>Input:</strong> <span className="text-muted-foreground">{tc.input}</span></p>
+                      <p className="text-sm"><strong>Expected Output:</strong> <span className="text-muted-foreground">{tc.expectedOutput}</span></p>
+                      <p className="text-sm"><strong>Description:</strong> <span className="text-muted-foreground">{tc.description}</span></p>
                     </div>
                   ))}
                   <p className="text-sm text-muted-foreground mt-4">
@@ -340,11 +347,11 @@ int main() {
             </CardHeader>
             <CardContent className="space-y-4">
               {testCases.filter(tc => !tc.isHidden).map((tc, index) => (
-                <div key={index}>
+                <div key={index} className="p-4 rounded-lg border border-border bg-card">
                   <p className="text-sm font-semibold">Test Case {index + 1}:</p>
-                  <p className="text-sm"><strong>Input:</strong> {tc.input}</p>
-                  <p className="text-sm"><strong>Expected Output:</strong> {tc.expectedOutput}</p>
-                  <p className="text-sm"><strong>Description:</strong> {tc.description}</p>
+                  <p className="text-sm"><strong>Input:</strong> <span className="text-muted-foreground">{tc.input}</span></p>
+                  <p className="text-sm"><strong>Expected Output:</strong> <span className="text-muted-foreground">{tc.expectedOutput}</span></p>
+                  <p className="text-sm"><strong>Description:</strong> <span className="text-muted-foreground">{tc.description}</span></p>
                 </div>
               ))}
               <p className="text-sm text-muted-foreground">

@@ -8,6 +8,7 @@ import { format, parseISO, isPast } from "date-fns"
 import { useEffect, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { Clock, ChevronRight, CheckCircle2, AlertCircle, FileCheck } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Update type to match Prisma schema
 type Assignment = {
@@ -26,6 +27,37 @@ type Assignment = {
     submittedAt: string
   }[]
 }
+
+const AssignmentCardSkeleton = () => (
+  <Card className="overflow-hidden flex flex-col h-[200px]">
+    <CardHeader className="pb-2 flex-none">
+      <div className="flex justify-between items-start">
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-48" /> {/* Title */}
+          <Skeleton className="h-4 w-32" /> {/* Course name */}
+        </div>
+        <Skeleton className="h-5 w-20" /> {/* Badge */}
+      </div>
+    </CardHeader>
+    <CardContent className="flex flex-col flex-1 justify-between">
+      <Skeleton className="h-4 w-40" /> {/* Date */}
+      <div className="mt-auto pt-2">
+        <Skeleton className="h-9 w-full" /> {/* Button */}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const SectionSkeleton = () => (
+  <section className="space-y-4">
+    <Skeleton className="h-8 w-48" /> {/* Section title */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {[...Array(3)].map((_, i) => (
+        <AssignmentCardSkeleton key={i} />
+      ))}
+    </div>
+  </section>
+);
 
 const Page = () => {
   const router = useRouter()
@@ -109,7 +141,11 @@ const Page = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       {loading ? (
-        <p>Loading assignments...</p>
+        <div className="space-y-8">
+          <SectionSkeleton /> {/* Pending Assignments */}
+          <SectionSkeleton /> {/* Overdue Assignments */}
+          <SectionSkeleton /> {/* Recent Submissions */}
+        </div>
       ) : (
         <div className="space-y-8">
           {/* Pending Assignments Section */}

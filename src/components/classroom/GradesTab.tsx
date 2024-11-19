@@ -5,29 +5,51 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 
 interface Submission {
+  id: string;
+  submittedAt: Date | string;
+  content: string;
+  userId: string;
+  assignmentId: string;
   marks: number;
-  submittedAt: string;
   assignment: {
+    id: string;
     title: string;
     maxMarks: number;
   };
 }
 
+interface Assignment {
+  id: number;
+  title: string;
+  type: 'theory' | 'lab';
+  deadline: string;
+  maxMarks: number;
+  description?: string;
+  requirements?: string[];
+  creator: {
+    firstName: string;
+  };
+}
+
 interface GradesTabProps {
   submissions: Submission[];
-  assignments: any[]; // TODO: Add proper type
+  assignments: Assignment[];
   userId: string;
 }
 
 export function GradesTab({ submissions = [], assignments = [], userId }: GradesTabProps) {
-  const gradedSubmissions = submissions.filter((sub: Submission) => sub.marks > 0);
+  const gradedSubmissions = submissions.filter((sub: Submission) => 
+    sub.marks > 0 && sub.assignment
+  );
 
   const chartData = gradedSubmissions
     .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime())
     .map((submission) => ({
-      date: submission.submittedAt,
-      score: Math.round((submission.marks / submission.assignment.maxMarks) * 100),
-      name: submission.assignment.title
+      date: submission.submittedAt.toString(),
+      score: submission.assignment 
+        ? Math.round((submission.marks / submission.assignment.maxMarks) * 100)
+        : 0,
+      name: submission.assignment?.title || 'Untitled Assignment'
     }));
 
   // Calculate statistics
@@ -49,13 +71,13 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
           <CardTitle>Academic Progress</CardTitle>
         </CardHeader>
-        <CardContent className="h-[400px]">
+        <CardContent className="h-[400px] bg-background">
           {gradedSubmissions.length > 0 ? (
-            <ChartContainer config={{ score: { label: "Score (%)", color: "hsl(220, 90%, 56%)" }}} className="h-full w-full">
+            <ChartContainer config={{ score: { label: "Score (%)", color: "hsl(var(--primary))" }}} className="h-full w-full">
               <LineChart
                 data={chartData}
                 margin={{ top: 20, right: 20, bottom: 40, left: 40 }}
@@ -94,9 +116,9 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="hsl(220, 90%, 56%)"
+                  stroke="hsl(var(--primary))"
                   strokeWidth={3}
-                  dot={{ r: 6, fill: "hsl(220, 90%, 56%)" }}
+                  dot={{ r: 6, fill: "hsl(var(--primary))" }}
                 />
               </LineChart>
             </ChartContainer>
@@ -109,22 +131,22 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
       </Card>
 
       {/* Recent Assignments List */}
-      <Card className="mb-6">
+      <Card className="mb-6 bg-card">
         <CardHeader>
           <CardTitle>Recent Assignments</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-background">
           {chartData.length > 0 ? (
             <div className="space-y-2">
               {chartData.slice(-5).reverse().map((assignment, index) => (
-                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
+                <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 transition-colors">
                   <div>
                     <p className="font-medium">{assignment.name}</p>
                     <p className="text-sm text-muted-foreground">
                       {formatDate(assignment.date)}
                     </p>
                   </div>
-                  <Badge variant={assignment.score >= 70 ? "blue" : "amber"}>
+                  <Badge variant={assignment.score >= 70 ? "default" : "secondary"}>
                     {assignment.score}%
                   </Badge>
                 </div>
@@ -138,11 +160,11 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
 
       {/* Academic Summary Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle>Performance Summary</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="bg-background">
             {chartData.length > 0 ? (
               <div className="space-y-4">
                 <div>
@@ -171,11 +193,11 @@ export function GradesTab({ submissions = [], assignments = [], userId }: Grades
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle>Progress Analysis</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="bg-background">
             {chartData.length > 0 ? (
               <div className="space-y-4">
                 <div>

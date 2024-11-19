@@ -10,6 +10,7 @@ import axios from 'axios'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Resource {
   id: string
@@ -103,6 +104,28 @@ const downloadCategoryFiles = async (classroomId: string, category: string, cate
     console.error('Download failed:', error);
   }
 };
+
+const ResourceItemSkeleton = () => (
+  <div className="flex items-start py-2 px-3 rounded-lg">
+    <Skeleton className="h-4 w-4 mr-2" />
+    <Skeleton className="h-4 flex-1" />
+  </div>
+);
+
+const CategorySkeleton = () => (
+  <div className="space-y-1">
+    <div className="flex items-center gap-1 py-2">
+      <Skeleton className="h-4 w-4" />
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="h-4 w-4 ml-auto" />
+    </div>
+    <div className="pl-4 space-y-2">
+      {[...Array(3)].map((_, i) => (
+        <ResourceItemSkeleton key={i} />
+      ))}
+    </div>
+  </div>
+);
 
 export default function CourseResourcesPage({ params }: { params: { id: string } }) {
   const [resources, setResources] = useState<Resource[]>([])
@@ -289,8 +312,10 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
+              <div className="space-y-4 mt-4">
+                {[...Array(5)].map((_, i) => (
+                  <CategorySkeleton key={i} />
+                ))}
               </div>
             ) : error ? (
               <div className="text-red-500 text-sm py-4">{error}</div>
@@ -441,9 +466,23 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
           <Card className="flex-1">
             <CardContent className="p-6">
               {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
+                <>
+                  <Skeleton className="h-8 w-64 mb-4" />
+                  <Card className="flex-1">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center justify-center h-[calc(100vh-16rem)]">
+                        <Skeleton className="h-16 w-16 mb-4 rounded-full" />
+                        <Skeleton className="h-6 w-48 mb-2" />
+                        <Skeleton className="h-4 w-72" />
+                        <div className="mt-6 w-64 space-y-2">
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-4 w-5/6" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
               ) : error ? (
                 <div className="text-red-500">{error}</div>
               ) : !selectedResource ? (
