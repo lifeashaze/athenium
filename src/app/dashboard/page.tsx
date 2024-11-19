@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion' // npm install framer-mo
 import { ClassInvitationCard } from '@/components/ClassInvitationCard'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { NotificationDropdown } from '@/components/NotificationDropdown'
+import { ModeToggle } from '@/components/ThemeToggle'
 
 
 interface Classroom {
@@ -182,7 +183,7 @@ const DashboardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-background">
         <main>
           <div className="container max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="px-4 py-6 sm:px-0">
@@ -206,7 +207,7 @@ const DashboardPage = () => {
                 <Skeleton className="h-8 w-48 mb-3" /> {/* Section title */}
                 <div className="space-y-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-4 rounded-lg border bg-white">
+                    <div key={i} className="flex items-center justify-between p-4 rounded-lg border bg-card">
                       <div className="flex-1">
                         <Skeleton className="h-6 w-3/4 mb-2" />
                         <div className="flex gap-2">
@@ -233,7 +234,7 @@ const DashboardPage = () => {
               {/* Classrooms Grid */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="border rounded-lg p-6 bg-white">
+                  <div key={i} className="border rounded-lg p-6 bg-card">
                     <div className="flex justify-between items-start gap-4 mb-6">
                       <div className="flex-1">
                         <Skeleton className="h-7 w-3/4 mb-3" /> {/* Course name */}
@@ -497,9 +498,9 @@ const DashboardPage = () => {
               exit={{ opacity: 0, scale: 0.8 }}
               className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
             >
-              <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-xl text-center">
+              <div className="bg-background/90 backdrop-blur-sm p-8 rounded-xl shadow-xl text-center">
                 <motion.h1 
-                  className="text-4xl font-bold mb-4"
+                  className="text-4xl font-bold mb-4 text-foreground"
                   initial={{ y: -20 }}
                   animate={{ y: 0 }}
                   transition={{ type: "spring", bounce: 0.5 }}
@@ -537,13 +538,13 @@ const DashboardPage = () => {
         )}
       </AnimatePresence>
       
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-background">
         <main className="py-8">
           <div className="container max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             {/* Header Section - Redesigned */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
               <div>
-                <h1 className="text-2xl font-medium text-gray-900 dark:text-gray-100">
+                <h1 className="text-2xl font-medium text-foreground">
                   {(() => {
                     const hour = new Date().getHours()
                     if (hour >= 5 && hour < 12) return "Good Morning"
@@ -572,12 +573,13 @@ const DashboardPage = () => {
                     <TooltipContent>Update Profile</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                <ModeToggle />
                 <NotificationDropdown userId={user?.id} />
               </div>
             </div>
 
             {/* Action Bar - Redesigned */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 p-4 bg-card rounded-lg shadow-sm">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -727,9 +729,9 @@ const DashboardPage = () => {
               </div>
               
               {filteredClassrooms.length === 0 ? (
-                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg">
-                  <Book className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                <div className="text-center py-12 bg-card rounded-lg">
+                  <Book className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                  <h3 className="text-sm font-medium text-foreground mb-1">
                     No classrooms found
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -741,7 +743,7 @@ const DashboardPage = () => {
                   {filteredClassrooms.map((classroom) => (
                     <Card 
                       key={classroom.id} 
-                      className="group hover:shadow-md transition-all duration-300 overflow-hidden bg-white dark:bg-gray-800"
+                      className="group hover:shadow-md transition-all duration-300 overflow-hidden bg-card"
                     >
                       <div className="relative p-4">
                         {/* Top Section */}
@@ -768,7 +770,7 @@ const DashboardPage = () => {
                         </div>
 
                         {/* Professor & Assignment Info */}
-                        <div className="flex items-center justify-between mb-3 p-2.5 bg-muted/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-3 p-2.5 bg-muted rounded-lg">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                               <UserCog className="h-4 w-4 text-primary" />
@@ -830,9 +832,9 @@ const DashboardPage = () => {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => deleteClassroom(classroom.id)}
-                                    className="h-9 w-9 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="h-9 w-9 hover:bg-destructive/10 dark:hover:bg-destructive/20"
                                   >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                    <Trash2 className="h-4 w-4 text-destructive" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom">Delete Classroom</TooltipContent>

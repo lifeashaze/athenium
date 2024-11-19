@@ -5,7 +5,8 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css'
 import { usePathname } from 'next/navigation'
 import { SidebarDemo } from '@/components/Sidebar'
-import '../../public/fonts/fonts.css' // Add this line
+import '../../public/fonts/fonts.css' 
+import { ThemeProvider } from '@/components/theme-provider'
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -32,10 +33,17 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
-      <html lang="en">
-        <body className="font-styrene"> 
-          <RootLayoutContent>{children}</RootLayoutContent>
-          <Toaster />
+      <html lang="en" suppressHydrationWarning>
+        <body className="font-styrene">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <RootLayoutContent>{children}</RootLayoutContent>
+            <Toaster />
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
