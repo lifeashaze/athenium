@@ -5,7 +5,7 @@ import React from 'react'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 15, // 15 seconds
+      staleTime: 1000 * 15, // 30 seconds
       gcTime: 1000 * 60 * 10, // 10 minutes
     },
   },

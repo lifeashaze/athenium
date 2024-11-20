@@ -73,8 +73,9 @@ const Page = () => {
       return data
     },
     enabled: !!userId, // Only fetch when userId is available
-    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
-    gcTime: 1000 * 60 * 10, // Keep unused data in cache for 10 minutes
+    staleTime: 1000 * 60, // Consider data stale after 1 minute
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   })
 
   // Memoize the categorized assignments to prevent unnecessary recalculations

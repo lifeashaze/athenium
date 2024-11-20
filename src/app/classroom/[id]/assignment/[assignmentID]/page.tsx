@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { FileText, Download } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { useQueryClient } from '@tanstack/react-query'
 
 interface Assignment {
   id: string;
@@ -62,6 +63,7 @@ const AssignmentPage = () => {
   const [submissionUrl, setSubmissionUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [marks, setMarks] = useState<number | null>(null);
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -126,6 +128,9 @@ const AssignmentPage = () => {
       );
       setSubmissionUrl(response.data.content);
       setFile(null);
+      
+      await queryClient.invalidateQueries({ queryKey: ['assignments'] })
+      
       router.refresh();
     } catch (error) {
       console.error('Failed to submit assignment:', error);
@@ -133,7 +138,7 @@ const AssignmentPage = () => {
     } finally {
       setIsUploading(false);
     }
-  }, [file, params.id, params.assignmentID, router, isDeadlinePassed]);
+  }, [file, params.id, params.assignmentID, router, isDeadlinePassed, queryClient]);
 
   const isSubmissionLocked = useCallback(() => {
     return isDeadlinePassed() || (marks !== null && marks > 0);
