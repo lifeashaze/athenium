@@ -3,9 +3,13 @@ import axios from 'axios'
 
 interface User {
   id: string
-  firstName: string
-  email: string
   role: "STUDENT" | "PROFESSOR" | "ADMIN"
+  rollNo?: string | null
+  year?: string | null
+  division?: string | null
+  srn?: string | null
+  prn?: string | null
+  officeHours?: string | null
 }
 
 export function useDbUser() {

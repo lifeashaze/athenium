@@ -110,6 +110,7 @@ const DashboardPage = () => {
   const { toast } = useToast();
   const router = useRouter();
 
+
   const {
     classrooms,
     isLoading: isClassroomsLoading,
@@ -176,6 +177,7 @@ const DashboardPage = () => {
       router.prefetch(`/classroom/${classroom.id}`);
     });
   }, [classrooms, router]);
+
 
   const handleOnboardingSubmit = async () => {
     try {
@@ -608,42 +610,44 @@ const DashboardPage = () => {
                 />
               </div>
               <div className="flex items-center gap-3">
-                <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9">
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Join
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Join Classroom</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <Input
-                        type="text"
-                        value={joinCode}
-                        onChange={(e) => {
-                          setJoinCode(e.target.value)
-                          setJoinError(null)
-                        }}
-                        placeholder="Classroom Code"
-                      />
-                      {joinError && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{joinError}</AlertDescription>
-                        </Alert>
-                      )}
-                      <Button 
-                        onClick={handleJoinClassroom} 
-                        className="w-full"
-                        disabled={isJoining}
-                      >
-                        {isJoining ? 'Joining...' : 'Join Classroom'}
+                {!isProfessor && (
+                  <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-9">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Join
                       </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Join Classroom</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <Input
+                          type="text"
+                          value={joinCode}
+                          onChange={(e) => {
+                            setJoinCode(e.target.value)
+                            setJoinError(null)
+                          }}
+                          placeholder="Classroom Code"
+                        />
+                        {joinError && (
+                          <Alert variant="destructive">
+                            <AlertDescription>{joinError}</AlertDescription>
+                          </Alert>
+                        )}
+                        <Button 
+                          onClick={handleJoinClassroom} 
+                          className="w-full"
+                          disabled={isJoining}
+                        >
+                          {isJoining ? 'Joining...' : 'Join Classroom'}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
                 
                 {isProfessor && (
                   <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
