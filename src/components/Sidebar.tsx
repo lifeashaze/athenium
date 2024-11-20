@@ -6,6 +6,7 @@ import {
   IconBrandTabler,
   IconChartBar,
   IconSettings,
+  IconBook,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -28,15 +29,13 @@ export function SidebarDemo() {
         <IconFiles className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
-
     {
-      label: "Analytics",
-      href: "/analytics",
+      label: "Resources",
+      href: "/resources",
       icon: (
-        <IconChartBar className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        <IconBook className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
-    // New User Settings link
     {
       label: "User Settings",
       href: "/user-settings",
@@ -46,6 +45,14 @@ export function SidebarDemo() {
     },
   ];
   const [open, setOpen] = useState(false);
+
+  const handleLinkClick = () => {
+    // Close sidebar on mobile devices
+    if (window.innerWidth < 768) { // md breakpoint
+      setOpen(false);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -61,7 +68,11 @@ export function SidebarDemo() {
             </>
             <div className="mt-8 flex flex-col gap-2">
               {links.map((link, idx) => (
-                <SidebarLink key={idx} link={link} />
+                <SidebarLink 
+                  key={idx} 
+                  link={link}
+                  onClick={handleLinkClick}
+                />
               ))}
             </div>
           </div>

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { ClipLoader } from 'react-spinners';
 import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
+import { AlertCircle, ExternalLink, Loader2 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +40,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Student {
   id: string;
@@ -246,9 +247,9 @@ const EvaluationClient = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header Section */}
-      <div className="border-b bg-white">
+      <div className="border-b border-border bg-card">
         <div className="container mx-auto py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -275,14 +276,16 @@ const EvaluationClient = () => {
       <div className="container mx-auto py-6">
         {isLoading && (
           <div className="flex justify-center items-center mt-4">
-            <ClipLoader size={30} color={"#123abc"} loading={true} />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-600">{error}</p>
-          </div>
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
         {submissions.length > 0 && (
@@ -482,7 +485,7 @@ const EvaluationClient = () => {
             </div>
 
             {/* Table Card */}
-            <Card>
+            <Card className="bg-card">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
@@ -553,7 +556,7 @@ const EvaluationClient = () => {
 
         {submissions.length === 0 && !isLoading && !error && (
           <div className="text-center py-12">
-            <div className="bg-white rounded-lg p-8 inline-block">
+            <div className="bg-card rounded-lg p-8 inline-block border border-border">
               <p className="text-lg text-muted-foreground">No submissions yet for this assignment.</p>
             </div>
           </div>

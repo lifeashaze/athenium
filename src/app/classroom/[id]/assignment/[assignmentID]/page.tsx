@@ -14,6 +14,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FileText, Download } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+import { useQueryClient } from '@tanstack/react-query'
 
 interface Assignment {
   id: string;
@@ -60,6 +63,7 @@ const AssignmentPage = () => {
   const [submissionUrl, setSubmissionUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [marks, setMarks] = useState<number | null>(null);
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -124,6 +128,9 @@ const AssignmentPage = () => {
       );
       setSubmissionUrl(response.data.content);
       setFile(null);
+      
+      await queryClient.invalidateQueries({ queryKey: ['assignments'] })
+      
       router.refresh();
     } catch (error) {
       console.error('Failed to submit assignment:', error);
@@ -131,13 +138,68 @@ const AssignmentPage = () => {
     } finally {
       setIsUploading(false);
     }
-  }, [file, params.id, params.assignmentID, router, isDeadlinePassed]);
+  }, [file, params.id, params.assignmentID, router, isDeadlinePassed, queryClient]);
 
   const isSubmissionLocked = useCallback(() => {
     return isDeadlinePassed() || (marks !== null && marks > 0);
   }, [marks, isDeadlinePassed]);
 
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return (
+    <div className="min-h-screen bg-background py-4 sm:py-6 lg:py-8 px-2 sm:px-4 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-4 lg:gap-8">
+          {/* Assignment details skeleton */}
+          <div className="order-2 lg:order-1 h-[60vh] lg:h-[calc(100vh-4rem)]">
+            <Card className="h-full">
+              <CardHeader className="border-b border-border">
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-3/4 bg-muted" />
+                  <Skeleton className="h-4 w-1/2 bg-muted" />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-24 bg-muted" />
+                    <Skeleton className="h-20 w-full bg-muted" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-32 bg-muted" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-3/4 bg-muted" />
+                      <Skeleton className="h-4 w-2/3 bg-muted" />
+                      <Skeleton className="h-4 w-1/2 bg-muted" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-24 bg-muted" />
+                    <Skeleton className="h-4 w-48 bg-muted" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Preview section skeleton */}
+          <div className="order-1 lg:order-2 h-[60vh] lg:h-[calc(100vh-4rem)] lg:sticky lg:top-4">
+            <Card className="h-full">
+              <CardHeader className="border-b border-border py-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-40 bg-muted" />
+                  <Skeleton className="h-8 w-24 bg-muted" />
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 h-[calc(100%-4rem)]">
+                <div className="h-full flex items-center justify-center">
+                  <Skeleton className="h-full w-full rounded-b-md bg-muted" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
   if (error) return <p className="text-red-500">{error}</p>;
   if (!assignment) return <p>No assignment found.</p>;
 
@@ -145,18 +207,18 @@ const AssignmentPage = () => {
   const timeRemaining = formatDistanceToNow(dueDate, { addSuffix: true });
 
   return (
-    <div className="min-h-screen bg-gray-100 py-4 sm:py-6 lg:py-8 px-2 sm:px-4 lg:px-8">
+    <div className="min-h-screen bg-background py-4 sm:py-6 lg:py-8 px-2 sm:px-4 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Grid container - make it stack on smaller screens */}
         <div className="grid lg:grid-cols-2 gap-4 lg:gap-8">
           {/* Assignment details section */}
           <div className="order-2 lg:order-1 h-[60vh] lg:h-[calc(100vh-4rem)]">
             <Card className="h-full overflow-auto">
-              <CardHeader className="border-b border-gray-200 sticky top-0 bg-card z-10">
+              <CardHeader className="border-b border-border sticky top-0 bg-card z-10">
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-2xl font-bold">{assignment.title}</CardTitle>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {assignment.classroom.name} •
                       <TooltipProvider>
                         <Tooltip>
@@ -232,8 +294,12 @@ const AssignmentPage = () => {
                       </Label>
                       <div
                         {...getRootProps()}
-                        className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'
-                          }`}
+                        className={cn(
+                          "p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors",
+                          isDragActive 
+                            ? "border-primary bg-primary/10" 
+                            : "border-border hover:border-primary"
+                        )}
                       >
                         <input {...getInputProps()} id="file-upload" />
                         {file ? (
@@ -283,7 +349,7 @@ const AssignmentPage = () => {
           {/* PDF Viewer Section */}
           <div className="order-1 lg:order-2 h-[60vh] lg:h-[calc(100vh-4rem)] lg:sticky lg:top-4">
             <Card className="h-full">
-              <CardHeader className="border-b border-gray-200 py-3">
+              <CardHeader className="border-b border-border py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-muted-foreground" />
@@ -317,7 +383,7 @@ const AssignmentPage = () => {
                 {submissionUrl ? (
                   <iframe
                     src={getPreviewUrl(submissionUrl)}
-                    className="w-full h-full border-0 rounded-b-md bg-white"
+                    className="w-full h-full border-0 rounded-b-md bg-background"
                     title="Submission Preview"
                   />
                 ) : (

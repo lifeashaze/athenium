@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface User {
   id: string;
@@ -42,8 +43,10 @@ const AttendancePage = () => {
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const [pendingUpdates, setPendingUpdates] = useState<AttendanceUpdate[]>([]);
   const tableRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchMembers = useCallback(async () => {
+    setIsLoading(true);
     try {
       const response = await axios.get(`/api/classrooms/${params.id}/members`);
       setMembers(response.data);
@@ -51,6 +54,7 @@ const AttendancePage = () => {
       console.error('Failed to fetch members:', error);
       toast({ title: "Error", description: "Failed to fetch class members.", variant: "destructive" });
     }
+    setIsLoading(false);
   }, [params.id]);
 
   const fetchAttendance = useCallback(async () => {
@@ -148,9 +152,21 @@ const AttendancePage = () => {
     }
   };
 
+  const TableSkeleton = () => (
+    <>
+      {[...Array(5)].map((_, index) => (
+        <TableRow key={index} className="border-border hover:bg-muted/50">
+          <TableCell><Skeleton className="h-6 w-[120px]" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-[200px]" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-[80px]" /></TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-3xl font-bold mb-6">Attendance Management</h1>
+    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+      <h1 className="text-3xl font-bold mb-6 text-foreground">Attendance Management</h1>
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center space-x-4">
@@ -167,12 +183,13 @@ const AttendancePage = () => {
                   {date ? format(date, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0 bg-popover border border-border">
                 <Calendar
                   mode="single"
                   selected={date}
                   onSelect={(newDate) => newDate && setDate(newDate)}
                   initialFocus
+                  className="bg-popover"
                 />
               </PopoverContent>
             </Popover>
@@ -180,7 +197,7 @@ const AttendancePage = () => {
               Use arrow keys to navigate. Press &apos;P&apos; for Present, &apos;A&apos; for Absent.
             </div>
             {pendingUpdates.length > 0 && (
-              <div className="flex items-center text-sm text-yellow-600">
+              <div className="flex items-center text-sm text-yellow-500 dark:text-yellow-400">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving changes...
               </div>
@@ -190,48 +207,69 @@ const AttendancePage = () => {
             <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search attendees..."
-              className="pl-8"
+              className="pl-8 bg-background"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle>Attendance List</CardTitle>
           </CardHeader>
           <CardContent>
-            <div ref={tableRef} tabIndex={0} onKeyDown={handleKeyDown} className="outline-none max-h-[calc(100vh-300px)] overflow-y-auto">
+            <div 
+              ref={tableRef} 
+              tabIndex={0} 
+              onKeyDown={handleKeyDown} 
+              className="outline-none max-h-[calc(100vh-300px)] overflow-y-auto"
+            >
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-border hover:bg-muted/50">
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMembers.map((member, index) => (
-                    <TableRow 
-                      key={member.id}
-                      className={cn(
-                        focusedIndex === index && "bg-primary/20 outline outline-2 outline-primary",
-                        "transition-colors duration-200"
-                      )}
-                    >
-                      <TableCell>{member.firstName}</TableCell>
-                      <TableCell>{member.email}</TableCell>
-                      <TableCell>
-                        {attendance[member.id] === "present" ? (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded">Present</span>
-                        ) : attendance[member.id] === "absent" ? (
-                          <span className="px-2 py-1 bg-red-100 text-red-800 rounded">Absent</span>
-                        ) : (
-                          "-"
+                  {isLoading ? (
+                    <TableSkeleton />
+                  ) : (
+                    filteredMembers.map((member, index) => (
+                      <TableRow 
+                        key={member.id}
+                        className={cn(
+                          focusedIndex === index && "bg-primary/20 outline outline-2 outline-primary",
+                          "transition-colors duration-200 border-border hover:bg-muted/50"
                         )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      >
+                        <TableCell>{member.firstName}</TableCell>
+                        <TableCell>{member.email}</TableCell>
+                        <TableCell>
+                          {attendance[member.id] === "present" ? (
+                            <span className={cn(
+                              "px-2 py-1 rounded",
+                              "bg-green-100 dark:bg-green-900/30",
+                              "text-green-800 dark:text-green-300"
+                            )}>
+                              Present
+                            </span>
+                          ) : attendance[member.id] === "absent" ? (
+                            <span className={cn(
+                              "px-2 py-1 rounded",
+                              "bg-red-100 dark:bg-red-900/30",
+                              "text-red-800 dark:text-red-300"
+                            )}>
+                              Absent
+                            </span>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

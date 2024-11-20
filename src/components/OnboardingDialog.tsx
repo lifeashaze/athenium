@@ -95,10 +95,10 @@ export function OnboardingDialog({
           }
         }}
       >
-        <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden max-h-[90vh] overflow-y-auto dark:border-gray-800">
           <div className="flex flex-col sm:flex-row h-full">
             {/* Sidebar */}
-            <div className="w-full sm:w-1/3 bg-black p-4 sm:p-6 text-white flex flex-col justify-around">
+            <div className="w-full sm:w-1/3 bg-black dark:bg-gray-900 p-4 sm:p-6 text-white flex flex-col justify-around">
               <div className="mt-4 sm:mt-8">
                 {steps.map((s, index) => (
                   <div key={index} className={`mb-4 sm:mb-6 ${step === index ? 'opacity-100' : 'opacity-50'}`}>
@@ -110,7 +110,7 @@ export function OnboardingDialog({
             </div>
 
             {/* Main Content */}
-            <div className="w-full sm:w-2/3 p-4 sm:p-6">
+            <div className="w-full sm:w-2/3 p-4 sm:p-6 dark:bg-background">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={step}
@@ -122,11 +122,11 @@ export function OnboardingDialog({
                 >
                   {step === 0 && (
                     <div className="space-y-4">
-                      <h1 className="text-2xl font-semibold text-center">Hi {user.firstName}!</h1>
-                      <h2 className="text-2xl font-semibold text-center">We&apos;re excited to have you here.</h2>
-                      <p className="text-gray-600">Welcome to Athenium, your comprehensive academic management system. We&apos;re excited to help enhance your educational journey! ✨</p>
-                      <p className="text-gray-600">In the next steps, we&apos;ll ask for some basic information and your academic details. This will help us:</p>
-                      <ul className="list-disc list-inside text-gray-600 space-y-2">
+                      <h1 className="text-2xl font-semibold text-center dark:text-foreground">Hi {user.firstName}!</h1>
+                      <h2 className="text-2xl font-semibold text-center dark:text-foreground">We&apos;re excited to have you here.</h2>
+                      <p className="text-gray-600 dark:text-gray-400">Welcome to Athenium, your comprehensive academic management system. We&apos;re excited to help enhance your educational journey! ✨</p>
+                      <p className="text-gray-600 dark:text-gray-400">In the next steps, we&apos;ll ask for some basic information and your academic details. This will help us:</p>
+                      <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-2">
                         <li>📊 Set up your personalized dashboard</li>
                         <li>👥 Connect you with your classrooms and assignments</li>
                         <li>📝 Configure your attendance tracking</li>
@@ -136,10 +136,10 @@ export function OnboardingDialog({
                   )}
                   {step === 1 && (
                     <div className="space-y-4">
-                      <h2 className="text-2xl font-semibold">Basic Information</h2>
+                      <h2 className="text-2xl font-semibold dark:text-foreground">Basic Information</h2>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium">Roll Number</label>
+                          <label className="block text-sm font-medium dark:text-gray-200">Roll Number</label>
                           <Input
                             value={userDetails.rollNo || ''}
                             onChange={(e) => {
@@ -153,7 +153,7 @@ export function OnboardingDialog({
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium">SRN</label>
+                          <label className="block text-sm font-medium dark:text-gray-200">SRN</label>
                           <Input
                             value={userDetails.srn || ''}
                             onChange={(e) => {
@@ -167,7 +167,7 @@ export function OnboardingDialog({
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium">PRN</label>
+                          <label className="block text-sm font-medium dark:text-gray-200">PRN</label>
                           <Input
                             value={userDetails.prn || ''}
                             onChange={(e) => {
@@ -185,10 +185,10 @@ export function OnboardingDialog({
                   )}
                   {step === 2 && (
                     <div className="space-y-4">
-                      <h2 className="text-2xl font-semibold">Academic Details</h2>
+                      <h2 className="text-2xl font-semibold dark:text-foreground">Academic Details</h2>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium">Current Year</label>
+                          <label className="block text-sm font-medium dark:text-gray-200">Current Year</label>
                           <Select 
                             onValueChange={(value) => setUserDetails({ ...userDetails, year: value })}
                             value={userDetails.year || ''}
@@ -205,7 +205,7 @@ export function OnboardingDialog({
                           </Select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium">Division</label>
+                          <label className="block text-sm font-medium dark:text-gray-200">Division</label>
                           <Input
                             value={userDetails.division || ''}
                             onChange={(e) => setUserDetails({ ...userDetails, division: e.target.value })}
@@ -225,7 +225,11 @@ export function OnboardingDialog({
                 )}
                 <Button 
                   onClick={handleNext}
-                  className={`ml-auto ${isStepValid() ? 'bg-black hover:bg-gray-800' : 'bg-gray-300'} text-white`}
+                  className={`ml-auto ${
+                    isStepValid() 
+                      ? 'bg-black hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700' 
+                      : 'bg-gray-300 dark:bg-gray-700'
+                  } text-white`}
                   disabled={!isStepValid()}
                 >
                   {step === steps.length - 1 ? 'Finish' : 'Next'}
