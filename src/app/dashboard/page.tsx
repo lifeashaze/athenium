@@ -18,12 +18,16 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { OnboardingDialog } from '@/components/OnboardingDialog'
 import ReactConfetti from 'react-confetti'
 import { useWindowSize } from 'react-use'
-import { motion, AnimatePresence } from 'framer-motion' // npm install framer-motion
+import { motion, AnimatePresence } from 'framer-motion'
 import { ClassInvitationCard } from '@/components/ClassInvitationCard'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { NotificationDropdown } from '@/components/NotificationDropdown'
 import { Clock, GraduationCap, CheckCircle2 } from 'lucide-react'
 import { ModeToggle } from "@/components/ThemeToggle"
+import { useClassrooms } from '@/lib/hooks/useClassrooms'
+import { useInvitations } from '@/lib/hooks/useInvitations'
+import { useActivities } from '@/lib/hooks/useActivites'
+import { useDbUser } from '@/lib/hooks/useUser'
 
 
 interface Classroom {
@@ -102,15 +106,44 @@ interface User {
 
 const DashboardPage = () => {
   const { user, isLoaded } = useUser();
+  const { dbUser, isLoading: isDbUserLoading } = useDbUser();
   const { toast } = useToast();
   const router = useRouter();
+
+  const {
+    classrooms,
+    isLoading: isClassroomsLoading,
+    createClassroom,
+    joinClassroom,
+    leaveClassroom,
+    deleteClassroom,
+    isCreating,
+    isJoining,
+    isDeleting,
+  } = useClassrooms();
+
+  const {
+    invitations,
+    isLoading: isInvitationsLoading,
+    acceptInvitation,
+    dismissInvitation,
+  } = useInvitations();
+
+  const {
+    activities,
+    isLoading: isActivitiesLoading,
+  } = useActivities();
+
+  // Loading state
+  const isLoading = isClassroomsLoading || isInvitationsLoading || isActivitiesLoading || isDbUserLoading;
+
+  // Use the data from queries
+  const recentActivities = activities || [];
+  const isProfessor = dbUser?.role === 'PROFESSOR';
   const [joinCode, setJoinCode] = useState<string>('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [isJoining, setIsJoining] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
-  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [year, setYear] = useState<string>('');
   const [division, setDivision] = useState<string>('');
   const [courseCode, setCourseCode] = useState<string>('');
@@ -118,7 +151,6 @@ const DashboardPage = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userDetails, setUserDetails] = useState<UserDetails>({
@@ -132,74 +164,11 @@ const DashboardPage = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const { width, height } = useWindowSize();
   const [navigatingStates, setNavigatingStates] = useState<NavigationState>({});
-  const [classInvitations, setClassInvitations] = useState<ClassInvitation[]>([]);
+
   const [classroomToLeave, setClassroomToLeave] = useState<number | null>(null);
   const [classroomToDelete, setClassroomToDelete] = useState<number | null>(null);
   const [showFinalDeleteConfirm, setShowFinalDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
-  // Add dbUser state
-  const [dbUser, setDbUser] = useState<User | null>(null);
-
-  // Add fetchUserData function
-  const fetchUserData = useCallback(async () => {
-    try {
-      const response = await axios.get('/api/user');
-      console.log('User data from DB:', response.data);
-      setDbUser(response.data);
-    } catch (error) {
-      console.error('Failed to fetch user data:', error);
-    }
-  }, []);
-
-  // Add useEffect for fetching user data
-  useEffect(() => {
-    if (isLoaded && user) {
-      fetchUserData();
-    }
-  }, [isLoaded, user, fetchUserData]);
-
-  // Replace isProfessor check with dbUser check
-  const isProfessor = dbUser?.role === 'PROFESSOR';
-
-  useEffect(() => {
-    const fetchAllData = async () => {
-      if (!user) return;
-      
-      setIsLoading(true);
-      try {
-        const [classroomsResponse, userDetailsResponse, invitationsResponse, activitiesResponse] = await Promise.all([
-          axios.get('/api/classrooms'),
-          axios.get('/api/user'),
-          axios.get('/api/classrooms/invitations'),
-          axios.get('/api/activities')
-        ]);
-
-        // Set classrooms
-        setClassrooms(classroomsResponse.data.classrooms || []);
-
-        // Check user details
-        const details = userDetailsResponse.data;
-        if (details.rollNo === null || details.srn === null || details.prn === null) {
-          setShowOnboarding(true);
-          setUserDetails(details);
-        }
-
-        // Set invitations
-        setClassInvitations(invitationsResponse.data.invitations || []);
-
-        // Set real activities
-        setRecentActivities(activitiesResponse.data.activities || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError('Unable to load data. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAllData();
-  }, [user]);
 
   useEffect(() => {
     // Prefetch classroom routes
@@ -472,140 +441,6 @@ const DashboardPage = () => {
     return <div>{error}</div>;
   }
 
-  const createClassroom = async () => {
-    if (!courseName.trim() || !year || !division.trim() || !courseCode.trim()) {
-      setCreateError("All fields are required")
-      return
-    }
-    setCreateError(null)
-    setIsCreating(true)
-    try {
-      const res = await axios.post('/api/classrooms/create', { 
-        name: courseName, 
-        year, 
-        division, 
-        courseCode,
-        courseName 
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-      })
-      
-      const classroom = res.data
-      
-      toast({
-        variant: "default",
-        title: "Success",
-        description: `Classroom "${classroom.courseName}" created successfully`,
-      })
-      
-      setClassrooms([...classrooms, classroom])
-      setCourseName('')
-      setYear('')
-      setDivision('')
-      setCourseCode('')
-      setIsCreateDialogOpen(false)
-    } catch (error) {
-      console.error(error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create classroom",
-      })
-    } finally {
-      setIsCreating(false)
-    }
-  }
-
-  const joinClassroom = async () => {
-    if (!joinCode.trim()) {
-      setJoinError("Join code cannot be empty")
-      return
-    }
-    setJoinError(null)
-    setIsJoining(true)
-    try {
-      const res = await axios.post('/api/classrooms/join', { code: joinCode }, {
-        headers: { 'Content-Type': 'application/json' },
-      })
-      
-      const { message, classroom } = res.data
-      
-      if (classroom && classroom.courseName) {
-        if (message === 'You are already a member of this classroom') {
-          toast({
-            variant: "default",
-            title: "Info",
-            description: message,
-          })
-        } else {
-          toast({
-            variant: "default",
-            title: "Success",
-            description: `Joined classroom "${classroom.courseName}" successfully`,
-          })
-          
-          // Fetch updated classroom list
-          const updatedClassrooms = await fetchClassrooms()
-          setClassrooms(updatedClassrooms)
-        }
-        
-        setJoinCode('')
-        setIsJoinDialogOpen(false)
-      } else {
-        throw new Error('Invalid classroom data received')
-      }
-    } catch (error) {
-      console.error(error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to join classroom",
-      })
-    } finally {
-      setIsJoining(false)
-    }
-  }
-
-  // Add this function to fetch classrooms
-  const fetchClassrooms = async () => {
-    try {
-      const response = await axios.get('/api/classrooms', {
-        params: {
-          includeCounts: true 
-        }
-      })
-      return response.data.classrooms
-    } catch (error) {
-      console.error('Failed to fetch classrooms:', error)
-      return []
-    }
-  }
-
-  const handleDeleteClassroom = async () => {
-    if (!classroomToDelete) return;
-    
-    try {
-      await axios.delete(`/api/classrooms/${classroomToDelete}`);
-      setClassrooms(classrooms.filter(classroom => classroom.id !== classroomToDelete));
-      toast({
-        variant: "default",
-        title: "Success",
-        description: "Classroom deleted successfully",
-      });
-    } catch (error) {
-      console.error('Failed to delete classroom:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete classroom",
-      });
-    } finally {
-      setClassroomToDelete(null);
-      setShowFinalDeleteConfirm(false);
-      setDeleteConfirmText('');  // Clear the confirmation text
-    }
-  };
-
   const filteredClassrooms = classrooms.filter(classroom =>
     (classroom.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
     (classroom.courseCode?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
@@ -617,63 +452,50 @@ const DashboardPage = () => {
     router.push(`/classroom/${classroomId}`);
   };
 
-  const handleAcceptInvitation = async (id: string) => {
-    try {
-      setIsJoining(true);
-      const response = await axios.post('/api/classrooms/join', { id });
-      
-      // Remove the invitation from the list
-      setClassInvitations(prev => prev.filter(invite => invite.id !== id));
-      
-      // Add the new classroom to the list
-      const updatedClassrooms = await fetchClassrooms();
-      setClassrooms(updatedClassrooms);
+  const handleCreateClassroom = () => {
+    if (!courseName.trim() || !year || !division.trim() || !courseCode.trim()) {
+      setCreateError("All fields are required")
+      return
+    }
+    createClassroom({ 
+      name: courseName, 
+      year, 
+      division, 
+      courseCode, 
+      courseName 
+    })
+    setIsCreateDialogOpen(false)
+  }
 
-      toast({
-        title: "Success",
-        description: "Successfully joined the classroom",
-      });
-    } catch (error) {
-      console.error('Error accepting invitation:', error);
+  const handleJoinClassroom = () => {
+    if (!joinCode.trim()) {
+      setJoinError("Join code is required")
+      return
+    }
+    joinClassroom(joinCode)
+    setIsJoinDialogOpen(false)
+  }
+
+  const handleDeleteClassroom = () => {
+    if (!classroomToDelete) return
+    
+    const classroom = classrooms.find(c => c.id === classroomToDelete)
+    if (!classroom) return
+    
+    if (deleteConfirmText.toLowerCase() !== classroom.courseName.toLowerCase()) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to join classroom",
-      });
-    } finally {
-      setIsJoining(false);
+        description: "Course name doesn't match",
+      })
+      return
     }
-  };
-
-  const handleDismissInvitation = (id: string | number) => {
-    // Simply remove from local state
-    setClassInvitations(prev => prev.filter(invite => invite.id !== id));
-    toast({
-      title: "Success",
-      description: "Invitation dismissed",
-    });
-  };
-
-  const handleLeaveClassroom = async (classroomId: number) => {
-    try {
-      await axios.post(`/api/classrooms/${classroomId}/leave`);
-      
-      // Remove the classroom from the list
-      setClassrooms(prev => prev.filter(c => c.id !== classroomId));
-      
-      toast({
-        title: "Success",
-        description: "Successfully left the classroom",
-      });
-    } catch (error: any) {
-      console.error('Error leaving classroom:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.response?.data?.error || "Failed to leave classroom",
-      });
-    }
-  };
+    
+    deleteClassroom(classroomToDelete)
+    setShowFinalDeleteConfirm(false)
+    setClassroomToDelete(null)
+    setDeleteConfirmText('')
+  }
 
   return (
     <>
@@ -813,7 +635,7 @@ const DashboardPage = () => {
                         </Alert>
                       )}
                       <Button 
-                        onClick={joinClassroom} 
+                        onClick={handleJoinClassroom} 
                         className="w-full"
                         disabled={isJoining}
                       >
@@ -878,7 +700,7 @@ const DashboardPage = () => {
                           </Alert>
                         )}
                         <Button 
-                          onClick={createClassroom} 
+                          onClick={handleCreateClassroom} 
                           className="w-full"
                           disabled={isCreating}
                         >
@@ -892,23 +714,23 @@ const DashboardPage = () => {
             </div>
 
             {/* Class Invitations Section - Redesigned */}
-            {classInvitations.length > 0 && (
+            {invitations.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-3">
                   <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     Pending Invitations
                   </h2>
                   <Badge variant="secondary" className="rounded-full">
-                    {classInvitations.length}
+                    {invitations.length}
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  {classInvitations.map((invitation) => (
+                  {invitations.map((invitation) => (
                     <ClassInvitationCard
                       key={invitation.id}
                       {...invitation}
-                      onAccept={handleAcceptInvitation}
-                      onDismiss={handleDismissInvitation}
+                      onAccept={acceptInvitation}
+                      onDismiss={dismissInvitation}
                     />
                   ))}
                 </div>
@@ -1275,7 +1097,7 @@ const DashboardPage = () => {
                           Invitations
                         </p>
                         <p className="text-2xl font-semibold mt-1">
-                          {classInvitations.length}
+                          {invitations.length}
                         </p>
                       </div>
                     </div>
@@ -1299,7 +1121,7 @@ const DashboardPage = () => {
               variant="destructive" 
               onClick={() => {
                 if (classroomToLeave) {
-                  handleLeaveClassroom(classroomToLeave);
+                  leaveClassroom(classroomToLeave);
                   setClassroomToLeave(null);
                 }
               }}
