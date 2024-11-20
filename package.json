@@ -96,7 +96,9 @@
     "uuid": "^10.0.0",
     "xlsx": "^0.20.2",
     "y-websocket": "^2.0.4",
-    "yjs": "^13.6.20"
+    "yjs": "^13.6.20",
+    "@tanstack/react-query": "^5.28.4",
+    "@tanstack/react-query-devtools": "^5.28.4"
   },
   "devDependencies": {
     "@types/node": "^20",
