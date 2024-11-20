@@ -50,21 +50,24 @@ export function useInvitations() {
 
   const dismissMutation = useMutation({
     mutationFn: async (id: string) => {
-      await axios.post(`/api/classrooms/invitations/${id}/dismiss`)
+      return id;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invitations'] })
+    onSuccess: (id) => {
+      queryClient.setQueryData(['invitations'], (oldData: ClassInvitation[] | undefined) => {
+        return oldData ? oldData.filter(invitation => invitation.id !== id) : [];
+      });
+      
       toast({
         title: "Success",
         description: "Invitation dismissed",
-      })
+      });
     },
     onError: () => {
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to dismiss invitation",
-      })
+      });
     }
   })
 
