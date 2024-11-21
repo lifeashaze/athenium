@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Users, Calendar, BarChart2, BookOpen, Zap, Shield, Clock, Globe,ChevronRight } from "lucide-react";
 import Image from 'next/image';
-import placeholder from '../components/img/placeholder.png';
+import placeholder from '/public/placeholder2.png';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Bento } from "@/components/Bento";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { MarqueeComp } from "@/components/Marquee";
+import Particles from "@/components/ui/particles";
 
 
 
@@ -38,6 +39,7 @@ export default function Home() {
   return (
     <>
       <div >
+        
         <div >
           <motion.header
             initial="hidden"
@@ -47,9 +49,10 @@ export default function Home() {
           <Header />
           </motion.header>
 
-          
-          <main className="container mx-auto px-4 py-30">
-
+          <div className="relative w-full min-h-screen">
+          <Particles className="absolute inset-0 z-0 w-full h-full" quantity={800} color="#696969"  size={1} staticity={100}/>
+          <main className="container mx-auto px-4 py-30 relative ">
+            
             {/* Hero Section */}
 
             <motion.section
@@ -74,7 +77,7 @@ export default function Home() {
                   <Link href="/sign-up">Get Started</Link>
                 </Button>
                 
-                  <Link href='/about' className=" ml-4 text-sm text-black rounded-md font-semibold flex items-center">
+                  <Link href='/about' className=" ml-4 text-sm text-black dark:text-white rounded-md font-semibold flex items-center">
                   Documentation <ChevronRight size={12} strokeWidth={3} className="mt-1" />
                   </Link>
                 
@@ -149,6 +152,7 @@ export default function Home() {
             </section>
 
             {/* {Marquee Section} */}
+            
 
             <section className="">
               <h1 className="text-4xl font-bold text-center mb-10">
@@ -174,13 +178,14 @@ export default function Home() {
                   <Link href="/sign-up">Get Started</Link>
                 </Button>
                 
-                  <Link href='/about' className=" ml-4 text-sm text-black rounded-md font-semibold flex items-center">
+                  <Link href='/about' className=" ml-4 text-sm text-black dark:text-white rounded-md font-semibold flex items-center">
                   Documentation <ChevronRight size={12} strokeWidth={3} className="mt-1" />
                   </Link>
                 
               </div>
             </section>
           </main>
+          </div>
 
           {/* Footer */}
           <footer className="bg-gray-100 py-8">

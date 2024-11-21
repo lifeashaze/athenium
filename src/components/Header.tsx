@@ -58,7 +58,7 @@ export function Header() {
         <SignedIn> 
           <div className='flex gap-3'>
           <Link href="/dashboard"
-            className="bg-[#9966CC] text-black px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-800 focus:bg-gray-800 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200 dark:focus:bg-gray-200"
+            className="bg-[#9966CC] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-800 focus:bg-gray-800 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200 dark:focus:bg-gray-200"
           >
             Dashboard
           </Link>

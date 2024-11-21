@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import Marquee from "./ui/marquee";
+
+
  
 const reviews = [
     {
@@ -38,6 +40,12 @@ const reviews = [
       body: "I'm at a loss for words. This is amazing. I love it.",
       img: "https://avatar.vercel.sh/james",
     },
+  ];
+
+  const images = [
+    "/Slice1.png", 
+    "/Slice2.png",
+    "/Slice3.png",
   ];
    
   const firstRow = reviews.slice(0, reviews.length / 2);
@@ -91,4 +99,28 @@ const reviews = [
         <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-white dark:from-background"></div>
       </div>
     );
+  }
+
+  export function ClassroomMarquee() {
+    
+  
+    return (
+      <div className="absolute inset-0 w-full  flex h-[300px] w-full items-center justify-center overflow-hidden rounded-lg transition-all duration-200 ease-in-out hover:scale-[105%]">
+        <Marquee pauseOnHover className="[--duration:15s]">
+          {images.map((image, index) => (
+            <div key={index} className="flex items-center justify-center mx-4">
+              <img
+                src={image}
+                alt={`Image ${index + 1}`}
+                className="w-[400px] rounded-lg object-contain" // Ensure full size without distortion
+              />
+            </div>
+          ))}
+        </Marquee>
+    
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-white dark:from-background"></div>
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-white dark:from-background"></div>
+      </div>
+    );
+    
   }

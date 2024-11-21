@@ -1,0 +1,30 @@
+import { useEffect, useState } from "react";
+ 
+import AnimatedCircularProgressBar from "@/components/ui/animated-circular-progress-bar";
+ 
+export function AnimatedProgressBar() {
+  const [value, setValue] = useState(0);
+ 
+  useEffect(() => {
+    const handleIncrement = (prev: number) => {
+      if (prev === 100) {
+        return 0;
+      }
+      return prev + 10;
+    };
+    setValue(handleIncrement);
+    const interval = setInterval(() => setValue(handleIncrement), 2000);
+    return () => clearInterval(interval);
+  }, []);
+ 
+  return (
+    <AnimatedCircularProgressBar
+      className="absolute"
+      max={100}
+      min={0}
+      value={value}
+      gaugePrimaryColor="#333333"
+      gaugeSecondaryColor="rgba(0, 0, 0, 0.1)"
+    />
+  );
+}
