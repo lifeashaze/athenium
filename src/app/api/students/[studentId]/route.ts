@@ -16,50 +16,59 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Get pagination params for attendance
-    const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const classroomId = searchParams.get('classroomId'); // Optional: for filtering attendance by classroom
-
-    const student = await prisma.user.findUnique({
-      where: {
-        id: params.studentId,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true,
-        year: true,
-        division: true,
-        srn: true,
-        prn: true,
-        submissions: {
+    // Execute main queries in parallel
+    const [student, attendanceRecords, classroomAttendance, presentCounts, classroomDetails] = 
+      await Promise.all([
+        prisma.user.findUnique({
+          where: { id: params.studentId },
           select: {
             id: true,
-            submittedAt: true,
-            marks: true,
-            assignment: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            year: true,
+            division: true,
+            srn: true,
+            prn: true,
+            submissions: {
               select: {
-                title: true,
-                maxMarks: true,
-                deadline: true,
+                id: true,
+                submittedAt: true,
+                marks: true,
+                assignment: {
+                  select: {
+                    title: true,
+                    maxMarks: true,
+                    deadline: true,
+                    classroom: {
+                      select: {
+                        name: true,
+                        courseCode: true
+                      }
+                    }
+                  }
+                }
+              },
+              orderBy: { submittedAt: 'desc' }
+            },
+            memberships: {
+              select: {
                 classroom: {
                   select: {
+                    id: true,
                     name: true,
                     courseCode: true
                   }
                 }
               }
             }
-          },
-          orderBy: {
-            submittedAt: 'desc'
           }
-        },
-        memberships: {
-          select: {
+        }),
+        // Simplified attendance query - remove pagination if not necessary
+        prisma.attendance.findMany({
+          where: { userId: params.studentId },
+          include: {
             classroom: {
               select: {
                 id: true,
@@ -67,87 +76,48 @@ export async function GET(
                 courseCode: true
               }
             }
+          },
+          orderBy: { date: 'desc' }
+        }),
+        prisma.attendance.groupBy({
+          by: ['classroomId'],
+          where: { userId: params.studentId },
+          _count: { _all: true }
+        }),
+        prisma.attendance.groupBy({
+          by: ['classroomId'],
+          where: {
+            userId: params.studentId,
+            isPresent: true
+          },
+          _count: { _all: true }
+        }),
+        prisma.classroom.findMany({
+          where: {
+            id: {
+              in: (await prisma.attendance.groupBy({
+                by: ['classroomId'],
+                where: { userId: params.studentId }
+              })).map(ca => ca.classroomId)
+            }
+          },
+          select: {
+            id: true,
+            courseCode: true,
+            courseName: true
           }
-        }
-      }
-    });
+        })
+    ]);
 
     if (!student) {
       return new NextResponse("Student not found", { status: 404 });
     }
-
-    // Get attendance data with classroom-wise grouping and pagination
-    const attendanceWhere = {
-      userId: params.studentId,
-      ...(classroomId ? { classroomId } : {})
-    };
-
-    // Get total attendance count for pagination
-    const totalAttendanceCount = await prisma.attendance.count({
-      where: attendanceWhere
-    });
-
-    // Get paginated attendance records
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: attendanceWhere,
-      include: {
-        classroom: {
-          select: {
-            id: true,
-            name: true,
-            courseCode: true
-          }
-        }
-      },
-      orderBy: {
-        date: 'desc'
-      },
-      skip: (page - 1) * ITEMS_PER_PAGE,
-      take: ITEMS_PER_PAGE
-    });
-
-    // Calculate classroom-wise attendance
-    const classroomAttendance = await prisma.attendance.groupBy({
-      by: ['classroomId'],
-      where: {
-        userId: params.studentId
-      },
-      _count: {
-        _all: true
-      }
-    });
-
-    // Get the actual present count separately
-    const presentCounts = await prisma.attendance.groupBy({
-      by: ['classroomId'],
-      where: {
-        userId: params.studentId,
-        isPresent: true
-      },
-      _count: {
-        _all: true
-      }
-    });
 
     // Calculate overall attendance percentage
     const overallAttendance = {
       total: classroomAttendance.reduce((sum, curr) => sum + curr._count._all, 0),
       present: presentCounts.reduce((sum, curr) => sum + curr._count._all, 0)
     };
-
-    // Get classroom details for attendance data
-    const classroomDetails = await prisma.classroom.findMany({
-      where: {
-        id: {
-          in: classroomAttendance.map(ca => ca.classroomId)
-        }
-      },
-      select: {
-        id: true,
-        courseCode: true,
-        courseName: true
-      }
-    });
 
     // Calculate performance metrics
     const submissionStats = student.submissions.reduce((stats, sub) => {
@@ -183,25 +153,6 @@ export async function GET(
       };
     });
 
-    // Get all attendance records
-    const records = await prisma.attendance.findMany({
-      where: {
-        userId: params.studentId,
-      },
-      orderBy: {
-        date: 'desc'  // Most recent first
-      },
-      include: {
-        classroom: {
-          select: {
-            id: true,
-            name: true,
-            courseCode: true
-          }
-        }
-      }
-    });
-
     const formattedResponse = {
       id: student.id,
       firstName: student.firstName,
@@ -230,7 +181,7 @@ export async function GET(
         },
         byClassroom: byClassroom,
         records: {
-          data: records  // All records, no limit
+          data: attendanceRecords  // All records, no limit
         }
       },
       memberships: student.memberships,
