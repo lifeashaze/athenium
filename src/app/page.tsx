@@ -73,7 +73,7 @@ export default function Home() {
                     athenium is the all-in-one platform that empowers students and educators to streamline coursework, enhance collaboration, and achieve academic excellence.
                   </p>
                   <div className="flex flex-wrap gap-4 justify-center">
-                    <Button asChild className="font-semibold py-2 px-4 text-white bg-[#9966CC] rounded-md">
+                    <Button asChild className="font-semibold py-2 px-4 text-white bg-[#9966CC] hover:bg-[#B48DDB] rounded-md">
                       <Link href="/sign-up">Get Started</Link>
                     </Button>
                     <Link
