@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CalendarIcon, SearchIcon, Loader2 } from "lucide-react"
+import { CalendarIcon, SearchIcon, Loader2, UserIcon } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import React from 'react'
+import Link from "next/link"
 
 interface User {
   id: string;
@@ -333,6 +334,7 @@ const AttendancePage = () => {
                     <TableHead>Year</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
+                    <TableHead>Profile</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -390,6 +392,17 @@ const AttendancePage = () => {
                               Absent
                             </Button>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Link href={`/students/${member.id}`}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="w-8 h-8 p-0"
+                            >
+                              <UserIcon className="h-4 w-4" />
+                            </Button>
+                          </Link>
                         </TableCell>
                       </TableRow>
                     ))
