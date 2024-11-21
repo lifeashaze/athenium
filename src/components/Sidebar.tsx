@@ -4,9 +4,9 @@ import { Sidebar, SidebarBody, SidebarLink } from "./ui/sidebar"
 import {
   IconFiles,
   IconBrandTabler,
-  IconChartBar,
   IconSettings,
   IconBook,
+  IconShieldLock,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -42,6 +42,11 @@ export function SidebarDemo() {
       icon: (
         <IconSettings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
+    },
+    {
+      label: "Admin Panel",
+      href: "/admin",
+      icon: <IconShieldLock className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
     },
   ];
   const [open, setOpen] = useState(false);
@@ -96,7 +101,7 @@ export const Logo = () => {
         animate={{ opacity: 1 }}
         className="font-medium text-black dark:text-white whitespace-pre"
       >
-        Athenium
+        athenium
       </motion.span>
     </Link>
   );

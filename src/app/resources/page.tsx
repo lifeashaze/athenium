@@ -15,6 +15,7 @@ import {
 import React, { useState, useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Resource {
   id: string;
@@ -173,10 +174,47 @@ export default function ResourcesPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8 flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading resources...</span>
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-[180px]" />
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-6 w-24" />
+                  </div>
+                  
+                  <div className="bg-muted p-3 rounded-lg space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+              </CardContent>
+              
+              <CardFooter className="flex gap-2">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 flex-1" />
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -192,7 +230,7 @@ export default function ResourcesPage() {
 
   if (message) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto min-h-[calc(100vh-4rem)] flex items-center justify-center">
         <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
           <FolderOpen className="h-12 w-12 text-muted-foreground opacity-50 mb-4" />
           <p className="text-lg text-muted-foreground mb-2">{message}</p>
