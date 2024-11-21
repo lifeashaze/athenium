@@ -22,17 +22,17 @@ const features = [
       href: "/",
       cta: "Learn more",
       background: 
-      <div className="absolute inset-0 flex items-center justify-center translate-y-[-70px]  transition-all duration-200 ease-in-out hover:scale-[105%]  ">
+      <div className="hidden md:flex absolute inset-0 flex items-center justify-center translate-y-[-70px]  transition-all duration-200 ease-in-out hover:scale-[105%]  ">
           <Image
                 src={brain}
                 alt="Brain"
-                className="w-[140px] h-auto object-contain mx-auto dark:hidden"
+                className=" w-[140px] h-auto object-contain mx-auto dark:hidden"
                 priority 
             />
             <Image
                 src={brainDark} 
                 alt="Brain"
-                className="w-[140px] h-auto object-contain mx-auto hidden dark:block"
+                className=" w-[140px] h-auto object-contain mx-auto hidden dark:block"
                 priority
     />
       </div>,
@@ -65,7 +65,7 @@ const features = [
       description: "Track grades, submission, and progress to help students excel.",
       href: "/",
       cta: "Learn more",
-      background: <div className="h-[-200px] absolute top-1/2 left-1/2  flex justify-center items-center -translate-y-12 transition-all duration-200 ease-in-out hover:scale-[105%] ">
+      background: <div className="hidden md:flex h-[-200px] absolute top-1/2 left-1/2  flex justify-center items-center -translate-y-12 transition-all duration-200 ease-in-out hover:scale-[105%] ">
           <AnimatedProgressBar/> 
            
         </div> ,
@@ -78,7 +78,7 @@ const features = [
         "Quick and simple assignment evaluation system ",
       href: "/",
       cta: "Learn more",
-      background: <div className="absolute inset-0 flex items-center justify-center translate-y-[-70px]  transition-all duration-200 ease-in-out hover:scale-[105%]  ">
+      background: <div className="hidden md:flex absolute inset-0 flex items-center justify-center translate-y-[-70px]  transition-all duration-200 ease-in-out hover:scale-[105%]  ">
       <Image
             src={file}
             alt="Brain"

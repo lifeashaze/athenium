@@ -105,7 +105,7 @@ const reviews = [
     
   
     return (
-      <div className="absolute inset-0 w-full  flex h-[300px] w-full items-center justify-center overflow-hidden rounded-lg transition-all duration-200 ease-in-out hover:scale-[105%]">
+      <div className="hidden md:flex absolute inset-0 w-full  flex h-[300px] w-full items-center justify-center overflow-hidden rounded-lg transition-all duration-200 ease-in-out hover:scale-[105%]">
         <Marquee pauseOnHover className="[--duration:15s]">
           {images.map((image, index) => (
             <div key={index} className="flex items-center justify-center mx-4">

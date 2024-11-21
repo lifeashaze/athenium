@@ -7,6 +7,7 @@ import {
   IconChartBar,
   IconSettings,
   IconBook,
+  IconDatabase
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -14,36 +15,80 @@ import { cn } from "@/lib/utils";
 import { UserButton ,SignedIn,SignedOut} from "@clerk/nextjs";
 
 
+
+
 export function Hamburger() {
+
+    
+
+      
   const links = [
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: "Sign In",
+      href: "/sign-in",
       icon: (
         <IconBrandTabler className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
     {
-      label: "Assignments",
-      href: "/assignments",
+      label: "Sign Up",
+      href: "/sign-up",
       icon: (
         <IconFiles className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
     {
-      label: "Resources",
-      href: "/resources",
+      label: "about",
+      href: "/",
       icon: (
         <IconBook className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
     {
-      label: "User Settings",
-      href: "/user-settings",
+      label: "docs",
+      href: "/",
       icon: (
-        <IconSettings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        <IconDatabase className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
+    {
+        label: "changelog",
+        href: "/",
+        icon: (
+          <IconSettings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        ),
+      },
+  ];
+
+  const dlinks = [
+    {
+        label: "Dashboard",
+        href: "/dashboard",
+        icon: (
+          <IconBrandTabler className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        ),
+    },
+    {
+        label: "about",
+        href: "/",
+        icon: (
+          <IconBook className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        ),
+      },
+      {
+        label: "docs",
+        href: "/",
+        icon: (
+          <IconDatabase className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        ),
+      },
+      {
+          label: "changelog",
+          href: "/",
+          icon: (
+            <IconSettings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+          ),
+        },
   ];
   const [open, setOpen] = useState(false);
 
@@ -67,6 +112,7 @@ export function Hamburger() {
             <>
               <Logo />
             </>
+            <SignedOut>
             <div className="mt-8 flex flex-col gap-2">
               {links.map((link, idx) => (
                 <SidebarLink 
@@ -76,6 +122,18 @@ export function Hamburger() {
                 />
               ))}
             </div>
+            </SignedOut>
+            <SignedIn>
+            <div className="mt-8 flex flex-col gap-2">
+              {dlinks.map((dlink, idx) => (
+                <SidebarLink 
+                  key={idx} 
+                  link={dlink}
+                  onClick={handleLinkClick}
+                />
+              ))}
+            </div>
+            </SignedIn>
           </div>
           <div className="">
              <UserButton />
