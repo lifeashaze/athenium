@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Users, Calendar, BarChart2, BookOpen, Zap, Shield, Clock, Globe,ChevronRight } from "lucide-react";
 import Image from 'next/image';
-import placeholder from '/public/placeholder2.png';
+import placeholder from '/public/Dashboard.png';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Bento } from "@/components/Bento";
@@ -62,7 +62,7 @@ export default function Home() {
             variants={fadeInFromTop}
             >
 
-            <section className="text-center mb-20">
+            <section className="relative text-center mb-20">
               <h1 className="text-[#9966CC] text-7xl md:text-7xl font-semibold mb-3">
               Transform learning 
               </h1>
@@ -95,16 +95,16 @@ export default function Home() {
                 >
 
       
-            <section className="flex justify-center items-center ">
+            <section className="flex justify-center items-center  ">
             <div className="relative">
               <BorderBeam
-              size={400}
+              size={300}
               borderWidth={2}
               />
             <Image
                 src={placeholder}
                 alt="Placeholder"
-                className="max-w-full max-h-full object-contain mx-auto"
+                className="max-w-full max-h-full object-contain mx-auto rounded-lg"
                 priority 
             />
             </div>
@@ -113,7 +113,7 @@ export default function Home() {
             </motion.section>
 
             {/* How It Works Section */}
-            <section className="mb-40">
+            <section className="mb-40 mt-32">
               <h2 className="text-3xl font-bold text-center mb-12">How <span className="text-[#9966CC]">athenium</span> Works</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="text-center">

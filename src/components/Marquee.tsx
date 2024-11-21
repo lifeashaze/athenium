@@ -4,42 +4,42 @@ import Marquee from "./ui/marquee";
 
  
 const reviews = [
-    {
-      name: "Jack",
-      username: "@jack",
-      body: "I've never seen anything like this before. It's amazing. I love it.",
-      img: "https://avatar.vercel.sh/jack",
-    },
-    {
-      name: "Jill",
-      username: "@jill",
-      body: "I don't know what to say. I'm speechless. This is amazing.",
-      img: "https://avatar.vercel.sh/jill",
-    },
-    {
-      name: "John",
-      username: "@john",
-      body: "I'm at a loss for words. This is amazing. I love it.",
-      img: "https://avatar.vercel.sh/john",
-    },
-    {
-      name: "Jane",
-      username: "@jane",
-      body: "I'm at a loss for words. This is amazing. I love it.",
-      img: "https://avatar.vercel.sh/jane",
-    },
-    {
-      name: "Jenny",
-      username: "@jenny",
-      body: "I'm at a loss for words. This is amazing. I love it.",
-      img: "https://avatar.vercel.sh/jenny",
-    },
-    {
-      name: "James",
-      username: "@james",
-      body: "I'm at a loss for words. This is amazing. I love it.",
-      img: "https://avatar.vercel.sh/james",
-    },
+  {
+    name: "Dr. Smith",
+    username: "Professor of AI",
+    body: "The platform is transformative! It's intuitive and enhances the learning experience significantly.",
+    img: "https://avatar.vercel.sh/drsmith",
+  },
+  {
+    name: "Dr. Taylor",
+    username: "Professor of Data Science",
+    body: "This platform simplifies resource sharing and fosters collaboration among students and faculty.",
+    img: "https://avatar.vercel.sh/drtaylor",
+  },
+  {
+    name: "Alex Johnson",
+    username: "Student of Computer Science",
+    body: "I've learned so much with the tools and resources provided. It's a game-changer for my studies!",
+    img: "https://avatar.vercel.sh/alexjohnson",
+  },
+  {
+    name: "Emily Carter",
+    username: "Student of Business Management",
+    body: "I love how the platform organizes everything seamlessly. It’s been an essential part of my learning journey.",
+    img: "https://avatar.vercel.sh/emilycarter",
+  },
+  {
+    name: "Michael Brown",
+    username: "Student of Mechanical Engineering",
+    body: "The accessibility and real-time updates make it the best platform I've used for learning.",
+    img: "https://avatar.vercel.sh/michaelbrown",
+  },
+  {
+    name: "Sophia Davis",
+    username: "Student of Design",
+    body: "The interactive tools and intuitive design have boosted my productivity and creativity.",
+    img: "https://avatar.vercel.sh/sophiadavis",
+  },
   ];
 
   const images = [
@@ -65,7 +65,7 @@ const reviews = [
     return (
       <figure
         className={cn(
-          "relative w-64 cursor-pointer overflow-hidden rounded-xl border p-4",
+          "relative w-72 h-40 cursor-pointer overflow-hidden rounded-xl border p-4",
           // light styles
           "border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05]",
           // dark styles
@@ -88,7 +88,7 @@ const reviews = [
    
   export function MarqueeComp() {
     return (
-      <div className="relative flex h-[500px] w-full flex-col items-center justify-center overflow-hidden rounded-lg  bg-background ">
+      <div className="relative flex h-[300px] w-full flex-col items-center justify-center overflow-hidden rounded-lg  bg-background ">
         <Marquee pauseOnHover className="[--duration:20s]">
           {firstRow.map((review) => (
             <ReviewCard key={review.username} {...review} />
