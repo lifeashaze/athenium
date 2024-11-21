@@ -66,15 +66,15 @@ export async function DELETE(
     const classroomId = params.id;
     const assignmentId = params.assignmentId;
 
-    // Check if user is the creator of the classroom
-    const classroom = await prisma.classroom.findUnique({
-      where: { id: classroomId },
-      include: { creator: true },
-    });
+    // // Check if user is the creator of the classroom
+    // const classroom = await prisma.classroom.findUnique({
+    //   where: { id: classroomId },
+    //   include: { creator: true },
+    // });
 
-    if (!classroom || classroom.creator.id !== userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    // if (!classroom || classroom.creator.id !== userId) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    // }
 
     // Delete the assignment and its submissions
     await prisma.$transaction([
