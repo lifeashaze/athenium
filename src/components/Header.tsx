@@ -56,7 +56,7 @@ export function Header() {
           </button>
           <button 
             onClick={handleSignUp}
-            className="bg-[#9966CC] text-black px-5 py-2 rounded-md text-xs font-semibold transition-colors hover:bg-primary-hover flex items-center h-[26px] "
+            className="bg-[#9966CC] text-black px-5 py-2 rounded-md text-xs font-semibold transition-colors hover:bg-[#B48DDB] flex items-center h-[26px] "
            >
             Get Started <Play fill='#6A0DAD' color="#6A0DAD" size={6} className="ml-1"/>
            </button>
@@ -66,7 +66,7 @@ export function Header() {
         <SignedIn> 
           <div className='flex gap-3'>
           <Link href="/dashboard"
-            className="hidden md:flex bg-[#9966CC] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-800 focus:bg-gray-800 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200 dark:focus:bg-gray-200"
+            className="hidden md:flex bg-[#9966CC] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-[#B48DDB] focus:bg-gray-800 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200 dark:focus:bg-gray-200"
           >
             Dashboard
           </Link>

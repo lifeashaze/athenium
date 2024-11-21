@@ -36,7 +36,7 @@ export function AnimatedBeamM() {
  
   return (
     <div
-      className=" absolute inset-0 w-full  flex h-[300px]  w-full items-center justify-center overflow-hidden rounded-lg border bg-[#F9F9F9] dark:bg-black p-10 md:shadow-xl absolute  border-none transition-all duration-300 ease-out [mask-image:linear-gradient(to_top,transparent_0%,#000_40%)] group-hover:scale-105"
+      className=" hidden md:flex absolute inset-0 w-full  flex h-[300px]  w-full items-center justify-center overflow-hidden rounded-lg border bg-[#F9F9F9] dark:bg-black p-10 md:shadow-xl absolute  border-none transition-all duration-300 ease-out [mask-image:linear-gradient(to_top,transparent_0%,#000_40%)] group-hover:scale-105"
       ref={containerRef}
     >
       <div className="flex size-full flex-col max-w-lg max-h-[200px] items-stretch justify-between gap-10 dark:bg-black">

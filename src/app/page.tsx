@@ -62,27 +62,30 @@ export default function Home() {
             variants={fadeInFromTop}
             >
 
-            <section className="relative text-center mb-20">
-              <h1 className="text-[#9966CC] text-7xl md:text-7xl font-semibold mb-3">
-              Transform learning 
-              </h1>
-              <h1 className="text-7xl md:text-7xl font-semibold mb-12">
-              Elevate teaching
-              </h1>
-              <p className="text-base text-[#696969] md:text-base  mb-12 max-w-xl mx-auto">
-                athenium is the all-in-one platform that empowers students and educators to streamline coursework, enhance collaboration, and achieve academic excellence.
-              </p>
-              <div className="flex gap-4 justify-center">
-                <Button asChild className="font-semibold py-1 text-black bg-[#9966CC]">
-                  <Link href="/sign-up">Get Started</Link>
-                </Button>
-                
-                  <Link href='/about' className=" ml-4 text-sm text-black dark:text-white rounded-md font-semibold flex items-center">
-                  Documentation <ChevronRight size={12} strokeWidth={3} className="mt-1" />
-                  </Link>
-                
-              </div>
-            </section>
+                <section className="relative text-center mb-20 px-4">
+                  <h1 className="text-[#9966CC] font-semibold mb-3 text-4xl sm:text-2xl md:text-5xl">
+                    Transform learning
+                  </h1>
+                  <h1 className="font-semibold mb-6 text-4xl sm:text-2xl md:text-5xl">
+                    Elevate teaching
+                  </h1>
+                  <p className="text-base text-[#696969] mb-8 max-w-md sm:text-sm md:text-lg mx-auto">
+                    athenium is the all-in-one platform that empowers students and educators to streamline coursework, enhance collaboration, and achieve academic excellence.
+                  </p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button asChild className="font-semibold py-2 px-4 text-white bg-[#9966CC] hover:bg-[#B48DDB] rounded-md">
+                      <Link href="/sign-up">Get Started</Link>
+                    </Button>
+                    <Link
+                      href="/about"
+                      className="text-sm text-black dark:text-white rounded-md font-semibold flex items-center"
+                    >
+                      Documentation
+                      <ChevronRight size={12} strokeWidth={3} className="ml-1 mt-[2px]" />
+                    </Link>
+                  </div>
+                </section>
+
             </motion.section>
 
             {/* Dashboard Flex Section */}
@@ -188,9 +191,9 @@ export default function Home() {
           </div>
 
           {/* Footer */}
-          <footer className="bg-gray-100 py-8">
+          <footer className="bg-gray-100 py-8 dark:text-white dark:bg-black">
             <div className="container mx-auto px-4 text-center">
-              <p>&copy; 2024 Athenium. All rights reserved.</p>
+              <p> 2024 athenium. Developed by Group 32 .</p>
             </div>
           </footer>
         </div>
