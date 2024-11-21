@@ -23,7 +23,77 @@ import {
   AttendanceAlertsSkeleton 
 } from "@/components/loaders/StudentProfileLoaders";
 
-const AttendanceSection = ({ attendanceData }) => {
+interface AttendanceRecord {
+  id: string;
+  date: string;
+  isPresent: boolean;
+  classroom: {
+    id: string;
+    name: string;
+    courseCode: string;
+  };
+}
+
+interface CourseAttendance {
+  classroomId: string;
+  courseName: string;
+  courseCode: string;
+  percentage: number;
+  present: number;
+  total: number;
+}
+
+interface AttendanceData {
+  overall: {
+    percentage: number;
+    present: number;
+    total: number;
+  };
+  byClassroom: CourseAttendance[];
+  records: {
+    data: AttendanceRecord[];
+  };
+}
+
+interface Student {
+  firstName: string;
+  lastName: string;
+  year: string;
+  division: string;
+  srn: string;
+  prn: string;
+  email: string;
+  performance: {
+    submissions: {
+      percentage: number;
+      onTime: number;
+      total: number;
+    };
+  };
+  attendance: AttendanceData;
+  memberships: Array<{
+    classroom: {
+      name: string;
+      courseCode: string;
+    };
+  }>;
+  submissions: Array<{
+    id: string;
+    assignment: {
+      title: string;
+      maxMarks: number;
+      deadline: string;
+      classroom: {
+        name: string;
+        courseCode: string;
+      };
+    };
+    marks: number;
+    submittedAt: string;
+  }>;
+}
+
+const AttendanceSection = ({ attendanceData }: { attendanceData: AttendanceData }) => {
   const [selectedCourse, setSelectedCourse] = useState<string>("overall");
 
   const getAttendanceDisplay = () => {
@@ -39,6 +109,16 @@ const AttendanceSection = ({ attendanceData }) => {
     const courseData = attendanceData.byClassroom.find(
       (course) => course.classroomId === selectedCourse
     );
+
+    if (!courseData) {
+      return {
+        title: "Overall Attendance",
+        percentage: attendanceData.overall.percentage,
+        present: attendanceData.overall.present,
+        total: attendanceData.overall.total,
+      };
+    }
+
     return {
       title: courseData.courseName,
       percentage: courseData.percentage,
@@ -121,7 +201,7 @@ const AttendanceSection = ({ attendanceData }) => {
                               </p>
                             </div>
                           </div>
-                          <Badge variant={record.isPresent ? "success" : "destructive"}>
+                          <Badge variant={record.isPresent ? "default" : "destructive"}>
                             {record.isPresent ? 'Present' : 'Absent'}
                           </Badge>
                         </div>
@@ -154,7 +234,7 @@ const AttendanceSection = ({ attendanceData }) => {
                       <h4 className="font-medium">{course.courseName}</h4>
                       <p className="text-sm text-muted-foreground">{course.courseCode}</p>
                     </div>
-                    <Badge variant={course.percentage >= 75 ? "success" : "destructive"}>
+                    <Badge variant={course.percentage >= 75 ? "default" : "destructive"}>
                       {course.percentage.toFixed(1)}%
                     </Badge>
                   </div>
@@ -169,7 +249,7 @@ const AttendanceSection = ({ attendanceData }) => {
 };
 
 export default function StudentPage({ params }: { params: { studentId: string } }) {
-  const [studentData, setStudentData] = useState<any>(null);
+  const [studentData, setStudentData] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -274,8 +354,8 @@ export default function StudentPage({ params }: { params: { studentId: string } 
                         {studentData.performance.submissions.percentage.toFixed(1)}%
                       </div>
                       <Badge variant={
-                        studentData.performance.submissions.percentage >= 75 ? "success" : 
-                        studentData.performance.submissions.percentage >= 60 ? "warning" : 
+                        studentData.performance.submissions.percentage >= 75 ? "default" : 
+                        studentData.performance.submissions.percentage >= 60 ? "secondary" : 
                         "destructive"
                       }>
                         {studentData.performance.submissions.percentage >= 75 ? "Excellent" :
@@ -324,8 +404,8 @@ export default function StudentPage({ params }: { params: { studentId: string } 
                         {studentData.attendance.overall.percentage.toFixed(1)}%
                       </div>
                       <Badge variant={
-                        studentData.attendance.overall.percentage >= 75 ? "success" : 
-                        studentData.attendance.overall.percentage >= 60 ? "warning" : 
+                        studentData.attendance.overall.percentage >= 75 ? "default" : 
+                        studentData.attendance.overall.percentage >= 60 ? "secondary" : 
                         "destructive"
                       }>
                         {studentData.attendance.overall.percentage >= 75 ? "Good Standing" :
@@ -412,8 +492,8 @@ export default function StudentPage({ params }: { params: { studentId: string } 
                         <div className="text-right">
                           <div className="flex items-center gap-2">
                             <Badge variant={
-                              (submission.marks / submission.assignment.maxMarks) * 100 >= 75 ? "success" :
-                              (submission.marks / submission.assignment.maxMarks) * 100 >= 60 ? "warning" :
+                              (submission.marks / submission.assignment.maxMarks) * 100 >= 75 ? "default" :
+                              (submission.marks / submission.assignment.maxMarks) * 100 >= 60 ? "secondary" :
                               "destructive"
                             }>
                               {submission.marks}/{submission.assignment.maxMarks}
