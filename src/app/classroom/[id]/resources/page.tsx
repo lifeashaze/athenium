@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Book, FileText, FileSpreadsheet, FileImage, File, Video, ChevronRight, Loader2, Upload, Trash2, ChevronDown, Search, Download, FolderOpen } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useUser } from '@clerk/nextjs';
 
 interface Resource {
   id: string
@@ -27,6 +28,13 @@ interface Resource {
 interface UploadState {
   isUploading: boolean
   progress: number
+}
+
+interface User {
+  id: string;
+  firstName: string;
+  email: string;
+  role: "STUDENT" | "PROFESSOR" | "ADMIN";
 }
 
 const getPreviewUrl = (url: string) => {
@@ -127,6 +135,178 @@ const CategorySkeleton = () => (
   </div>
 );
 
+const MobileView = ({ 
+  resources, 
+  selectedResource, 
+  setSelectedResource, 
+  handleDeleteResource,
+  dbUser,
+  classroomTitle,
+  searchQuery,
+  setSearchQuery,
+  params,
+  setResourceToDelete,
+  organizedResources,
+  sortCategories,
+  RESOURCE_CATEGORIES,
+  getFileIcon,
+  downloadCategoryFiles,
+  getPreviewUrl
+}: {
+  resources: Resource[];
+  selectedResource: Resource | null;
+  setSelectedResource: (resource: Resource | null) => void;
+  handleDeleteResource: (id: string) => void;
+  dbUser: User | null;
+  classroomTitle: string;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  params: { id: string };
+  setResourceToDelete: (resource: Resource | null) => void;
+  organizedResources: () => { [key: string]: Resource[] };
+  sortCategories: (a: string, b: string) => number;
+  RESOURCE_CATEGORIES: { value: string; label: string; }[];
+  getFileIcon: (url: string) => JSX.Element;
+  downloadCategoryFiles: (classroomId: string, category: string, categoryLabel: string) => Promise<void>;
+  getPreviewUrl: (url: string) => string;
+}) => {
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      {/* Mobile Header */}
+      <div className="sticky top-0 z-10 bg-background border-b p-4">
+        <h1 className="text-lg font-bold">{classroomTitle}</h1>
+      </div>
+
+      {/* Mobile Content */}
+      {selectedResource ? (
+        // Document Preview Mode
+        <div className="flex flex-col h-full">
+          <div className="flex items-center justify-between p-4 border-b">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSelectedResource(null)}
+            >
+              <ChevronRight className="h-4 w-4 rotate-180 mr-2" />
+              Back
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = selectedResource.url;
+                link.download = selectedResource.title;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+          <div className="flex-1">
+            <iframe
+              src={getPreviewUrl(selectedResource.url)}
+              className="w-full h-full border-0"
+              title={selectedResource.title}
+            />
+          </div>
+        </div>
+      ) : (
+        // Resource List Mode
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 sticky top-0 bg-background border-b">
+            <Input
+              placeholder="Search resources..."
+              className="w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <div className="p-4">
+            {Object.entries(organizedResources())
+              .sort(([a], [b]) => sortCategories(a, b))
+              .map(([category, categoryResources]) => {
+                const categoryLabel = RESOURCE_CATEGORIES.find(c => c.value === category)?.label || 'Uncategorized';
+                
+                return (
+                  <div key={category} className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-sm text-muted-foreground">
+                        {categoryLabel}
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => downloadCategoryFiles(params.id, category, categoryLabel)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {categoryResources.map((resource) => (
+                        <div key={resource.id} className="w-full">
+                          {dbUser?.role === 'PROFESSOR' ? (
+                            // Version with delete button for professors
+                            <div className="flex items-center p-3 rounded-lg bg-accent/50 hover:bg-accent">
+                              <button
+                                onClick={() => setSelectedResource(resource)}
+                                className="flex items-center flex-1"
+                              >
+                                {getFileIcon(resource.url)}
+                                <span className="flex-1 text-left text-sm">
+                                  {resource.title}
+                                </span>
+                              </button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="ml-2"
+                                onClick={() => setResourceToDelete(resource)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          ) : (
+                            // Simpler version for students
+                            <button
+                              onClick={() => setSelectedResource(resource)}
+                              className="w-full flex items-center p-3 rounded-lg bg-accent/50 hover:bg-accent"
+                            >
+                              {getFileIcon(resource.url)}
+                              <span className="flex-1 text-left text-sm">
+                                {resource.title}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Upload FAB for professors */}
+      {dbUser?.role === 'PROFESSOR' && !selectedResource && (
+        <Button 
+          className="fixed bottom-4 right-4 rounded-full shadow-lg"
+          size="icon"
+          onClick={() => document.getElementById('file-upload')?.click()}
+        >
+          <Upload className="h-5 w-5" />
+        </Button>
+      )}
+    </div>
+  );
+};
+
 export default function CourseResourcesPage({ params }: { params: { id: string } }) {
   const [resources, setResources] = useState<Resource[]>([])
   const [loading, setLoading] = useState(true)
@@ -152,6 +332,25 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [classroomTitle, setClassroomTitle] = useState<string>("")
+  const { user: clerkUser, isLoaded: isUserLoaded } = useUser();
+  const [dbUser, setDbUser] = useState<User | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  const fetchUserData = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/user');
+      setDbUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isUserLoaded && clerkUser) {
+      fetchUserData();
+    }
+  }, [isUserLoaded, clerkUser, fetchUserData]);
 
   useEffect(() => {
     const fetchResources = async () => {
@@ -275,11 +474,58 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
     });
   };
 
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <MobileView
+        resources={resources}
+        selectedResource={selectedResource}
+        setSelectedResource={setSelectedResource}
+        handleDeleteResource={handleDeleteResource}
+        dbUser={dbUser}
+        classroomTitle={classroomTitle}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        params={params}
+        setResourceToDelete={setResourceToDelete}
+        organizedResources={organizedResources}
+        sortCategories={sortCategories}
+        RESOURCE_CATEGORIES={RESOURCE_CATEGORIES}
+        getFileIcon={getFileIcon}
+        downloadCategoryFiles={downloadCategoryFiles}
+        getPreviewUrl={getPreviewUrl}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container flex-1 items-start md:grid md:grid-cols-[280px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-10">
-        <aside className="fixed top-0 z-30 -ml-2 hidden h-[calc(100vh-4rem)] w-full shrink-0 md:sticky md:block">
-          <ScrollArea className="h-full py-6 pl-8 pr-6 lg:py-8">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="fixed bottom-4 right-4 z-50 rounded-full p-3 md:hidden"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        <ChevronRight className={`h-4 w-4 transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
+      </Button>
+
+      <div className="flex flex-col md:grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr]">
+        <aside className={`
+          fixed inset-y-0 left-0 z-30 w-[280px] lg:w-[320px] bg-background
+          transform transition-transform duration-200 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:relative md:translate-x-0
+        `}>
+          <ScrollArea className="h-screen py-6 px-4">
             <div className="flex flex-col gap-4">
               <h2 className="text-lg font-semibold">Resources</h2>
               
@@ -293,22 +539,24 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
                 />
               </div>
 
-              <div className="w-full">
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-                <Button 
-                  size="sm" 
-                  className="cursor-pointer w-full"
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Resource
-                </Button>
-              </div>
+              {dbUser?.role === 'PROFESSOR' && (
+                <div className="w-full">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                  <Button 
+                    size="sm" 
+                    className="cursor-pointer w-full"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Resource
+                  </Button>
+                </div>
+              )}
             </div>
 
             {loading ? (
@@ -372,30 +620,47 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
                           <div className="grid gap-1 pl-4">
                             {filteredResources.map((resource) => (
                               <div key={resource.id} className="group relative">
-                                <button
-                                  onClick={() => setSelectedResource(resource)}
-                                  className={`w-full flex items-start py-2 px-3 rounded-lg hover:bg-accent transition-colors text-left ${
+                                {dbUser?.role === 'PROFESSOR' ? (
+                                  // Version with delete button for professors
+                                  <div className={`flex items-start py-2 px-3 rounded-lg hover:bg-accent transition-colors ${
                                     selectedResource?.id === resource.id ? 'bg-accent' : ''
-                                  }`}
-                                >
-                                  {getFileIcon(resource.url)}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium leading-tight break-words">
-                                      {resource.title}
-                                    </p>
+                                  }`}>
+                                    <button
+                                      onClick={() => setSelectedResource(resource)}
+                                      className="flex items-start flex-1"
+                                    >
+                                      {getFileIcon(resource.url)}
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium leading-tight break-words">
+                                          {resource.title}
+                                        </p>
+                                      </div>
+                                    </button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => setResourceToDelete(resource)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </Button>
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 opacity-0 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setResourceToDelete(resource);
-                                    }}
+                                ) : (
+                                  // Simpler version for students
+                                  <button
+                                    onClick={() => setSelectedResource(resource)}
+                                    className={`w-full flex items-start py-2 px-3 rounded-lg hover:bg-accent transition-colors ${
+                                      selectedResource?.id === resource.id ? 'bg-accent' : ''
+                                    }`}
                                   >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </button>
+                                    {getFileIcon(resource.url)}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium leading-tight break-words">
+                                        {resource.title}
+                                      </p>
+                                    </div>
+                                  </button>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -459,52 +724,17 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
             </DialogContent>
           </Dialog>
         </aside>
-        <main className="flex w-full flex-col overflow-hidden">
-          <h1 className="text-2xl font-bold mb-4">
+        <main className="flex-1 p-4 md:p-6">
+          <h1 className="text-xl md:text-2xl font-bold mb-4">
             {classroomTitle}
           </h1>
+          
           <Card className="flex-1">
-            <CardContent className="p-6">
-              {loading ? (
-                <>
-                  <Skeleton className="h-8 w-64 mb-4" />
-                  <Card className="flex-1">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col items-center justify-center h-[calc(100vh-16rem)]">
-                        <Skeleton className="h-16 w-16 mb-4 rounded-full" />
-                        <Skeleton className="h-6 w-48 mb-2" />
-                        <Skeleton className="h-4 w-72" />
-                        <div className="mt-6 w-64 space-y-2">
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-4 w-5/6" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              ) : error ? (
-                <div className="text-red-500">{error}</div>
-              ) : !selectedResource ? (
-                <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center h-[calc(100vh-16rem)]">
-                  <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-xl font-semibold mb-2">Course Materials</h3>
-                  <p className="text-sm max-w-sm text-muted-foreground">
-                    Select a resource from the sidebar to view course materials and other learning resources shared by your instructor.
-                  </p>
-                  <div className="mt-6 flex flex-col items-center gap-2 text-sm">
-                    <p className="font-medium">Quick Tips:</p>
-                    <ul className="list-disc text-left text-muted-foreground">
-                      <li>Use the search bar to find specific materials</li>
-                      <li>Click on any file to preview it</li>
-                      <li>Use the download button to save files for offline access</li>
-                    </ul>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-[calc(100vh-8rem)]">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold">
+            <CardContent className="p-2 sm:p-4 md:p-6">
+              {selectedResource ? (
+                <div className="w-full h-[calc(100vh-12rem)] md:h-[calc(100vh-14rem)]">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                    <h2 className="text-lg md:text-xl font-semibold truncate">
                       {selectedResource.title}
                     </h2>
                     <Button
@@ -525,15 +755,39 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
                   </div>
                   <iframe
                     src={getPreviewUrl(selectedResource.url)}
-                    className="w-full h-[calc(100%-3rem)] border-0 rounded-lg"
+                    className="w-full h-[calc(100%-4rem)] border-0 rounded-lg"
                     title={selectedResource.title}
                   />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center h-[calc(100vh-16rem)]">
+                  <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-xl font-semibold mb-2">Course Materials</h3>
+                  <p className="text-sm max-w-sm text-muted-foreground">
+                    Select a resource from the sidebar to view course materials and other learning resources shared by your instructor.
+                  </p>
+                  <div className="mt-6 flex flex-col items-center gap-2 text-sm">
+                    <p className="font-medium">Quick Tips:</p>
+                    <ul className="list-disc text-left text-muted-foreground">
+                      <li>Use the search bar to find specific materials</li>
+                      <li>Click on any file to preview it</li>
+                      <li>Use the download button to save files for offline access</li>
+                    </ul>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
         </main>
       </div>
+
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <AlertDialog 
         open={!!resourceToDelete} 
         onOpenChange={(open) => !open && setResourceToDelete(null)}

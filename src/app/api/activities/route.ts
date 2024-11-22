@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       ...attendances.map(attendance => ({
         id: attendance.id,
         type: 'attendance' as const,
-        title: `Attended ${attendance.classroom.courseName}`,
+        title: `${attendance.isPresent ? 'Attended' : 'Missed'} ${attendance.classroom.courseName}`,
         date: attendance.date,
         details: {
           classroomName: attendance.classroom.courseName,

@@ -300,16 +300,16 @@ export default function StudentPage({ params }: { params: { studentId: string } 
   return (
     <div className="container py-8 space-y-6">
       {/* Profile Header */}
-      <div className="flex items-start gap-6 bg-card p-6 rounded-lg shadow-sm">
-        <Avatar className="h-24 w-24">
+      <div className="flex flex-col md:flex-row items-start gap-6 bg-card p-4 md:p-6 rounded-lg shadow-sm">
+        <Avatar className="h-20 w-20 md:h-24 md:w-24">
           <AvatarImage src="" />
-          <AvatarFallback className="text-2xl">
+          <AvatarFallback className="text-xl md:text-2xl">
             {studentData.firstName[0]}{studentData.lastName[0]}
           </AvatarFallback>
         </Avatar>
         
-        <div className="space-y-3">
-          <h1 className="text-3xl font-bold">
+        <div className="space-y-2 md:space-y-3">
+          <h1 className="text-2xl md:text-3xl font-bold">
             {studentData.firstName} {studentData.lastName}
           </h1>
           <div className="flex flex-wrap gap-2">
@@ -321,13 +321,13 @@ export default function StudentPage({ params }: { params: { studentId: string } 
             <Badge variant="outline">SRN: {studentData.srn}</Badge>
             <Badge variant="outline">PRN: {studentData.prn}</Badge>
           </div>
-          <p className="text-muted-foreground">{studentData.email}</p>
+          <p className="text-sm md:text-base text-muted-foreground">{studentData.email}</p>
         </div>
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-1/2">
+      <Tabs defaultValue="overview" className="space-y-8">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 md:w-[600px]">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="courses">Courses</TabsTrigger>
@@ -335,8 +335,8 @@ export default function StudentPage({ params }: { params: { studentId: string } 
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <TabsContent value="overview" className="mt-6">
+          <div className="grid gap-4 md:gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {/* Performance Card */}
             <Card>
               <CardHeader>
@@ -549,12 +549,12 @@ export default function StudentPage({ params }: { params: { studentId: string } 
         </TabsContent>
 
         {/* Attendance Tab */}
-        <TabsContent value="attendance">
+        <TabsContent value="attendance" className="mt-6">
           <AttendanceSection attendanceData={studentData.attendance} />
         </TabsContent>
 
         {/* Courses Tab */}
-        <TabsContent value="courses">
+        <TabsContent value="courses" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle>Enrolled Courses</CardTitle>
@@ -577,7 +577,7 @@ export default function StudentPage({ params }: { params: { studentId: string } 
         </TabsContent>
 
         {/* Submissions Tab */}
-        <TabsContent value="submissions">
+        <TabsContent value="submissions" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -591,16 +591,16 @@ export default function StudentPage({ params }: { params: { studentId: string } 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[600px]">
-                <div className="space-y-4">
+              <ScrollArea className="h-[400px] md:h-[600px]">
+                <div className="space-y-3 md:space-y-4">
                   {studentData.submissions
                     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
                     .map((submission) => (
                       <div 
                         key={submission.id} 
-                        className="p-4 border rounded-lg space-y-3"
+                        className="p-3 md:p-4 border rounded-lg space-y-2 md:space-y-3"
                       >
-                        <div className="flex items-start justify-between">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                           <div>
                             <h4 className="font-semibold text-base">
                               {submission.assignment.title}
@@ -622,7 +622,7 @@ export default function StudentPage({ params }: { params: { studentId: string } 
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
                             Submitted: {new Date(submission.submittedAt).toLocaleDateString('en-US', {

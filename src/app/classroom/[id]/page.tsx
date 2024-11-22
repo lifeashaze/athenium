@@ -333,12 +333,14 @@ const ClassroomPage = () => {
                 {dbUser?.role === 'PROFESSOR' ? 'Manage Resources' : 'Resources'}
               </Button>
             </Link>
-            <Link href={`/classroom/${params.id}/attendance`} className="w-full sm:w-auto">
-              <Button className="w-full">
-                <Users className="mr-2 h-4 w-4" />
-                {dbUser?.role === 'PROFESSOR' ? 'Manage Attendance' : 'Attendance'}
-              </Button>
-            </Link>
+            {dbUser?.role !== 'STUDENT' && (
+              <Link href={`/classroom/${params.id}/attendance`} className="w-full sm:w-auto">
+                <Button className="w-full">
+                  <Users className="mr-2 h-4 w-4" />
+                  {dbUser?.role === 'PROFESSOR' ? 'Manage Attendance' : 'Attendance'}
+                </Button>
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>

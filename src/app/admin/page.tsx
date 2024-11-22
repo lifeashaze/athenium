@@ -88,7 +88,7 @@ export default function AdminPanel() {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [activeTab, setActiveTab] = useState<'ALL' | 'STUDENT' | 'PROFESSOR' | 'ADMIN'>('ALL')
+  const [activeTab, setActiveTab] = useState<'ALL' | 'STUDENT' | 'PROFESSOR' | 'ADMIN'>('STUDENT')
   const itemsPerPage = 10
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -324,10 +324,10 @@ export default function AdminPanel() {
             setCurrentPage(1)
           }}>
             <TabsList className="mb-4">
-              <TabsTrigger value="ALL">All Users</TabsTrigger>
               <TabsTrigger value="STUDENT">Students</TabsTrigger>
               <TabsTrigger value="PROFESSOR">Professors</TabsTrigger>
               <TabsTrigger value="ADMIN">Admins</TabsTrigger>
+              <TabsTrigger value="ALL">All Users</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -352,6 +352,13 @@ export default function AdminPanel() {
                       <Select
                         value={user.role}
                         onValueChange={async (newRole) => {
+                          // Optimistically update the UI
+                          setUsers(prevUsers => 
+                            prevUsers.map(u => 
+                              u.id === user.id ? { ...u, role: newRole as typeof user.role } : u
+                            )
+                          )
+
                           try {
                             const token = await getToken()
                             const response = await fetch('/api/members', {
@@ -369,15 +376,15 @@ export default function AdminPanel() {
                             if (!response.ok) throw new Error('Failed to update role')
                             
                             const { user: updatedUser } = await response.json()
+                            toast.success(`Role successfully updated to ${newRole}`)
+                          } catch (error) {
+                            // Revert the optimistic update on error
                             setUsers(prevUsers => 
                               prevUsers.map(u => 
-                                u.id === updatedUser.id ? updatedUser : u
+                                u.id === user.id ? { ...u, role: user.role } : u
                               )
                             )
-                            
-                            toast.success('Role updated successfully')
-                          } catch (error) {
-                            toast.error('Error updating role')
+                            toast.error('Failed to update role. Please try again.')
                             console.error(error)
                           }
                         }}
