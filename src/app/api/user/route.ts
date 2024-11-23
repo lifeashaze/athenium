@@ -15,6 +15,9 @@ export async function GET(req: NextRequest) {
       where: { id: userId },
       select: {
         id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
         role: true,
         rollNo: true,
         year: true,
@@ -53,6 +56,19 @@ export async function PUT(req: NextRequest) {
         srn: body.srn,
         prn: body.prn,
         officeHours: body.officeHours,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        rollNo: true,
+        year: true,
+        division: true,
+        srn: true,
+        prn: true,
+        officeHours: true,
       },
     })
 
