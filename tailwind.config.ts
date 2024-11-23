@@ -123,10 +123,57 @@ const config: Config = {
   		},
   		fontFamily: {
   			styrene: ['Styrene A Web', 'sans-serif']
-  		}
+  		},
+  		typography: {
+  			DEFAULT: {
+  				css: {
+  					maxWidth: 'none',
+  					color: 'inherit',
+  					p: {
+  						color: 'inherit',
+  						marginTop: '0.5em',
+  						marginBottom: '0.5em',
+  					},
+  					strong: {
+  						color: 'inherit',
+  						fontWeight: '600',
+  					},
+  					li: {
+  						color: 'inherit',
+  						marginTop: '0.25em',
+  						marginBottom: '0.25em',
+  					},
+  					h2: {
+  						color: 'inherit',
+  						marginTop: '1em',
+  						marginBottom: '0.5em',
+  						fontWeight: '600',
+  					},
+  					blockquote: {
+  						color: 'inherit',
+  						borderLeftColor: 'hsl(var(--primary))',
+  						fontStyle: 'normal',
+  					},
+  					code: {
+  						color: 'inherit',
+  						backgroundColor: 'hsl(var(--muted))',
+  						borderRadius: '0.25rem',
+  						padding: '0.2em 0.4em',
+  					},
+  					hr: {
+  						borderColor: 'hsl(var(--border))',
+  						marginTop: '1em',
+  						marginBottom: '1em',
+  					},
+  				},
+  			},
+  		},
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/typography"),
+  ],
 } satisfies Config
 
 export default config

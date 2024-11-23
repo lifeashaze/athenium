@@ -128,6 +128,7 @@ const DashboardPage = () => {
     isLoading: isInvitationsLoading,
     acceptInvitation,
     dismissInvitation,
+    refetchInvitations,
   } = useInvitations();
 
   const {
@@ -178,17 +179,68 @@ const DashboardPage = () => {
     });
   }, [classrooms, router]);
 
+  // Add this useEffect to check for new users
+  useEffect(() => {
+    if (!isLoading && dbUser) {
+      const isNewUser = !dbUser.rollNo && !dbUser.srn && !dbUser.prn && !dbUser.year && !dbUser.division;
+      if (isNewUser) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [isLoading, dbUser]);
 
   const handleOnboardingSubmit = async () => {
     try {
       await axios.put('/api/user', userDetails);
+      
+      // Show celebration animation
       setShowCelebration(true);
       setShowOnboarding(false);
       
+      // Check for invitations after a short delay (to allow celebration to show)
+      setTimeout(async () => {
+        try {
+          // Refresh invitations data
+          await refetchInvitations();
+          
+          // If there are invitations, show a toast notification
+          if (invitations.length > 0) {
+            toast({
+              title: "Class Invitations Available",
+              description: `You have ${invitations.length} pending class invitation${invitations.length > 1 ? 's' : ''}.`,
+              action: (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // Scroll to invitations section if it exists
+                          document.querySelector('#invitations-section')?.scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'center'
+                          });
+                        }}
+                      >
+                        <Bell className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View Invitations</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ),
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching invitations:', error);
+        }
+      }, 1000); // Check after 1 second
       
+      // Hide celebration after specified duration
       setTimeout(() => {
         setShowCelebration(false);
-      }, 3250);
+      }, 4000);
     } catch (error) {
       console.error('Error updating user details:', error);
       toast({
@@ -408,50 +460,109 @@ const DashboardPage = () => {
               width={width}
               height={height}
               recycle={false}
-              numberOfPieces={500}
-              gravity={0.2}
+              numberOfPieces={200}
+              gravity={0.15}
+              colors={['#FF5733', '#33FF57', '#5733FF', '#FFFF33']}
+              tweenDuration={5000}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center"
             >
-              <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-xl text-center">
-                <motion.h1 
-                  className="text-4xl font-bold mb-4"
-                  initial={{ y: -20 }}
-                  animate={{ y: 0 }}
-                  transition={{ type: "spring", bounce: 0.5 }}
-                >
-                  Welcome to Athenium! 🎓
-                </motion.h1>
-                <motion.div 
-                  className="flex justify-center space-x-4 mt-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  {["", "📚", "✨", "", "🎓"].map((emoji, i) => (
-                    <motion.span
-                      key={i}
-                      className="text-3xl"
-                      animate={{ 
-                        y: [0, -10, 0],
-                        scale: [1, 1.2, 1]
-                      }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                        delay: i * 0.1
-                      }}
-                    >
-                      {emoji}
-                    </motion.span>
-                  ))}
-                </motion.div>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative p-8 rounded-2xl overflow-hidden"
+              >
+                {/* Glass background */}
+                <div className="absolute inset-0 bg-white/30 dark:bg-gray-950/30 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-800/20 shadow-2xl" />
+                
+                {/* Content */}
+                <div className="relative space-y-6 text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-2"
+                  >
+                    <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/50">
+                      Welcome to Athenium!
+                    </h2>
+                    <p className="text-lg text-muted-foreground">
+                      Your learning journey begins here
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="flex justify-center"
+                  >
+                    <div className="w-24 h-24 relative">
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          rotate: [0, 360],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-primary/10"
+                      />
+                      <motion.div
+                        animate={{
+                          scale: [1.1, 1.3, 1.1],
+                          rotate: [180, 540],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: 0.2
+                        }}
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-primary/10"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <GraduationCap className="w-12 h-12 text-primary" />
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex justify-center space-x-8"
+                  >
+                    {[
+                      { icon: Book, label: "Learn" },
+                      { icon: Users, label: "Connect" },
+                      { icon: CheckCircle2, label: "Achieve" }
+                    ].map((item, i) => (
+                      <motion.div
+                        key={item.label}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8 + (i * 0.1) }}
+                        className="flex flex-col items-center space-y-2"
+                      >
+                        <div className="p-3 rounded-full bg-primary/10">
+                          <item.icon className="w-5 h-5 text-primary" />
+                        </div>
+                        <span className="text-sm font-medium text-muted-foreground">
+                          {item.label}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
+              </motion.div>
             </motion.div>
           </>
         )}
@@ -619,7 +730,7 @@ const DashboardPage = () => {
 
             {/* Class Invitations Section - Redesigned */}
             {invitations.length > 0 && (
-              <div className="mb-8">
+              <div id="invitations-section" className="mb-8">
                 <div className="flex items-center gap-2 mb-3">
                   <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     Pending Invitations
@@ -1018,7 +1129,7 @@ const DashboardPage = () => {
           <DialogHeader>
             <DialogTitle>Leave Classroom</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to leave this classroom? You'll need a new invitation to rejoin.</p>
+          <p>Are you sure you want to leave this classroom? You&apos;ll need a new invitation to rejoin.</p>
           <div className="flex justify-end gap-3 mt-4">
             <Button variant="outline" onClick={() => setClassroomToLeave(null)}>Cancel</Button>
             <Button 

@@ -78,5 +78,6 @@ export function useInvitations() {
     dismissInvitation: dismissMutation.mutate,
     isAccepting: acceptMutation.isPending,
     isDismissing: dismissMutation.isPending,
+    refetchInvitations: invitationsQuery.refetch,
   }
 }

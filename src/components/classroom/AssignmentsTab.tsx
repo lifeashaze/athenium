@@ -19,6 +19,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { Badge } from "@/components/ui/badge";
 import { Submission } from '@prisma/client';
+import { generateWithGemini, parseRequirementsFromGeminiResponse } from '@/lib/utils/gemini';
 
 interface Assignment {
   id: number;
@@ -189,36 +190,6 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
 
     setIsGenerating(true);
     try {
-      const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY!);
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-pro',
-        safetySettings: [
-          {
-            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-        ].filter(setting => Object.values(HarmCategory).includes(setting.category)),
-      });
-
-      const chat = model.startChat({
-        history: [],
-        generationConfig: {
-          maxOutputTokens: 8192,
-        },
-      });
-
       const prompt = `You are an experienced professor creating requirements for an assignment.
 
 Assignment Title: "${newAssignment.title}"
@@ -235,16 +206,8 @@ Generate 3 specific, measurable requirements for this assignment. Each requireme
 Format each requirement as a bullet point starting with "- ".
 Keep the requirements concise but detailed enough for proper evaluation.`;
 
-      const result = await chat.sendMessage(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      // Convert the bullet points to array
-      const requirements = text
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.startsWith('- '))
-        .map(line => line.substring(2));
+      const response = await generateWithGemini(prompt);
+      const requirements = parseRequirementsFromGeminiResponse(response);
 
       setNewAssignment(prev => ({
         ...prev,
@@ -711,7 +674,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
               <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold text-muted-foreground">No Past Assignments</h3>
               <p className="text-sm text-muted-foreground mt-2">
-                You don't have any past assignments yet.
+                You don&apos;t have any past assignments yet.
               </p>
             </div>
           ) : (

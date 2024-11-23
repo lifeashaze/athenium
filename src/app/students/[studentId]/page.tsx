@@ -22,6 +22,7 @@ import {
   SubmissionsSkeleton, 
   AttendanceAlertsSkeleton 
 } from "@/components/loaders/StudentProfileLoaders";
+import { StudentChatBot } from '@/components/classroom/StudentChatBot';
 
 interface AttendanceRecord {
   id: string;
@@ -645,6 +646,8 @@ export default function StudentPage({ params }: { params: { studentId: string } 
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {studentData && <StudentChatBot studentData={studentData} />}
     </div>
   );
 }

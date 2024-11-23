@@ -12,8 +12,19 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { UserButton } from "@clerk/nextjs";
+import { useDbUser } from '@/lib/hooks/useUser';
 
 export function SidebarDemo() {
+  const { dbUser } = useDbUser();
+  const [open, setOpen] = useState(false);
+
+  const handleLinkClick = () => {
+    // Close sidebar on mobile devices
+    if (window.innerWidth < 768) { // md breakpoint
+      setOpen(false);
+    }
+  };
+
   const links = [
     {
       label: "Dashboard",
@@ -43,20 +54,16 @@ export function SidebarDemo() {
         <IconSettings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
-    {
-      label: "Admin Panel",
-      href: "/admin",
-      icon: <IconShieldLock className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
-    },
-  ];
-  const [open, setOpen] = useState(false);
-
-  const handleLinkClick = () => {
-    // Close sidebar on mobile devices
-    if (window.innerWidth < 768) { // md breakpoint
-      setOpen(false);
-    }
-  };
+  ].concat(
+    // Only show Admin Panel for users with ADMIN role
+    dbUser?.role === 'ADMIN' 
+      ? [{
+          label: "Admin Panel",
+          href: "/admin",
+          icon: <IconShieldLock className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+        }]
+      : []
+  );
 
   return (
     <div
