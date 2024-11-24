@@ -12,6 +12,7 @@ import { generateWithGeminiStream } from '@/lib/utils/gemini';
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  streaming?: boolean;
 }
 
 interface DocumentChatProps {
@@ -37,8 +38,9 @@ export default function DocumentChat({ documentContent, chatMessages, setChatMes
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim() || !documentContent || isChatLoading) return;
+    
     const newUserMessage: ChatMessage = { role: 'user', content: userInput };
-    setChatMessages([...chatMessages, newUserMessage]);
+    setChatMessages(prev => [...prev, newUserMessage]);
     setUserInput('');
     setIsChatLoading(true);
 
@@ -46,19 +48,36 @@ export default function DocumentChat({ documentContent, chatMessages, setChatMes
       let accumulatedResponse = '';
       const stream = generateWithGeminiStream(userInput, documentContent);
       
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: '▋',
+        streaming: true
+      }]);
+      
       for await (const chunk of stream) {
         accumulatedResponse += chunk;
+        setChatMessages(prev => [
+          ...prev.slice(0, -1),
+          { 
+            role: 'assistant', 
+            content: accumulatedResponse + '▋',
+            streaming: true
+          }
+        ]);
         scrollToBottom();
       }
 
-      setChatMessages((prev: ChatMessage[]) => [...prev, { 
-        role: 'assistant' as const, 
-        content: accumulatedResponse 
-      }]);
+      setChatMessages(prev => [
+        ...prev.slice(0, -1),
+        { 
+          role: 'assistant', 
+          content: accumulatedResponse
+        }
+      ]);
     } catch (error) {
       console.error('Chat error:', error);
-      setChatMessages((prev: ChatMessage[]) => [
-        ...prev,
+      setChatMessages(prev => [
+        ...prev.slice(0, -1),
         { 
           role: 'assistant', 
           content: 'Sorry, I encountered an error while processing your question. Please try again.'
@@ -168,6 +187,12 @@ export default function DocumentChat({ documentContent, chatMessages, setChatMes
                 >
                   {message.content}
                 </ReactMarkdown>
+                {message.streaming && (
+                  <span 
+                    className="inline-block w-[3px] h-[16px] align-middle bg-primary/50 animate-blink ml-[2px]"
+                    aria-hidden="true"
+                  />
+                )}
               </div>
             </div>
             {message.role === 'user' && (
@@ -177,16 +202,6 @@ export default function DocumentChat({ documentContent, chatMessages, setChatMes
             )}
           </div>
         ))}
-        {isChatLoading && (
-          <div className="flex justify-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-primary" />
-            </div>
-            <div className="rounded-xl px-4 py-2.5 bg-accent/50 border">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            </div>
-          </div>
-        )}
       </ScrollArea>
       
       <form onSubmit={handleChatSubmit} className="p-4 border-t">

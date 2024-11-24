@@ -505,23 +505,58 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
     try {
       setChatMessages([]);
       setIsChatLoading(true);
+      setDocumentContent('');  // Reset document content
 
       const response = await fetch(`/api/extract-content?url=${encodeURIComponent(url)}`);
-      const data = await response.json();
+      if (!response.ok) throw new Error('Failed to fetch document content');
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader available');
+
+      let fullContent = '';
       
-      if (data.error) {
-        setDocumentContent('');
-        setChatMessages([{
-          role: 'assistant',
-          content: `${data.content}${data.details ? `\n\nTechnical details: ${data.details}` : ''}`
-        }]);
-      } else {
-        setDocumentContent(data.content);
-        // Simple confirmation message instead of analysis
-        setChatMessages([{
-          role: 'assistant',
-          content: 'I have successfully processed the document. Feel free to ask any questions about it!'
-        }]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        // Convert the chunk to text
+        const chunk = new TextDecoder().decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(5);
+            if (data === '[DONE]') break;
+
+            try {
+              const parsed = JSON.parse(data);
+              
+              switch (parsed.status) {
+                case 'loading':
+                  setDocumentContent('Loading document...');
+                  break;
+                case 'processing':
+                  if (parsed.content) {
+                    fullContent += parsed.content;
+                    setDocumentContent(fullContent);
+                  }
+                  break;
+                case 'complete':
+                  // Final content is set
+                  setDocumentContent(fullContent);
+                  setChatMessages([{
+                    role: 'assistant',
+                    content: 'I have successfully processed the document. Feel free to ask any questions about it!'
+                  }]);
+                  break;
+                case 'error':
+                  throw new Error(parsed.message || 'Failed to process document');
+              }
+            } catch (e) {
+              console.error('Error parsing chunk:', e);
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to extract document content:', error);

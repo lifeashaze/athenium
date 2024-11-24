@@ -111,6 +111,10 @@ const config: Config = {
   				to: {
   					transform: 'translateY(calc(-100% - var(--gap)))'
   				}
+  			},
+  			blink: {
+  				'0%, 100%': { opacity: '0' },
+  				'50%': { opacity: '1' }
   			}
   		},
   		animation: {
@@ -119,7 +123,8 @@ const config: Config = {
   			meteor: 'meteor 5s linear infinite',
   			'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
   			marquee: 'marquee var(--duration) infinite linear',
-  			'marquee-vertical': 'marquee-vertical var(--duration) linear infinite'
+  			'marquee-vertical': 'marquee-vertical var(--duration) linear infinite',
+  			blink: 'blink 1s ease-in-out infinite'
   		},
   		fontFamily: {
   			styrene: ['Styrene A Web', 'sans-serif']

@@ -45,14 +45,26 @@ Remember: Your responses should be educational and detailed enough for study pur
 export async function* generateWithGeminiStream(question: string, context?: string) {
   try {
     const prompt = `${SYSTEM_PROMPT}\n\nDocument content: ${context?.slice(0, 15000)}\n\nQuestion: ${question}`;
-    
     const messages = [{ role: 'user', content: prompt }];
     const result = await model.stream(messages);
     
+    let buffer = '';
     for await (const chunk of result) {
       if (chunk.content) {
-        yield chunk.content;
+        // Split by words/punctuation to create more natural chunks
+        buffer += chunk.content;
+        const words = buffer.split(/([.,!?]\s+|\s+)/);
+        
+        // Keep the last partial word in the buffer
+        if (words.length > 1) {
+          buffer = words.pop() || '';
+          yield words.join('');
+        }
       }
+    }
+    // Yield any remaining content in the buffer
+    if (buffer) {
+      yield buffer;
     }
   } catch (error) {
     console.error('Streaming error:', error);
