@@ -16,6 +16,9 @@ import { generateWithGemini, generateWithGeminiStream } from '@/lib/utils/gemini
 import { Textarea } from "@/components/ui/textarea"
 import ReactMarkdown from 'react-markdown'
 import { Badge } from "@/components/ui/badge"
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import DocumentChat from '@/components/classroom/DocumentChat';
 
 interface Resource {
   id: string
@@ -532,29 +535,49 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
     }
   };
 
+  const scrollToBottom = () => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTo({
+        top: chatScrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInput.trim() || !documentContent) return;
+    if (!userInput.trim() || !documentContent || isChatLoading) return;
     
-    const newMessage: ChatMessage = { role: 'user', content: userInput };
-    setChatMessages(prev => [...prev, newMessage]);
+    const newUserMessage: ChatMessage = { role: 'user', content: userInput };
+    setChatMessages(prev => [...prev, newUserMessage]);
     setUserInput('');
     setIsChatLoading(true);
 
     try {
-      // Pass both the user input and document content to Gemini
-      const response = await generateWithGemini(userInput, documentContent);
+      let accumulatedResponse = '';
+      const stream = generateWithGeminiStream(userInput, documentContent);
+      
+      for await (const chunk of stream) {
+        accumulatedResponse += chunk;
+        scrollToBottom();
+      }
+
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: response 
+        content: accumulatedResponse 
       }]);
     } catch (error) {
-      setChatMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I encountered an error while processing your question. Please try again.' 
-      }]);
+      console.error('Chat error:', error);
+      setChatMessages(prev => [
+        ...prev,
+        { 
+          role: 'assistant', 
+          content: 'Sorry, I encountered an error while processing your question. Please try again.'
+        }
+      ]);
     } finally {
       setIsChatLoading(false);
+      scrollToBottom();
     }
   };
 
@@ -571,10 +594,9 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
   }, [selectedResource]); // Only trigger when selectedResource changes
 
   useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [chatMessages]); // Scroll whenever messages change
+    // Scroll when messages change or when loading state changes
+    scrollToBottom();
+  }, [chatMessages, isChatLoading]);
 
   if (isMobile) {
     return (
@@ -854,113 +876,11 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
                       />
                     </div>
                     
-                    <div className="flex-[0.35] border-l flex flex-col h-full bg-background">
-                      <div className="p-4 border-b flex items-center gap-4">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Bot className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">Document Chat</h3>
-                          <p className="text-sm text-muted-foreground">Ask questions about this document</p>
-                        </div>
-                      </div>
-                      
-                      <ScrollArea className="flex-1 p-4">
-                        {chatMessages.map((message, index) => (
-                          <div
-                            key={index}
-                            className={`flex gap-4 mb-6 ${
-                              message.role === 'user' ? 'justify-end' : 'justify-start'
-                            }`}
-                          >
-                            {message.role !== 'user' && (
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                <Bot className="h-4 w-4 text-primary" />
-                              </div>
-                            )}
-                            <div
-                              className={`rounded-xl px-4 py-2.5 max-w-[80%] ${
-                                message.role === 'user'
-                                  ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-12'
-                                  : 'bg-accent/50 border'
-                              }`}
-                            >
-                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <ReactMarkdown
-                                  components={{
-                                    h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
-                                    blockquote: ({ children }) => (
-                                      <blockquote className="border-l-4 border-primary/50 pl-4 italic text-muted-foreground">
-                                        {children}
-                                      </blockquote>
-                                    ),
-                                    code: ({ children }) => (
-                                      <code className="bg-muted px-1.5 py-0.5 rounded-md text-sm">
-                                        {children}
-                                      </code>
-                                    ),
-                                  }}
-                                >
-                                  {message.content}
-                                </ReactMarkdown>
-                              </div>
-                            </div>
-                            {message.role === 'user' && (
-                              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                                <User className="h-4 w-4 text-primary-foreground" />
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {isChatLoading && (
-                          <div className="flex justify-start gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <Bot className="h-4 w-4 text-primary" />
-                            </div>
-                            <div className="rounded-xl px-4 py-2.5 bg-accent/50 border">
-                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                            </div>
-                          </div>
-                        )}
-                      </ScrollArea>
-                      
-                      <form onSubmit={handleChatSubmit} className="p-4 border-t">
-                        <div className="flex flex-col gap-3">
-                          <div className="flex gap-2">
-                            <Badge variant={documentContent ? "default" : "secondary"} className="px-3 py-1">
-                              <Bot className="h-3.5 w-3.5 mr-1" />
-                              {documentContent ? "Ready to answer" : "Processing document..."}
-                            </Badge>
-                          </div>
-                          <div className="relative flex gap-2">
-                            <Textarea
-                              value={userInput}
-                              onChange={(e) => setUserInput(e.target.value)}
-                              placeholder="Ask about this document..."
-                              className="min-h-[80px] pr-12 resize-none"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault();
-                                  handleChatSubmit(e);
-                                }
-                              }}
-                            />
-                            <Button 
-                              type="submit" 
-                              disabled={isChatLoading || !documentContent}
-                              size="icon"
-                              className="absolute right-2 bottom-2 h-8 w-8"
-                            >
-                              {isChatLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Send className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
+                    <DocumentChat 
+                      documentContent={documentContent}
+                      chatMessages={chatMessages}
+                      setChatMessages={setChatMessages}
+                    />
                   </div>
                 </div>
               ) : (

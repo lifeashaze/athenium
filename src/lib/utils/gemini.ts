@@ -1,108 +1,70 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY!);
-
-// Configure safety settings
-const safetySettings = [
-  {
-    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
+const model = new ChatGoogleGenerativeAI({
+  modelName: "gemini-pro",
+  maxOutputTokens: 4096,
+  temperature: 0.7,
+  apiKey: process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY,
+  safetySettings: [{
     category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
     threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-].filter(setting => Object.values(HarmCategory).includes(setting.category));
+  }],
+});
 
-export async function* generateWithGeminiStream(prompt: string, pdfContent?: string) {
+const SYSTEM_PROMPT = `You are an expert document analysis assistant. Your role is to help users understand technical documents by providing comprehensive, educational responses.
+
+Document Content:
+{context}
+
+Guidelines for your responses:
+
+1. Provide detailed, thorough explanations
+   - Break down complex concepts
+   - Include relevant examples when helpful
+   - Explain underlying principles and connections
+   - Use analogies to clarify difficult concepts
+
+2. Structure your responses clearly:
+   - Use headings and subheadings
+   - Break information into logical sections
+   - Include bullet points or numbered lists for key points
+   - Add relevant code examples or diagrams when applicable
+
+3. Use markdown formatting to enhance readability:
+   - \`code blocks\` for technical terms or syntax
+   - **bold** for emphasis
+   - *italics* for definitions
+   - > blockquotes for direct quotes
+
+4. IMPORTANT: Always end your response with a source attribution:
+   > 📚 Source: [Page X] Under [Topic/Section]: [Include relevant quote from the document]
+
+Remember: Your responses should be educational and detailed enough for study purposes while maintaining clarity and organization.`;
+
+export async function* generateWithGeminiStream(question: string, context?: string) {
   try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      safetySettings,
-      generationConfig: {
-        maxOutputTokens: 8192,
-        temperature: 0.7,
-        candidateCount: 1,
-      },
-    });
-
-    const chat = model.startChat({
-      history: [],
-      generationConfig: {
-        maxOutputTokens: 8192,
-        temperature: 0.7,
-        candidateCount: 1,
-      },
-    });
-
-    if (pdfContent) {
-      const contextPrompt = `You are an expert programming tutor analyzing this document:
-${pdfContent}
-
-Provide structured responses with:
-1. Core Concept
-2. Detailed Explanation
-3. Technical Details
-4. Practical Example
-5. Key Points
-6. Source Reference
-
-Use markdown formatting and emojis for readability.`;
-      
-      await chat.sendMessage(contextPrompt);
-    }
-
-    const result = await chat.sendMessageStream(prompt);
+    const prompt = `${SYSTEM_PROMPT}\n\nDocument content: ${context?.slice(0, 15000)}\n\nQuestion: ${question}`;
     
-    for await (const chunk of result.stream) {
-      yield chunk.text();
+    const messages = [{ role: 'user', content: prompt }];
+    const result = await model.stream(messages);
+    
+    for await (const chunk of result) {
+      if (chunk.content) {
+        yield chunk.content;
+      }
     }
   } catch (error) {
+    console.error('Streaming error:', error);
     throw error;
   }
 }
 
-export async function generateWithGemini(prompt: string, pdfContent?: string) {
+export async function generateWithGemini(question: string, context?: string) {
   try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      safetySettings,
-      generationConfig: {
-        maxOutputTokens: 8192,
-        temperature: 0.7,
-      },
-    });
-
-    const chat = model.startChat({
-      history: [],
-      generationConfig: {
-        maxOutputTokens: 8192,
-        temperature: 0.7,
-      },
-    });
-
-    if (pdfContent) {
-      const contextPrompt = `You are analyzing the following document content:
-
-${pdfContent}
-
-Please provide responses based on this content, using markdown formatting for better readability.
-When answering questions, cite specific sections or pages when possible.`;
-      
-      await chat.sendMessage(contextPrompt);
-    }
-
-    const result = await chat.sendMessage(prompt);
-    const response = await result.response;
-    return response.text();
+    const prompt = `${SYSTEM_PROMPT}\n\nDocument content: ${context?.slice(0, 15000)}\n\nQuestion: ${question}`;
+    const result = await model.invoke(prompt);
+    return result.text;
   } catch (error) {
     console.error('Gemini API error:', error);
     throw error;

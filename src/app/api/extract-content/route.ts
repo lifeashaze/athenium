@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import * as pdfjsLib from 'pdfjs-dist';
 import axios from 'axios';
 
-// Set worker source path
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+const MAX_PAGES = 50; // Limit number of pages to process
+const CHUNK_SIZE = 1000; // Characters per chunk
 
 export async function GET(request: Request) {
   try {
@@ -23,40 +25,47 @@ export async function GET(request: Request) {
 
     const response = await axios.get(url, {
       responseType: 'arraybuffer',
-      timeout: 30000, // 30 second timeout for large files
+      timeout: 15000, // Reduced timeout
     });
 
     const uint8Array = new Uint8Array(response.data);
     const loadingTask = pdfjsLib.getDocument({ 
       data: uint8Array,
-      // Add performance options
       isEvalSupported: false,
-      disableFontFace: true
+      disableFontFace: true,
+      maxImageSize: 1024 * 1024, // Limit image size
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/',
+      cMapPacked: true,
     });
     
     const pdf = await loadingTask.promise;
+    const numPages = Math.min(pdf.numPages, MAX_PAGES);
     let fullText = '';
-    let currentSection = '';
     
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
+    // Process pages in parallel
+    const pagePromises = Array.from({ length: numPages }, async (_, i) => {
+      const page = await pdf.getPage(i + 1);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      
-      // Add page markers for better context
-      fullText += `\n=== Page ${i} ===\n${pageText}\n`;
-    }
+      return `=== Page ${i + 1} ===\n${
+        textContent.items
+          .map((item: any) => item.str)
+          .join(' ')
+      }`;
+    });
 
+    const pageTexts = await Promise.all(pagePromises);
+    fullText = pageTexts.join('\n');
+
+    // Clean and chunk the text
     const cleanedText = fullText
       .replace(/\s+/g, ' ')
-      .trim();
+      .trim()
+      .slice(0, CHUNK_SIZE * 15); // Limit total content size
 
     return NextResponse.json({ 
       error: false, 
       content: cleanedText,
-      totalPages: pdf.numPages
+      totalPages: numPages
     });
 
   } catch (error) {
