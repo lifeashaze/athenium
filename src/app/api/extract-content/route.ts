@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as pdfjsLib from 'pdfjs-dist';
 import axios from 'axios';
+import mammoth from 'mammoth';
 
 // 1. Update worker configuration
 const PDFJS_WORKER_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -29,80 +30,118 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: true, content: 'No URL provided' }, { status: 400 });
     }
 
-    if (!url.toLowerCase().endsWith('.pdf')) {
+    // Update file type checking
+    const fileExtension = url.toLowerCase().split('.').pop();
+    if (!['pdf', 'doc', 'docx'].includes(fileExtension || '')) {
       return NextResponse.json({ 
         error: true, 
-        content: 'Currently only PDF files are supported' 
+        content: 'Only PDF and Word documents (DOC/DOCX) are supported' 
       }, { status: 400 });
     }
 
-    // Return a streaming response
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
     const encoder = new TextEncoder();
 
-    // Process the PDF in the background and stream the results
     (async () => {
       try {
-        // Send initial loading state
         await writer.write(encoder.encode(`data: ${JSON.stringify({ status: 'loading' })}\n\n`));
 
-        // 3. Add error handling for PDF loading
-        let uint8Array;
-        try {
-          const response = await axios.get(url, {
-            responseType: 'arraybuffer',
-            timeout: 15000,
-          });
-          uint8Array = new Uint8Array(response.data);
-        } catch (error) {
-          throw new Error(`Failed to fetch PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-
-        // 4. Update PDF loading configuration
-        const loadingTask = pdfjsLib.getDocument({
-          data: uint8Array,
-          isEvalSupported: false,
-          disableFontFace: true,
-          maxImageSize: 1024 * 1024,
-          cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
-          cMapPacked: true,
-          standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+        // Fetch document
+        const response = await axios.get(url, {
+          responseType: 'arraybuffer',
+          timeout: 15000,
         });
-        
-        const pdf = await loadingTask.promise;
-        const numPages = Math.min(pdf.numPages, MAX_PAGES);
 
-        // Send total pages info
-        await writer.write(encoder.encode(`data: ${JSON.stringify({ 
-          status: 'processing',
-          totalPages: numPages 
-        })}\n\n`));
+        if (fileExtension === 'pdf') {
+          // 3. Add error handling for PDF loading
+          let uint8Array;
+          try {
+            const response = await axios.get(url, {
+              responseType: 'arraybuffer',
+              timeout: 15000,
+            });
+            uint8Array = new Uint8Array(response.data);
+          } catch (error) {
+            throw new Error(`Failed to fetch PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
 
-        // Stream each page
-        for (let i = 0; i < numPages; i++) {
-          const page = await pdf.getPage(i + 1);
-          const textContent = await page.getTextContent();
-          const pageText = `=== Page ${i + 1} ===\n${
-            textContent.items
-              .map((item: any) => item.str)
-              .join(' ')
-          }\n`;
+          // 4. Update PDF loading configuration
+          const loadingTask = pdfjsLib.getDocument({
+            data: uint8Array,
+            isEvalSupported: false,
+            disableFontFace: true,
+            maxImageSize: 1024 * 1024,
+            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+            cMapPacked: true,
+            standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+          });
+          
+          const pdf = await loadingTask.promise;
+          const numPages = Math.min(pdf.numPages, MAX_PAGES);
 
+          // Send total pages info
           await writer.write(encoder.encode(`data: ${JSON.stringify({ 
             status: 'processing',
-            currentPage: i + 1,
-            totalPages: numPages,
-            content: pageText 
+            totalPages: numPages 
           })}\n\n`));
-        }
 
-        // Send completion signal
-        await writer.write(encoder.encode(`data: ${JSON.stringify({ 
-          status: 'complete',
-          totalPages: numPages 
-        })}\n\n`));
-        await writer.write(encoder.encode('data: [DONE]\n\n'));
+          // Stream each page
+          for (let i = 0; i < numPages; i++) {
+            const page = await pdf.getPage(i + 1);
+            const textContent = await page.getTextContent();
+            const pageText = `=== Page ${i + 1} ===\n${
+              textContent.items
+                .map((item: any) => item.str)
+                .join(' ')
+            }\n`;
+
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ 
+              status: 'processing',
+              currentPage: i + 1,
+              totalPages: numPages,
+              content: pageText 
+            })}\n\n`));
+          }
+
+          // Send completion signal
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ 
+            status: 'complete',
+            totalPages: numPages 
+          })}\n\n`));
+          await writer.write(encoder.encode('data: [DONE]\n\n'));
+        } else {
+          // Handle DOC/DOCX
+          const result = await mammoth.extractRawText({ 
+            buffer: Buffer.from(response.data)
+          });
+          const text = result.value;
+
+          // Split text into chunks for streaming
+          const chunks = text.match(new RegExp(`.{1,${CHUNK_SIZE}}`, 'g')) || [];
+          
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ 
+            status: 'processing',
+            totalChunks: chunks.length 
+          })}\n\n`));
+
+          // Stream chunks
+          for (let i = 0; i < chunks.length; i++) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ 
+              status: 'processing',
+              currentChunk: i + 1,
+              totalChunks: chunks.length,
+              content: chunks[i] 
+            })}\n\n`));
+          }
+
+          // Send completion signal
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ 
+            status: 'complete',
+            totalChunks: chunks.length 
+          })}\n\n`));
+          await writer.write(encoder.encode('data: [DONE]\n\n'));
+        }
       } catch (error) {
         // 5. Improve error logging
         console.error('PDF processing error:', error);
