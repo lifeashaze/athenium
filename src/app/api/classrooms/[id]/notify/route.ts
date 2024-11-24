@@ -32,7 +32,7 @@ export async function POST(
       });
       
       return resend.emails.send({
-        from: 'delivered@resend.dev',
+        from: '',
         to: member.user.email,
         subject: `New Assignment: ${assignmentTitle}`,
         html: `

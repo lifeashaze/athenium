@@ -63,13 +63,11 @@ export function OnboardingDialog({
     
     switch (step) {
       case 1:
-        if (!userDetails.rollNo) newErrors.rollNo = "Roll number is required"
-        if (!userDetails.srn) newErrors.srn = "SRN is required"
-        if (!userDetails.prn) newErrors.prn = "PRN is required"
+        if (!userDetails.rollNo?.trim()) newErrors.rollNo = "Roll number is required"
         break
       case 2:
-        if (!userDetails.year) newErrors.year = "Year is required"
-        if (!userDetails.division) newErrors.division = "Division is required"
+        if (!userDetails.year?.trim()) newErrors.year = "Year is required"
+        if (!userDetails.division?.trim()) newErrors.division = "Division is required"
         break
     }
     
@@ -114,9 +112,9 @@ export function OnboardingDialog({
   const isStepValid = () => {
     switch (step) {
       case 1:
-        return userDetails.rollNo && userDetails.srn && userDetails.prn
+        return !!userDetails.rollNo?.trim()
       case 2:
-        return userDetails.year && userDetails.division
+        return !!userDetails.year?.trim() && !!userDetails.division?.trim()
       default:
         return true
     }

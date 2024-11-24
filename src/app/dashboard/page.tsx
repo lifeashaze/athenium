@@ -179,10 +179,11 @@ const DashboardPage = () => {
     });
   }, [classrooms, router]);
 
-  // Add this useEffect to check for new users
+  // Update the useEffect that checks for new users
   useEffect(() => {
     if (!isLoading && dbUser) {
-      const isNewUser = !dbUser.rollNo && !dbUser.srn && !dbUser.prn && !dbUser.year && !dbUser.division;
+      // Check if any of the required fields are missing
+      const isNewUser = !dbUser.rollNo || !dbUser.year || !dbUser.division;
       if (isNewUser) {
         setShowOnboarding(true);
       }

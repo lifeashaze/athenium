@@ -22,13 +22,15 @@ const safetySettings = [
   },
 ].filter(setting => Object.values(HarmCategory).includes(setting.category));
 
-export async function generateWithGemini(prompt: string) {
+export async function* generateWithGeminiStream(prompt: string, pdfContent?: string) {
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-1.5-flash',
       safetySettings,
       generationConfig: {
         maxOutputTokens: 8192,
+        temperature: 0.7,
+        candidateCount: 1,
       },
     });
 
@@ -36,14 +38,73 @@ export async function generateWithGemini(prompt: string) {
       history: [],
       generationConfig: {
         maxOutputTokens: 8192,
+        temperature: 0.7,
+        candidateCount: 1,
       },
     });
+
+    if (pdfContent) {
+      const contextPrompt = `You are an expert programming tutor analyzing this document:
+${pdfContent}
+
+Provide structured responses with:
+1. Core Concept
+2. Detailed Explanation
+3. Technical Details
+4. Practical Example
+5. Key Points
+6. Source Reference
+
+Use markdown formatting and emojis for readability.`;
+      
+      await chat.sendMessage(contextPrompt);
+    }
+
+    const result = await chat.sendMessageStream(prompt);
+    
+    for await (const chunk of result.stream) {
+      yield chunk.text();
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function generateWithGemini(prompt: string, pdfContent?: string) {
+  try {
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      safetySettings,
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.7,
+      },
+    });
+
+    const chat = model.startChat({
+      history: [],
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.7,
+      },
+    });
+
+    if (pdfContent) {
+      const contextPrompt = `You are analyzing the following document content:
+
+${pdfContent}
+
+Please provide responses based on this content, using markdown formatting for better readability.
+When answering questions, cite specific sections or pages when possible.`;
+      
+      await chat.sendMessage(contextPrompt);
+    }
 
     const result = await chat.sendMessage(prompt);
     const response = await result.response;
     return response.text();
   } catch (error) {
-    console.error('Error generating with Gemini:', error);
+    console.error('Gemini API error:', error);
     throw error;
   }
 }

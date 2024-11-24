@@ -5,11 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { MessageCircle, X, Send, Loader2, Bot, User, AlertCircle, Info } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot, User, AlertCircle, Info, Share2, Download, Copy, Calendar, BookOpen, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { generateWithGemini } from '@/lib/utils/gemini';
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import ReactMarkdown from 'react-markdown';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -45,6 +51,12 @@ Try questions like:
   }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [quickPrompts] = useState([
+    { icon: AlertTriangle, text: "Main concerns?", prompt: "What are the main concerns for this student?" },
+    { icon: Calendar, text: "Attendance", prompt: "Show me their attendance pattern" },
+    { icon: BookOpen, text: "Assignments", prompt: "Show recent assignment submissions" },
+    { icon: CheckCircle2, text: "Progress", prompt: "Summarize overall academic progress" },
+  ]);
 
   const formatResponse = (text: string): string => {
     return text
@@ -163,101 +175,200 @@ Try questions like:
     }
   };
 
+  const exportChat = () => {
+    const chatContent = messages
+      .map(m => `${m.role.toUpperCase()} (${m.timestamp.toLocaleString()}): ${m.content}`)
+      .join('\n\n');
+    
+    const blob = new Blob([chatContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat-${studentData.firstName}-${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+  };
+
+  const copyToClipboard = async () => {
+    const chatContent = messages
+      .map(m => `${m.role.toUpperCase()}: ${m.content}`)
+      .join('\n\n');
+    await navigator.clipboard.writeText(chatContent);
+  };
+
   return (
-    <div className="fixed bottom-4 left-4 z-50">
+    <div className="fixed bottom-4 right-4 z-[100]">
       {isOpen ? (
-        <Card className="w-[400px] h-[600px] flex flex-col shadow-lg">
-          <div className="p-4 border-b flex justify-between items-center bg-primary text-primary-foreground">
-            <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              <h3 className="font-semibold">Student Assistant</h3>
+        <Card className="w-[800px] h-[800px] flex flex-col shadow-xl rounded-2xl border-2">
+          <div className="p-6 border-b flex justify-between items-center bg-gradient-to-r from-primary to-primary/90 text-primary-foreground">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-white/10 rounded-lg">
+                <Bot className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Student Assistant</h3>
+                <p className="text-sm text-primary-foreground/70">Analyzing {studentData.firstName}&apos;s progress</p>
+              </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-3">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={copyToClipboard}
+                      className="hover:bg-white/10 text-primary-foreground h-10 w-10"
+                    >
+                      <Copy className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Copy chat</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={exportChat}
+                      className="hover:bg-white/10 text-primary-foreground h-10 w-10"
+                    >
+                      <Download className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Export chat</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsOpen(false)}
+                className="hover:bg-white/10 text-primary-foreground h-10 w-10"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
-          
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
+
+          <div className="p-4 border-b bg-muted/30">
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {quickPrompts.map((prompt, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="flex items-center gap-2 whitespace-nowrap text-sm py-5"
+                  onClick={() => {
+                    setInput(prompt.prompt);
+                    handleSend();
+                  }}
+                >
+                  <prompt.icon className="h-5 w-5" />
+                  <span>{prompt.text}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-8">
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex gap-2 ${
+                  className={`flex gap-4 ${
                     message.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
                 >
                   {message.role !== 'user' && (
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                       {message.role === 'system' ? (
-                        <Info className="h-4 w-4 text-primary-foreground" />
+                        <Info className="h-5 w-5 text-primary" />
                       ) : (
-                        <Bot className="h-4 w-4 text-primary-foreground" />
+                        <Bot className="h-5 w-5 text-primary" />
                       )}
                     </div>
                   )}
                   <div
-                    className={`rounded-lg px-4 py-2 max-w-[85%] ${
+                    className={`rounded-2xl px-6 py-4 max-w-[70%] ${
                       message.role === 'user'
-                        ? 'bg-primary text-primary-foreground ml-12'
+                        ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-12'
                         : message.role === 'system'
-                        ? 'bg-muted'
-                        : 'bg-accent'
+                        ? 'bg-muted/50 border'
+                        : 'bg-accent/50 border'
                     }`}
                   >
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <div className="prose prose-base dark:prose-invert max-w-none">
                       <ReactMarkdown>
-                        {message.content}
+                        {message.role === 'assistant' ? formatResponse(message.content) : message.content}
                       </ReactMarkdown>
                     </div>
-                    <div className="text-xs mt-1 opacity-70">
-                      {message.timestamp.toLocaleTimeString()}
+                    <div className="text-xs mt-2 opacity-60">
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                   {message.role === 'user' && (
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary-foreground" />
+                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary-foreground" />
                     </div>
                   )}
                 </div>
               ))}
               {isLoading && (
-                <div className="flex justify-start">
-                  <div className="rounded-lg px-4 py-2 bg-muted">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex justify-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="rounded-2xl px-4 py-2.5 bg-accent/50 border">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   </div>
                 </div>
               )}
             </div>
           </ScrollArea>
 
-          <div className="p-4 border-t">
+          <div className="p-6 border-t bg-muted/50">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex gap-2"
+              className="flex flex-col gap-3"
             >
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about attendance, performance, etc..."
-                className="flex-1"
-                disabled={isLoading}
-              />
-              <Button type="submit" size="icon" disabled={isLoading}>
-                <Send className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-3 mb-2">
+                <Badge className="px-4 py-1.5 text-sm" variant={studentData.attendance.overall.percentage >= 75 ? "default" : "secondary"}>
+                  Attendance: {studentData.attendance.overall.percentage.toFixed(1)}%
+                </Badge>
+                <Badge className="px-4 py-1.5 text-sm" variant={studentData.performance.submissions.percentage >= 60 ? "default" : "secondary"}>
+                  Performance: {studentData.performance.submissions.percentage.toFixed(1)}%
+                </Badge>
+              </div>
+
+              <div className="flex gap-3">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask about attendance, performance, etc..."
+                  className="flex-1 rounded-xl border-2 py-6 text-base"
+                  disabled={isLoading}
+                />
+                <Button 
+                  type="submit" 
+                  size="icon" 
+                  disabled={isLoading}
+                  className="rounded-xl bg-primary hover:bg-primary/90 h-12 w-12"
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </div>
             </form>
           </div>
         </Card>
       ) : (
         <Button
           onClick={() => setIsOpen(true)}
-          className="rounded-full h-12 w-12 shadow-lg"
+          className="rounded-full h-16 w-16 shadow-lg bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80"
           size="icon"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-8 w-8" />
         </Button>
       )}
     </div>

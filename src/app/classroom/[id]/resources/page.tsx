@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Book, FileText, FileSpreadsheet, FileImage, File, Video, ChevronRight, Loader2, Upload, Trash2, ChevronDown, Search, Download, FolderOpen } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Book, FileText, FileSpreadsheet, FileImage, File, Video, ChevronRight, Loader2, Upload, Trash2, ChevronDown, Search, Download, FolderOpen, Bot, User, Send } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useUser } from '@clerk/nextjs';
+import { generateWithGemini, generateWithGeminiStream } from '@/lib/utils/gemini';
+import { Textarea } from "@/components/ui/textarea"
+import ReactMarkdown from 'react-markdown'
+import { Badge } from "@/components/ui/badge"
 
 interface Resource {
   id: string
@@ -35,6 +39,11 @@ interface User {
   firstName: string;
   email: string;
   role: "STUDENT" | "PROFESSOR" | "ADMIN";
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
 }
 
 const getPreviewUrl = (url: string) => {
@@ -336,6 +345,11 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
   const [dbUser, setDbUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [userInput, setUserInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [documentContent, setDocumentContent] = useState<string>('');
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -483,6 +497,84 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const extractDocumentContent = async (url: string) => {
+    try {
+      setChatMessages([]);
+      setIsChatLoading(true);
+
+      const response = await fetch(`/api/extract-content?url=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        setDocumentContent('');
+        setChatMessages([{
+          role: 'assistant',
+          content: `${data.content}${data.details ? `\n\nTechnical details: ${data.details}` : ''}`
+        }]);
+      } else {
+        setDocumentContent(data.content);
+        // Simple confirmation message instead of analysis
+        setChatMessages([{
+          role: 'assistant',
+          content: 'I have successfully processed the document. Feel free to ask any questions about it!'
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to extract document content:', error);
+      setDocumentContent('');
+      setChatMessages([{
+        role: 'assistant',
+        content: 'Sorry, I was unable to process this document. Please try with a different file.'
+      }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userInput.trim() || !documentContent) return;
+    
+    const newMessage: ChatMessage = { role: 'user', content: userInput };
+    setChatMessages(prev => [...prev, newMessage]);
+    setUserInput('');
+    setIsChatLoading(true);
+
+    try {
+      // Pass both the user input and document content to Gemini
+      const response = await generateWithGemini(userInput, documentContent);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: response 
+      }]);
+    } catch (error) {
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error while processing your question. Please try again.' 
+      }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedResource) {
+      // Reset chat messages and document content
+      setChatMessages([]);
+      setDocumentContent('');
+      setUserInput('');
+      
+      // Then extract new document content
+      extractDocumentContent(selectedResource.url);
+    }
+  }, [selectedResource]); // Only trigger when selectedResource changes
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages]); // Scroll whenever messages change
 
   if (isMobile) {
     return (
@@ -732,7 +824,7 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
           <Card className="flex-1">
             <CardContent className="p-2 sm:p-4 md:p-6">
               {selectedResource ? (
-                <div className="w-full h-[calc(100vh-12rem)] md:h-[calc(100vh-14rem)]">
+                <div className="w-full h-[calc(100vh-8rem)]">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                     <h2 className="text-lg md:text-xl font-semibold truncate">
                       {selectedResource.title}
@@ -753,11 +845,123 @@ export default function CourseResourcesPage({ params }: { params: { id: string }
                       Download
                     </Button>
                   </div>
-                  <iframe
-                    src={getPreviewUrl(selectedResource.url)}
-                    className="w-full h-[calc(100%-4rem)] border-0 rounded-lg"
-                    title={selectedResource.title}
-                  />
+                  <div className="flex h-[calc(100%-3rem)]">
+                    <div className="flex-[0.65]">
+                      <iframe
+                        src={getPreviewUrl(selectedResource.url)}
+                        className="w-full h-full border-0 rounded-lg"
+                        title={selectedResource.title}
+                      />
+                    </div>
+                    
+                    <div className="flex-[0.35] border-l flex flex-col h-full bg-background">
+                      <div className="p-4 border-b flex items-center gap-4">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Bot className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Document Chat</h3>
+                          <p className="text-sm text-muted-foreground">Ask questions about this document</p>
+                        </div>
+                      </div>
+                      
+                      <ScrollArea className="flex-1 p-4">
+                        {chatMessages.map((message, index) => (
+                          <div
+                            key={index}
+                            className={`flex gap-4 mb-6 ${
+                              message.role === 'user' ? 'justify-end' : 'justify-start'
+                            }`}
+                          >
+                            {message.role !== 'user' && (
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <Bot className="h-4 w-4 text-primary" />
+                              </div>
+                            )}
+                            <div
+                              className={`rounded-xl px-4 py-2.5 max-w-[80%] ${
+                                message.role === 'user'
+                                  ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-12'
+                                  : 'bg-accent/50 border'
+                              }`}
+                            >
+                              <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown
+                                  components={{
+                                    h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
+                                    blockquote: ({ children }) => (
+                                      <blockquote className="border-l-4 border-primary/50 pl-4 italic text-muted-foreground">
+                                        {children}
+                                      </blockquote>
+                                    ),
+                                    code: ({ children }) => (
+                                      <code className="bg-muted px-1.5 py-0.5 rounded-md text-sm">
+                                        {children}
+                                      </code>
+                                    ),
+                                  }}
+                                >
+                                  {message.content}
+                                </ReactMarkdown>
+                              </div>
+                            </div>
+                            {message.role === 'user' && (
+                              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+                                <User className="h-4 w-4 text-primary-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {isChatLoading && (
+                          <div className="flex justify-start gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Bot className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="rounded-xl px-4 py-2.5 bg-accent/50 border">
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            </div>
+                          </div>
+                        )}
+                      </ScrollArea>
+                      
+                      <form onSubmit={handleChatSubmit} className="p-4 border-t">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex gap-2">
+                            <Badge variant={documentContent ? "default" : "secondary"} className="px-3 py-1">
+                              <Bot className="h-3.5 w-3.5 mr-1" />
+                              {documentContent ? "Ready to answer" : "Processing document..."}
+                            </Badge>
+                          </div>
+                          <div className="relative flex gap-2">
+                            <Textarea
+                              value={userInput}
+                              onChange={(e) => setUserInput(e.target.value)}
+                              placeholder="Ask about this document..."
+                              className="min-h-[80px] pr-12 resize-none"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleChatSubmit(e);
+                                }
+                              }}
+                            />
+                            <Button 
+                              type="submit" 
+                              disabled={isChatLoading || !documentContent}
+                              size="icon"
+                              className="absolute right-2 bottom-2 h-8 w-8"
+                            >
+                              {isChatLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Send className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center h-[calc(100vh-16rem)]">
