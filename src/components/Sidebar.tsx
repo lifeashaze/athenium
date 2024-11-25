@@ -7,6 +7,7 @@ import {
   IconSettings,
   IconBook,
   IconShieldLock,
+  IconUser,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -48,10 +49,10 @@ export function SidebarDemo() {
       ),
     },
     {
-      label: "User Settings",
-      href: "/user-settings",
+      label: "User Profile",
+      href: "/user-profile",
       icon: (
-        <IconSettings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+        <IconUser className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
   ].concat(

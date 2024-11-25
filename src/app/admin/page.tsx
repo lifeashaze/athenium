@@ -242,19 +242,21 @@ export default function AdminPanel() {
   }
 
   const paginatedUsers = () => {
-    const filteredUsers = users.filter(user => {
-      const roleMatch = activeTab === 'ALL' ? true : user.role === activeTab;
-      
+    // First apply search filter to all users
+    const searchedUsers = users.filter(user => {
       const searchLower = searchTerm.toLowerCase();
-      const searchMatch = searchTerm === '' || 
+      return searchTerm === '' || 
         user.firstName.toLowerCase().includes(searchLower) ||
         user.lastName.toLowerCase().includes(searchLower) ||
         user.email.toLowerCase().includes(searchLower) ||
         (user.srn && user.srn.toLowerCase().includes(searchLower)) ||
         (user.rollNo && user.rollNo.toLowerCase().includes(searchLower));
-      
-      return roleMatch && searchMatch;
     });
+
+    // Then apply role filter to searched results
+    const filteredUsers = searchedUsers.filter(user => 
+      activeTab === 'ALL' ? true : user.role === activeTab
+    );
 
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -263,6 +265,27 @@ export default function AdminPanel() {
       totalPages: Math.ceil(filteredUsers.length / itemsPerPage),
       totalUsers: filteredUsers.length
     };
+  }
+
+  const handleSearch = (searchValue: string) => {
+    setSearchTerm(searchValue);
+    setCurrentPage(1);
+
+    // If there's a search term, find the first matching user and switch to their role tab
+    if (searchValue) {
+      const searchLower = searchValue.toLowerCase();
+      const firstMatch = users.find(user => 
+        user.firstName.toLowerCase().includes(searchLower) ||
+        user.lastName.toLowerCase().includes(searchLower) ||
+        user.email.toLowerCase().includes(searchLower) ||
+        (user.srn && user.srn.toLowerCase().includes(searchLower)) ||
+        (user.rollNo && user.rollNo.toLowerCase().includes(searchLower))
+      );
+
+      if (firstMatch) {
+        setActiveTab(firstMatch.role);
+      }
+    }
   }
 
   if (loading) {
@@ -307,10 +330,7 @@ export default function AdminPanel() {
                     type="text"
                     placeholder="Search users..."
                     value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => handleSearch(e.target.value)}
                     className="pl-9 w-full sm:w-[300px] h-9"
                   />
                 </div>
@@ -344,283 +364,304 @@ export default function AdminPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedUsers().users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
-                    <TableCell className="hidden md:table-cell">{user.email}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={user.role}
-                        onValueChange={async (newRole) => {
-                          // Optimistically update the UI
-                          setUsers(prevUsers => 
-                            prevUsers.map(u => 
-                              u.id === user.id ? { ...u, role: newRole as typeof user.role } : u
-                            )
-                          )
-
-                          try {
-                            const token = await getToken()
-                            const response = await fetch('/api/members', {
-                              method: 'PATCH',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Bearer ${token}`
-                              },
-                              body: JSON.stringify({
-                                id: user.id,
-                                role: newRole
-                              })
-                            })
-
-                            if (!response.ok) throw new Error('Failed to update role')
-                            
-                            const { user: updatedUser } = await response.json()
-                            toast.success(`Role successfully updated to ${newRole}`)
-                          } catch (error) {
-                            // Revert the optimistic update on error
-                            setUsers(prevUsers => 
-                              prevUsers.map(u => 
-                                u.id === user.id ? { ...u, role: user.role } : u
-                              )
-                            )
-                            toast.error('Failed to update role. Please try again.')
-                            console.error(error)
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[120px] md:w-[180px]">
-                          <SelectValue>
-                            <span className={cn(
-                              "text-sm font-medium",
-                              user.role === 'ADMIN' && "text-red-600 dark:text-red-400",
-                              user.role === 'PROFESSOR' && "text-blue-600 dark:text-blue-400",
-                              user.role === 'STUDENT' && "text-green-600 dark:text-green-400"
-                            )}>
-                              {user.role}
-                            </span>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="STUDENT">
-                            <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                              STUDENT
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="PROFESSOR">
-                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                              PROFESSOR
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="ADMIN">
-                            <span className="text-sm font-medium text-red-600 dark:text-red-400">
-                              ADMIN
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {user.role === 'STUDENT' && (
-                        <div className="space-y-1">
-                          <Badge variant="outline" className="mr-2">SRN: {user.srn}</Badge>
-                          <Badge variant="outline" className="mr-2">Roll: {user.rollNo}</Badge>
-                          <Badge variant="outline">Year: {user.year}</Badge>
-                        </div>
-                      )}
-                      {user.role === 'PROFESSOR' && (
-                        <Badge variant="outline">Office Hours: {user.officeHours}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            className="w-full"
-                            onClick={() => setEditingUser(user)}
-                          >
-                            Edit
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent 
-                          className="w-[95vw] max-w-[90rem] max-h-[95vh] overflow-y-auto"
-                          onPointerDownOutside={handleCloseDialog}
-                          onEscapeKeyDown={handleCloseDialog}
-                        >
-                          <DialogHeader>
-                            <DialogTitle>Edit User: {user.firstName} {user.lastName}</DialogTitle>
-                            <DialogDescription>
-                              Make changes to the user's information below.
-                            </DialogDescription>
-                          </DialogHeader>
-
-                          <div className="grid grid-cols-1 lg:grxid-cols-2 gap-6 py-4">
-                            {/* Basic Information Section */}
-                            <div className="space-y-4">
-                              <h3 className="font-semibold">Basic Information</h3>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <label>First Name</label>
-                                  <Input
-                                    value={changedValues.firstName ?? user?.firstName ?? ''}
-                                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <label>Last Name</label>
-                                  <Input
-                                    value={changedValues.lastName ?? user?.lastName ?? ''}
-                                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <label>Email</label>
-                                  <Input
-                                    value={changedValues.email ?? user?.email ?? ''}
-                                    onChange={(e) => handleInputChange('email', e.target.value)}
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <label>Role</label>
-                                  <Select
-                                    value={changedValues.role ?? user?.role}
-                                    onValueChange={(value) => 
-                                      handleInputChange('role', value as 'STUDENT' | 'PROFESSOR' | 'ADMIN')
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="STUDENT">Student</SelectItem>
-                                      <SelectItem value="PROFESSOR">Professor</SelectItem>
-                                      <SelectItem value="ADMIN">Admin</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-
-                              {/* Role-specific Information */}
-                              <div className="mt-6">
-                                <h3 className="font-semibold mb-4">Role Information</h3>
-                                {user.role === 'STUDENT' && (
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <label>Roll Number</label>
-                                      <Input
-                                        value={changedValues.rollNo ?? user?.rollNo ?? ''}
-                                        onChange={(e) => handleInputChange('rollNo', e.target.value)}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <label>Year</label>
-                                      <Select
-                                        value={changedValues.year ?? user?.year ?? ''}
-                                        onValueChange={(value) => handleInputChange('year', value)}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select Year" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="First Year">First Year</SelectItem>
-                                          <SelectItem value="Second Year">Second Year</SelectItem>
-                                          <SelectItem value="Third Year">Third Year</SelectItem>
-                                          <SelectItem value="Fourth Year">Fourth Year</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <label>SRN</label>
-                                      <Input
-                                        value={changedValues.srn ?? user?.srn ?? ''}
-                                        onChange={(e) => handleInputChange('srn', e.target.value)}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <label>Division</label>
-                                      <Select
-                                        value={changedValues.division ?? user?.division ?? ''}
-                                        onValueChange={(value) => handleInputChange('division', value)}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select Division" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map((letter) => (
-                                            <SelectItem key={letter} value={letter}>
-                                              {letter}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  </div>
-                                )}
-                                {user.role === 'PROFESSOR' && (
-                                  <div className="space-y-2">
-                                    <label>Office Hours</label>
-                                    <Input
-                                      value={changedValues.officeHours ?? user?.officeHours ?? ''}
-                                      onChange={(e) => handleInputChange('officeHours', e.target.value)}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Class Memberships Section */}
-                            <div className="space-y-4">
-                              <h3 className="font-semibold">Class Memberships</h3>
-                              <div className="border rounded-lg divide-y">
-                                {user.memberships?.map((membership) => (
-                                  <div key={membership.classroomId} className="p-3 flex items-center justify-between">
-                                    <div>
-                                      <p className="font-medium">{membership.classroom.name}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        {membership.classroom.courseCode} - {membership.classroom.courseName}
-                                      </p>
-                                    </div>
-                                    <Button 
-                                      variant="destructive" 
-                                      size="sm"
-                                      onClick={() => handleRemoveFromClass(membership.classroomId)}
-                                      disabled={isUpdating}
-                                    >
-                                      Remove
-                                    </Button>
-                                  </div>
-                                ))}
-                                {(!user.memberships || user.memberships.length === 0) && (
-                                  <div className="p-3 text-sm text-muted-foreground">
-                                    No class memberships
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <DialogFooter>
-                            <Button 
-                              onClick={handleUpdateUser}
-                              disabled={Object.keys(changedValues).length === 0 || isUpdating}
-                              className="w-full"
-                            >
-                              {isUpdating ? (
-                                <>
-                                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                                  Saving...
-                                </>
-                              ) : (
-                                'Save Changes'
-                              )}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                {paginatedUsers().users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      <div className="flex flex-col items-center justify-center text-muted-foreground">
+                        <Search className="h-8 w-8 mb-2" />
+                        {searchTerm ? (
+                          <>
+                            <p>No users found matching "{searchTerm}"</p>
+                            <p className="text-sm">Try adjusting your search term</p>
+                          </>
+                        ) : (
+                          <>
+                            <p>No {activeTab.toLowerCase() === 'all' ? '' : activeTab.toLowerCase()} users found</p>
+                            <p className="text-sm">Try switching to a different tab</p>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  paginatedUsers().users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.firstName} {user.lastName}</TableCell>
+                      <TableCell className="hidden md:table-cell">{user.email}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={user.role}
+                          onValueChange={async (newRole) => {
+                            // Optimistically update the UI
+                            setUsers(prevUsers => 
+                              prevUsers.map(u => 
+                                u.id === user.id ? { ...u, role: newRole as typeof user.role } : u
+                              )
+                            )
+
+                            try {
+                              const token = await getToken()
+                              const response = await fetch('/api/members', {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  Authorization: `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                  id: user.id,
+                                  role: newRole
+                                })
+                              })
+
+                              if (!response.ok) throw new Error('Failed to update role')
+                              
+                              const { user: updatedUser } = await response.json()
+                              toast.success(`Role successfully updated to ${newRole}`)
+                            } catch (error) {
+                              // Revert the optimistic update on error
+                              setUsers(prevUsers => 
+                                prevUsers.map(u => 
+                                  u.id === user.id ? { ...u, role: user.role } : u
+                                )
+                              )
+                              toast.error('Failed to update role. Please try again.')
+                              console.error(error)
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-[120px] md:w-[180px]">
+                            <SelectValue>
+                              <span className={cn(
+                                "text-sm font-medium",
+                                user.role === 'ADMIN' && "text-red-600 dark:text-red-400",
+                                user.role === 'PROFESSOR' && "text-blue-600 dark:text-blue-400",
+                                user.role === 'STUDENT' && "text-green-600 dark:text-green-400"
+                              )}>
+                                {user.role}
+                              </span>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="STUDENT">
+                              <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                                STUDENT
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="PROFESSOR">
+                              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                PROFESSOR
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="ADMIN">
+                              <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                                ADMIN
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {user.role === 'STUDENT' && (
+                          <div className="space-y-1">
+                            <Badge variant="outline" className="mr-2">SRN: {user.srn}</Badge>
+                            <Badge variant="outline" className="mr-2">Roll: {user.rollNo}</Badge>
+                            <Badge variant="outline">Year: {user.year}</Badge>
+                          </div>
+                        )}
+                        {user.role === 'PROFESSOR' && (
+                          <Badge variant="outline">Office Hours: {user.officeHours}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              className="w-full"
+                              onClick={() => setEditingUser(user)}
+                            >
+                              Edit
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent 
+                            className="w-[95vw] max-w-[90rem] max-h-[95vh] overflow-y-auto"
+                            onPointerDownOutside={handleCloseDialog}
+                            onEscapeKeyDown={handleCloseDialog}
+                          >
+                            <DialogHeader>
+                              <DialogTitle>Edit User: {user.firstName} {user.lastName}</DialogTitle>
+                              <DialogDescription>
+                                Make changes to the user's information below.
+                              </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="grid grid-cols-1 lg:grxid-cols-2 gap-6 py-4">
+                              {/* Basic Information Section */}
+                              <div className="space-y-4">
+                                <h3 className="font-semibold">Basic Information</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <label>First Name</label>
+                                    <Input
+                                      value={changedValues.firstName ?? user?.firstName ?? ''}
+                                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <label>Last Name</label>
+                                    <Input
+                                      value={changedValues.lastName ?? user?.lastName ?? ''}
+                                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <label>Email</label>
+                                    <Input
+                                      value={changedValues.email ?? user?.email ?? ''}
+                                      onChange={(e) => handleInputChange('email', e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <label>Role</label>
+                                    <Select
+                                      value={changedValues.role ?? user?.role}
+                                      onValueChange={(value) => 
+                                        handleInputChange('role', value as 'STUDENT' | 'PROFESSOR' | 'ADMIN')
+                                      }
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="STUDENT">Student</SelectItem>
+                                        <SelectItem value="PROFESSOR">Professor</SelectItem>
+                                        <SelectItem value="ADMIN">Admin</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+
+                                {/* Role-specific Information */}
+                                <div className="mt-6">
+                                  <h3 className="font-semibold mb-4">Role Information</h3>
+                                  {user.role === 'STUDENT' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <label>Roll Number</label>
+                                        <Input
+                                          value={changedValues.rollNo ?? user?.rollNo ?? ''}
+                                          onChange={(e) => handleInputChange('rollNo', e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <label>Year</label>
+                                        <Select
+                                          value={changedValues.year ?? user?.year ?? ''}
+                                          onValueChange={(value) => handleInputChange('year', value)}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select Year" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="First Year">First Year</SelectItem>
+                                            <SelectItem value="Second Year">Second Year</SelectItem>
+                                            <SelectItem value="Third Year">Third Year</SelectItem>
+                                            <SelectItem value="Fourth Year">Fourth Year</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <label>SRN</label>
+                                        <Input
+                                          value={changedValues.srn ?? user?.srn ?? ''}
+                                          onChange={(e) => handleInputChange('srn', e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <label>Division</label>
+                                        <Select
+                                          value={changedValues.division ?? user?.division ?? ''}
+                                          onValueChange={(value) => handleInputChange('division', value)}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select Division" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map((letter) => (
+                                              <SelectItem key={letter} value={letter}>
+                                                {letter}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {user.role === 'PROFESSOR' && (
+                                    <div className="space-y-2">
+                                      <label>Office Hours</label>
+                                      <Input
+                                        value={changedValues.officeHours ?? user?.officeHours ?? ''}
+                                        onChange={(e) => handleInputChange('officeHours', e.target.value)}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Class Memberships Section */}
+                              <div className="space-y-4">
+                                <h3 className="font-semibold">Class Memberships</h3>
+                                <div className="border rounded-lg divide-y">
+                                  {user.memberships?.map((membership) => (
+                                    <div key={membership.classroomId} className="p-3 flex items-center justify-between">
+                                      <div>
+                                        <p className="font-medium">{membership.classroom.name}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                          {membership.classroom.courseCode} - {membership.classroom.courseName}
+                                        </p>
+                                      </div>
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => handleRemoveFromClass(membership.classroomId)}
+                                        disabled={isUpdating}
+                                      >
+                                        Remove
+                                      </Button>
+                                    </div>
+                                  ))}
+                                  {(!user.memberships || user.memberships.length === 0) && (
+                                    <div className="p-3 text-sm text-muted-foreground">
+                                      No class memberships
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <DialogFooter>
+                              <Button 
+                                onClick={handleUpdateUser}
+                                disabled={Object.keys(changedValues).length === 0 || isUpdating}
+                                className="w-full"
+                              >
+                                {isUpdating ? (
+                                  <>
+                                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                  </>
+                                ) : (
+                                  'Save Changes'
+                                )}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </Card>

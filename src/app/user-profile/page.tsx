@@ -382,10 +382,14 @@ export default function UserSettingsPage() {
       </Card>
 
       <Tabs defaultValue="personal" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className={`grid w-full ${formData.role === 'STUDENT' ? 'grid-cols-3' : 'grid-cols-1'}`}>
           <TabsTrigger value="personal">Personal Info</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
+          {formData.role === 'STUDENT' && (
+            <>
+              <TabsTrigger value="attendance">Attendance</TabsTrigger>
+              <TabsTrigger value="performance">Performance</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="personal">
@@ -554,89 +558,93 @@ export default function UserSettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="attendance">
-          {studentData && <AttendanceSection attendanceData={studentData.attendance} />}
-        </TabsContent>
+        {formData.role === 'STUDENT' && (
+          <>
+            <TabsContent value="attendance">
+              {studentData && <AttendanceSection attendanceData={studentData.attendance} />}
+            </TabsContent>
 
-        <TabsContent value="performance">
-          {studentData && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5" />
-                    Academic Performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Average Score</p>
-                      <div className="flex items-center gap-2">
-                        <div className="text-2xl font-bold">
-                          {studentData.performance.submissions.percentage.toFixed(1)}%
-                        </div>
-                        <Badge variant={
-                          studentData.performance.submissions.percentage >= 75 ? "default" : 
-                          studentData.performance.submissions.percentage >= 60 ? "secondary" : 
-                          "destructive"
-                        }>
-                          {studentData.performance.submissions.percentage >= 75 ? "Excellent" :
-                           studentData.performance.submissions.percentage >= 60 ? "Good" :
-                           "Needs Improvement"}
-                        </Badge>
-                      </div>
-                    </div>
-                    <Progress 
-                      value={studentData.performance.submissions.percentage} 
-                      className="h-2"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Submissions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-4">
-                      {studentData.submissions
-                        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-                        .map((submission) => (
-                          <div 
-                            key={submission.id} 
-                            className="p-4 border rounded-lg space-y-2"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="font-medium">{submission.assignment.title}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {submission.assignment.classroom.name}
-                                </p>
-                              </div>
-                              <Badge variant={
-                                (submission.marks / submission.assignment.maxMarks) * 100 >= 75 ? "default" :
-                                (submission.marks / submission.assignment.maxMarks) * 100 >= 60 ? "secondary" :
-                                "destructive"
-                              }>
-                                {submission.marks}/{submission.assignment.maxMarks}
-                              </Badge>
+            <TabsContent value="performance">
+              {studentData && (
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Trophy className="h-5 w-5" />
+                        Academic Performance
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Average Score</p>
+                          <div className="flex items-center gap-2">
+                            <div className="text-2xl font-bold">
+                              {studentData.performance.submissions.percentage.toFixed(1)}%
                             </div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              {new Date(submission.submittedAt).toLocaleDateString()}
-                            </div>
+                            <Badge variant={
+                              studentData.performance.submissions.percentage >= 75 ? "default" : 
+                              studentData.performance.submissions.percentage >= 60 ? "secondary" : 
+                              "destructive"
+                            }>
+                              {studentData.performance.submissions.percentage >= 75 ? "Excellent" :
+                               studentData.performance.submissions.percentage >= 60 ? "Good" :
+                               "Needs Improvement"}
+                            </Badge>
                           </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </TabsContent>
+                        </div>
+                        <Progress 
+                          value={studentData.performance.submissions.percentage} 
+                          className="h-2"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Recent Submissions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[400px]">
+                        <div className="space-y-4">
+                          {studentData.submissions
+                            .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+                            .map((submission) => (
+                              <div 
+                                key={submission.id} 
+                                className="p-4 border rounded-lg space-y-2"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-medium">{submission.assignment.title}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      {submission.assignment.classroom.name}
+                                    </p>
+                                  </div>
+                                  <Badge variant={
+                                    (submission.marks / submission.assignment.maxMarks) * 100 >= 75 ? "default" :
+                                    (submission.marks / submission.assignment.maxMarks) * 100 >= 60 ? "secondary" :
+                                    "destructive"
+                                  }>
+                                    {submission.marks}/{submission.assignment.maxMarks}
+                                  </Badge>
+                                </div>
+                                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                  <Clock className="h-4 w-4" />
+                                  {new Date(submission.submittedAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   )
