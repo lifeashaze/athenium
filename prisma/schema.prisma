@@ -1,8 +1,9 @@
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres.vsigbekcrsdrmabmvyvf:IDKWcc9dtYY0gx7K@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-  directUrl = "postgresql://postgres.vsigbekcrsdrmabmvyvf:IDKWcc9dtYY0gx7K@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
+
 generator client {
   provider = "prisma-client-js"
 }
