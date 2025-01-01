@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getAuth } from '@clerk/nextjs/server';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-
-let prisma: PrismaClient;
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
-} else {
-  if (!(global as any).prisma) {
-    (global as any).prisma = new PrismaClient();
-  }
-  prisma = (global as any).prisma;
-}
+import { prisma } from '@/lib/db'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {

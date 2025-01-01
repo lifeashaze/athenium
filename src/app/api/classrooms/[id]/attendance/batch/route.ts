@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, NotificationType } from '@prisma/client';
+import { prisma } from '@/lib/db'
+import { NotificationType } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json();

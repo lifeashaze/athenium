@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import JSZip from 'jszip';
 import axios from 'axios';
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db'
 
 export async function GET(
   request: NextRequest,

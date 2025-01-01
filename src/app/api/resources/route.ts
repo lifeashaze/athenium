@@ -3,17 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import { getAuth } from "@clerk/nextjs/server";
 import JSZip from 'jszip';
 import axios from 'axios';
+import { prisma } from '@/lib/db'
 
-let prisma: PrismaClient;
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
-} else {
-  if (!(global as any).prisma) {
-    (global as any).prisma = new PrismaClient();
-  }
-  prisma = (global as any).prisma;
-}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

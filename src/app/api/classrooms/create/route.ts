@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db'
 
 function generateClassroomCode(): string {
   const allowedCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

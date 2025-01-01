@@ -1,10 +1,7 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
-import { PrismaClient } from '@prisma/client'
-
-// Initialize PrismaClient
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/db'
 
 export async function POST(req: Request) {
 
