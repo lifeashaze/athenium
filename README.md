@@ -137,14 +137,3 @@ npm run dev
    - AI-powered document chat
    - Bulk download capabilities
 
-## 📄 License
-
-[MIT License](LICENSE)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## 📞 Support
-
-For support, please open an issue in the GitHub repository or contact the maintainers.
