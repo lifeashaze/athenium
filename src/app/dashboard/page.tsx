@@ -590,7 +590,7 @@ const DashboardPage = () => {
               </div>
               <div className="flex items-center gap-3">
                 <ModeToggle />
-                <TooltipProvider delayDuration={0}>
+                {/* <TooltipProvider delayDuration={0}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
@@ -604,7 +604,7 @@ const DashboardPage = () => {
                     </TooltipTrigger>
                     <TooltipContent>Update Profile</TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
+                </TooltipProvider> */}
                 <NotificationDropdown userId={user?.id} />
               </div>
             </div>
