@@ -82,6 +82,12 @@ export function Header() {
           </SignedOut>
 
           <SignedIn>
+            <Link
+              href="/dashboard"
+              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mr-4"
+            >
+              Dashboard
+            </Link>
             <UserButton afterSignOutUrl="/" />
           </SignedIn>
         </div>

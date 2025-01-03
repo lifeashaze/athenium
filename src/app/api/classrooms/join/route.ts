@@ -3,12 +3,10 @@ import { getAuth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
-  console.log('Received request at /api/classrooms/join');
 
   const { userId } = getAuth(req);
 
   if (!userId) {
-    console.log('Unauthorized: No user ID found');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -27,12 +25,10 @@ export async function POST(req: NextRequest) {
       // Join via invite code
       classroom = await prisma.classroom.findUnique({ where: { code } });
     } else {
-      console.log('Invalid request: Missing classroom ID or code');
       return NextResponse.json({ error: 'Invalid request: Missing classroom ID or code' }, { status: 400 });
     }
 
     if (!classroom) {
-      console.log('Classroom not found');
       return NextResponse.json({ error: 'Classroom not found' }, { status: 404 });
     }
 
@@ -47,7 +43,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingMembership) {
-      console.log('User is already a member of this classroom');
       return NextResponse.json({ message: 'You are already a member of this classroom', classroom }, { status: 200 });
     }
 
@@ -59,7 +54,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log('Joined classroom:', classroom);
     return NextResponse.json({ message: 'Successfully joined the classroom', classroom }, { status: 200 });
   } catch (error) {
     console.error('Internal server error:', error);

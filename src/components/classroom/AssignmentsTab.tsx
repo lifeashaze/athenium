@@ -106,9 +106,6 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
   isLoading,
   submissions
 }) => {
-  console.log('Current userRole:', userRole);
-  console.log('Type of userRole:', typeof userRole);
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({
     title: '',

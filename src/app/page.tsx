@@ -43,12 +43,9 @@ export default function Home() {
               className="mt-8 flex flex-col sm:flex-row gap-4 justify-center"
             >
               <Button size="lg" className="bg-purple-600 hover:bg-purple-700">
-                <Link href="/sign-up" className="flex items-center">
+                <Link href="/sign-up" className="flex items-center text-white">
                   Get started for free <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
-              </Button>
-              <Button variant="outline" size="lg">
-                <Link href="/docs">View documentation</Link>
               </Button>
             </motion.div>
           </div>

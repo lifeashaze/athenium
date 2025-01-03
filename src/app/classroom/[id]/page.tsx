@@ -161,7 +161,6 @@ const ClassroomPage = () => {
   const fetchUserData = useCallback(async () => {
     try {
       const response = await axios.get('/api/user');
-      console.log('User data from DB:', response.data);
       setDbUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user data:', error);

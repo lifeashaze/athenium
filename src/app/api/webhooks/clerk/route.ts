@@ -50,8 +50,6 @@ export async function POST(req: Request) {
 
   const { id } = evt.data;
   const eventType = evt.type;
-//   console.log(`Webhook with and ID of ${id} and type of ${eventType}`)
-//   console.log('Webhook body:', body)
 if (evt.type === 'user.created') {
     try {
       const { id, email_addresses, first_name, last_name } = evt.data;
@@ -75,7 +73,6 @@ if (evt.type === 'user.created') {
         },
       });
 
-      console.log('New user added to database:', newUser);
       return new Response('User added successfully', { status: 200 });
     } catch (error) {
       console.error('Error adding user to database:', error);

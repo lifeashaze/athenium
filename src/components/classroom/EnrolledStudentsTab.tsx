@@ -51,7 +51,6 @@ export const EnrolledStudentsTab: React.FC<EnrolledStudentsTabProps> = ({
   itemsPerPage,
   onPageChange
 }) => {
-  console.log('EnrolledStudentsTab received the following props:', { members, currentPage, totalPages, itemsPerPage, onPageChange });
   // Filter out professors from the members list
   const studentMembers = members.filter(member => member.role === 'student');
   

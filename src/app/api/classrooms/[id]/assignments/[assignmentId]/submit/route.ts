@@ -30,9 +30,6 @@ export async function POST(
       console.error('No file uploaded');
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
-
-    console.log('File received:', file.name, 'Type:', file.type, 'Size:', file.size);
-
     const fileBuffer = await file.arrayBuffer();
     const fileName = `${uuidv4()}-${file.name}`;
 
@@ -76,7 +73,6 @@ export async function POST(
       });
     }
 
-    console.log('Submission saved:', submission);
 
     return NextResponse.json(submission, { status: 200 });
   } catch (error) {

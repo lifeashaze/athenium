@@ -5,16 +5,12 @@ export async function GET(
     request: Request,
     { params }: { params: { id: string; assignmentId: string } }
   ) {
-    console.log('Received params:', params);
   
     try {
       const classroomId = params.id;
       const assignmentId = params.assignmentId;
-  
-      console.log('Using IDs:', { classroomId, assignmentId });
-  
+    
       if (!classroomId || !assignmentId) {
-        console.log('Invalid IDs:', { classroomId, assignmentId });
         return NextResponse.json({ error: 'Invalid classroom or assignment ID' }, { status: 400 });
       }
   
@@ -39,9 +35,7 @@ export async function GET(
           },
         },
       });
-  
-      console.log('Submissions found:', submissions.length);
-  
+    
       return NextResponse.json(submissions);
     } catch (error) {
       console.error('Failed to fetch submissions:', error);

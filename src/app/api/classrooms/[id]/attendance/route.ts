@@ -59,8 +59,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         })
       )
     );
-
-    console.log('Attendance saved:', result);
     return NextResponse.json({ message: 'Attendance saved successfully', data: result });
   } catch (error) {
     console.error('Failed to save attendance:', error);

@@ -11,7 +11,6 @@ function generateClassroomCode(): string {
 }
 
 export async function POST(req: NextRequest) {
-  console.log('Received request at /api/classrooms/create');
 
   const { userId } = getAuth(req);
 
@@ -68,7 +67,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log('Classroom created:', classroom);
     return NextResponse.json(classroom, { status: 201 });
   } catch (error) {
     console.error('Internal server error:', error);
