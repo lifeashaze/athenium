@@ -32,7 +32,7 @@ export function useClassrooms() {
   const classroomsQuery = useQuery({
     queryKey: ['classrooms'],
     queryFn: async () => {
-      const response = await axios.get('/api/classrooms')
+      const response = await axios.get('/ap¬i/classrooms')
       return response.data.classrooms as Classroom[]
     }
   })

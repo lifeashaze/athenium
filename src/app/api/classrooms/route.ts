@@ -18,55 +18,44 @@ export async function GET(req: NextRequest) {
           { memberships: { some: { userId: userId } } }
         ]
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        year: true,
+        division: true,
+        courseCode: true,
+        courseName: true,
         creator: {
           select: {
-            id: true,
             firstName: true,
             lastName: true,
-            email: true,
           },
         },
         assignments: {
           where: {
-            deadline: {
-              gt: now // Only get assignments that haven't passed deadline
-            },
-            // Exclude assignments that the user has already submitted
+            deadline: { gt: now },
             NOT: {
               submissions: {
-                some: {
-                  userId: userId
-                }
+                some: { userId }
               }
             }
           },
-          select: {
-            id: true,
-            deadline: true
-          }
-        },
-        memberships: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                role: true,
-              },
-            },
-          },
+          select: { id: true },
         },
       },
     });
 
-    // Transform the response to include pending assignments count
     const classroomsWithPendingCount = classrooms.map(classroom => ({
-      ...classroom,
+      id: classroom.id,
+      name: classroom.name,
+      code: classroom.code,
+      year: classroom.year,
+      division: classroom.division,
+      courseCode: classroom.courseCode,
+      courseName: classroom.courseName,
+      creator: classroom.creator,
       pendingAssignments: classroom.assignments.length,
-      assignments: undefined // Remove the assignments array from response
     }));
 
     return NextResponse.json({ classrooms: classroomsWithPendingCount });
