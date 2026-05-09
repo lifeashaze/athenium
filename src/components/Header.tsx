@@ -1,94 +1,86 @@
 'use client'
 import Link from 'next/link';
 import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
-import { ChevronRight, Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { ChevronRight } from "lucide-react"
 import { useEffect, useState } from 'react';
 
-export function Header() {
-  const { setTheme, theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+const navLinks = [
+  { href: '#features', label: 'Features' },
+  { href: '#roles', label: 'Roles' },
+  { href: '#docs', label: 'Docs' },
+];
 
-  // Prevent hydration mismatch
+function Logo() {
+  return (
+    <Link
+      href="/"
+      className="text-lg font-semibold tracking-tight text-gray-900 hover:text-gray-700 transition-colors"
+    >
+      athenium
+    </Link>
+  );
+}
+
+export function Header() {
+  const [scrolled, setScrolled] = useState(false)
+
   useEffect(() => {
-    setMounted(true)
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  if (!mounted) {
-    return (
-      <header className="fixed top-0 w-full border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm z-50">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
-              athenium
-            </span>
-          </Link>
-        </div>
-      </header>
-    )
-  }
+  const headerClasses = `fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+    scrolled
+      ? 'border-b border-gray-200/60 bg-white/75 backdrop-blur-md'
+      : 'border-b border-transparent bg-white/40 backdrop-blur-sm'
+  }`
 
   return (
-    <header className="fixed top-0 w-full border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm z-50">
-      <div className="container flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center space-x-2">
-          <span className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
-            athenium
-          </span>
-        </Link>
-        
-        <div className='flex items-center gap-4'>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9">
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme("light")}>
-                Light
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dark")}>
-                Dark
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("system")}>
-                System
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <header className={headerClasses}>
+      <div className="container relative flex h-16 items-center justify-between px-4">
+        <Logo />
 
+        <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-1.5">
           <SignedOut>
             <Link
               href="/sign-in"
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              className="hidden sm:inline-flex items-center text-sm text-gray-600 hover:text-gray-900 px-3 h-9 rounded-full hover:bg-gray-100 transition-colors"
             >
               Sign in
             </Link>
             <Link
               href="/sign-up"
-              className="inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-purple-600 text-white hover:bg-purple-700 h-9 rounded-md px-4"
+              className="inline-flex items-center justify-center text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 h-9 rounded-full pl-4 pr-3 transition-colors"
             >
-              Start for free <ChevronRight className="ml-1 h-4 w-4" />
+              Get started
+              <ChevronRight className="ml-0.5 h-4 w-4" />
             </Link>
           </SignedOut>
 
           <SignedIn>
             <Link
               href="/dashboard"
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mr-4"
+              className="hidden sm:inline-flex items-center text-sm text-gray-600 hover:text-gray-900 px-3 h-9 rounded-full hover:bg-gray-100 transition-colors"
             >
               Dashboard
             </Link>
-            <UserButton afterSignOutUrl="/" />
+            <div className="ml-1.5">
+              <UserButton afterSignOutUrl="/" />
+            </div>
           </SignedIn>
         </div>
       </div>

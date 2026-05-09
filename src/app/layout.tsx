@@ -12,11 +12,12 @@ import './globals.css'
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isPublicPage = 
-  ['/', '/about'].includes(pathname) || 
-  pathname.startsWith('/sign-in') || 
-  pathname.startsWith('/sign-up') || 
-  pathname.startsWith('/verify-email')
+  const isPublicPage =
+  ['/', '/about'].includes(pathname) ||
+  pathname.startsWith('/sign-in') ||
+  pathname.startsWith('/sign-up') ||
+  pathname.startsWith('/verify-email') ||
+  pathname.startsWith('/docs')
 
 if (isPublicPage) {
     return <>{children}</>
@@ -46,8 +47,8 @@ export default function RootLayout({
           <Providers>
             <ThemeProvider
               attribute="class"
-              defaultTheme="system"
-              enableSystem
+              forcedTheme="light"
+              enableSystem={false}
               disableTransitionOnChange
             >
               <RootLayoutContent>{children}</RootLayoutContent>
