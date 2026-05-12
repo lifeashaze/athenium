@@ -318,7 +318,7 @@ const AttendancePage = () => {
             <CardTitle className="flex justify-between items-center">
               <span>Attendance List</span>
               <span className="text-sm text-muted-foreground">
-                Use arrow keys to navigate. Press 'P' for Present, 'A' for Absent.
+                Use arrow keys to navigate. Press &apos;P&apos; for Present, &apos;A&apos; for Absent.
               </span>
             </CardTitle>
           </CardHeader>

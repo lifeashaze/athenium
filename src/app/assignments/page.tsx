@@ -30,6 +30,87 @@ type Assignment = {
   }[]
 }
 
+type AssignmentCardProps = {
+  assignment: Assignment
+  variant?: 'pending' | 'overdue' | 'submitted'
+  onOpen: (assignment: Assignment) => void
+}
+
+function formatDeadline(deadline: string) {
+  const date = parseISO(deadline)
+  return format(date, "PPP 'at' p")
+}
+
+function getDeadlineStatus(deadline: string) {
+  const dueDate = parseISO(deadline)
+  const now = new Date()
+  const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (isPast(dueDate)) return "Overdue"
+  if (daysUntilDue <= 1) return "Due Today"
+  if (daysUntilDue <= 3) return "Due Soon"
+  return `Due in ${daysUntilDue} days`
+}
+
+const AssignmentCard = React.memo(function AssignmentCard({
+  assignment,
+  variant = 'pending',
+  onOpen,
+}: AssignmentCardProps) {
+  return (
+    <Card className="overflow-hidden flex flex-col h-[200px]">
+      <CardHeader className="pb-2 flex-none">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg line-clamp-1">{assignment.title}</CardTitle>
+            <CardDescription className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+              {assignment.classroom.courseName}
+            </CardDescription>
+          </div>
+          <Badge
+            variant={
+              variant === 'overdue'
+                ? "destructive"
+                : variant === 'submitted'
+                  ? "secondary"
+                  : isPast(parseISO(assignment.deadline))
+                    ? "destructive"
+                    : "secondary"
+            }
+          >
+            {variant === 'submitted'
+              ? "Submitted"
+              : getDeadlineStatus(assignment.deadline)}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col flex-1 justify-between">
+        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+          <Clock className="h-4 w-4 mr-1" />
+          {variant === 'submitted'
+            ? `Submitted: ${formatDeadline(assignment.submissions[0].submittedAt)}`
+            : `Due: ${formatDeadline(assignment.deadline)}`}
+        </div>
+        <div className="mt-auto pt-2">
+          <Button
+            size="sm"
+            variant={variant === 'overdue' ? "outline" : "default"}
+            className="w-full"
+            onClick={() => onOpen(assignment)}
+          >
+            {variant === 'overdue'
+              ? 'Request Extension'
+              : variant === 'submitted'
+                ? 'View Submission'
+                : 'Submit Assignment'}
+            <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+})
+
 const AssignmentCardSkeleton = () => (
   <Card className="overflow-hidden flex flex-col h-[200px]">
     <CardHeader className="pb-2 flex-none">
@@ -108,19 +189,19 @@ const Page = () => {
 
   // Memoize sorted assignments
   const sortedOverdueAssignments = React.useMemo(() => 
-    overdueAssignments.sort((a: { deadline: string | number | Date }, b: { deadline: string | number | Date }) => 
+    [...overdueAssignments].sort((a: { deadline: string | number | Date }, b: { deadline: string | number | Date }) => 
       new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
     ), [overdueAssignments]
   )
 
   const sortedPendingAssignments = React.useMemo(() => 
-    pendingAssignments.sort((a: { deadline: string | number | Date }, b: { deadline: string | number | Date }) => 
+    [...pendingAssignments].sort((a: { deadline: string | number | Date }, b: { deadline: string | number | Date }) => 
       new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
     ), [pendingAssignments]
   )
 
   const sortedRecentSubmissions = React.useMemo(() => 
-    recentSubmissions
+    [...recentSubmissions]
       .sort((a: { submissions: { submittedAt: string | number | Date }[] }, b: { submissions: { submittedAt: string | number | Date }[] }) => 
         new Date(b.submissions[0].submittedAt).getTime() - 
         new Date(a.submissions[0].submittedAt).getTime()
@@ -129,22 +210,9 @@ const Page = () => {
     [recentSubmissions]
   )
 
-  // Memoize utility functions
-  const formatDeadline = React.useCallback((deadline: string) => {
-    const date = parseISO(deadline)
-    return format(date, "PPP 'at' p")
-  }, [])
-
-  const getDeadlineStatus = React.useCallback((deadline: string) => {
-    const dueDate = parseISO(deadline)
-    const now = new Date()
-    const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (isPast(dueDate)) return "Overdue"
-    if (daysUntilDue <= 1) return "Due Today"
-    if (daysUntilDue <= 3) return "Due Soon"
-    return `Due in ${daysUntilDue} days`
-  }, [])
+  const openAssignment = React.useCallback((assignment: Assignment) => {
+    router.push(`/classroom/${assignment.classroom.id}/assignment/${assignment.id}`)
+  }, [router])
 
   // Prefetch individual assignment pages
   React.useEffect(() => {
@@ -152,66 +220,6 @@ const Page = () => {
       router.prefetch(`/classroom/${assignment.classroom.id}/assignment/${assignment.id}`)
     })
   }, [sortedPendingAssignments, sortedOverdueAssignments, router])
-
-  // Create reusable assignment card component to reduce code duplication
-  const AssignmentCard = React.memo(({ 
-    assignment, 
-    variant = 'pending' 
-  }: { 
-    assignment: Assignment, 
-    variant?: 'pending' | 'overdue' | 'submitted' 
-  }) => (
-    <Card className="overflow-hidden flex flex-col h-[200px]">
-      <CardHeader className="pb-2 flex-none">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg line-clamp-1">{assignment.title}</CardTitle>
-            <CardDescription className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-              {assignment.classroom.courseName}
-            </CardDescription>
-          </div>
-          <Badge 
-            variant={
-              variant === 'overdue' 
-                ? "destructive" 
-                : variant === 'submitted' 
-                  ? "secondary" 
-                  : isPast(parseISO(assignment.deadline)) 
-                    ? "destructive" 
-                    : "secondary"
-            }
-          >
-            {variant === 'submitted' 
-              ? "Submitted" 
-              : getDeadlineStatus(assignment.deadline)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col flex-1 justify-between">
-        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-          <Clock className="h-4 w-4 mr-1" />
-          {variant === 'submitted' 
-            ? `Submitted: ${formatDeadline(assignment.submissions[0].submittedAt)}`
-            : `Due: ${formatDeadline(assignment.deadline)}`}
-        </div>
-        <div className="mt-auto pt-2">
-          <Button 
-            size="sm" 
-            variant={variant === 'overdue' ? "outline" : "default"}
-            className="w-full"
-            onClick={() => router.push(`/classroom/${assignment.classroom.id}/assignment/${assignment.id}`)}
-          >
-            {variant === 'overdue' 
-              ? 'Request Extension'
-              : variant === 'submitted'
-                ? 'View Submission'
-                : 'Submit Assignment'}
-            <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  ))
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -237,7 +245,7 @@ const Page = () => {
                 </Card>
               ) : (
                 sortedPendingAssignments.map((assignment: Assignment) => (
-                  <AssignmentCard key={assignment.id} assignment={assignment} variant="pending" />
+                  <AssignmentCard key={assignment.id} assignment={assignment} variant="pending" onOpen={openAssignment} />
                 ))
               )}
             </div>
@@ -257,7 +265,7 @@ const Page = () => {
                 </Card>
               ) : (
                 sortedOverdueAssignments.map((assignment: Assignment) => (
-                  <AssignmentCard key={assignment.id} assignment={assignment} variant="overdue" />
+                  <AssignmentCard key={assignment.id} assignment={assignment} variant="overdue" onOpen={openAssignment} />
                 ))
               )}
             </div>
@@ -277,7 +285,7 @@ const Page = () => {
                 </Card>
               ) : (
                 sortedRecentSubmissions.map((assignment: Assignment) => (
-                  <AssignmentCard key={assignment.id} assignment={assignment} variant="submitted" />
+                  <AssignmentCard key={assignment.id} assignment={assignment} variant="submitted" onOpen={openAssignment} />
                 ))
               )}
             </div>

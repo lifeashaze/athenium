@@ -3,6 +3,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import axios from 'axios';
 import mammoth from 'mammoth';
 
+export const dynamic = 'force-dynamic';
+
 // 1. Update worker configuration
 const PDFJS_WORKER_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 

@@ -92,7 +92,7 @@ export default function AdminPanel() {
   const itemsPerPage = 10
   const [searchTerm, setSearchTerm] = useState('')
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     try {
       const token = await getToken()
       const response = await fetch('/api/members', {
@@ -109,11 +109,11 @@ export default function AdminPanel() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [getToken])
 
   useEffect(() => {
     fetchUsers()
-  }, [])
+  }, [fetchUsers])
 
   const handleInputChange = (field: keyof User, value: string) => {
     if (!editingUser) return
@@ -371,7 +371,7 @@ export default function AdminPanel() {
                         <Search className="h-8 w-8 mb-2" />
                         {searchTerm ? (
                           <>
-                            <p>No users found matching "{searchTerm}"</p>
+                            <p>No users found matching &quot;{searchTerm}&quot;</p>
                             <p className="text-sm">Try adjusting your search term</p>
                           </>
                         ) : (
@@ -491,7 +491,7 @@ export default function AdminPanel() {
                             <DialogHeader>
                               <DialogTitle>Edit User: {user.firstName} {user.lastName}</DialogTitle>
                               <DialogDescription>
-                                Make changes to the user's information below.
+                                Make changes to the user&apos;s information below.
                               </DialogDescription>
                             </DialogHeader>
 

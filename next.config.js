@@ -1,6 +1,22 @@
 const nextConfig = {
-  // ... other configurations ...
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatar.vercel.sh',
+      },
+    ],
+  },
   webpack: (config, { isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
+
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,

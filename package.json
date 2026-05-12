@@ -16,7 +16,6 @@
     "@clerk/nextjs": "^5.1.5",
     "@google/generative-ai": "^0.21.0",
     "@langchain/google-genai": "^0.1.4",
-    "@monaco-editor/react": "^4.6.0",
     "@prisma/client": "^5.20.0",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-avatar": "^1.1.1",

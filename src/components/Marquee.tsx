@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import Marquee from "./ui/marquee";
 
 
@@ -73,7 +74,13 @@ const reviews = [
         )}
       >
         <div className="flex flex-row items-center gap-2">
-          <img className="rounded-full" width="32" height="32" alt="" src={img} />
+          <Image
+            className="rounded-full"
+            width={32}
+            height={32}
+            alt={`${name} avatar`}
+            src={img}
+          />
           <div className="flex flex-col">
             <figcaption className="text-sm font-medium dark:text-white">
               {name}
@@ -109,10 +116,13 @@ const reviews = [
         <Marquee pauseOnHover className="[--duration:15s]">
           {images.map((image, index) => (
             <div key={index} className="flex items-center justify-center mx-4">
-              <img
+              <Image
                 src={image}
                 alt={`Image ${index + 1}`}
-                className="w-[400px] rounded-lg object-contain" // Ensure full size without distortion
+                width={400}
+                height={187}
+                sizes="400px"
+                className="w-[400px] rounded-lg object-contain"
               />
             </div>
           ))}

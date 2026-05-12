@@ -1,203 +1,85 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
+import dynamic from 'next/dynamic';
+import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import CodeExecution from '@/components/CodeExecution';
 import { AssignmentsTab } from '@/components/classroom/AssignmentsTab';
-import { EnrolledStudentsTab } from '@/components/classroom/EnrolledStudentsTab';
 import { Users, BookOpen } from 'lucide-react';
-import { GradesTab } from '@/components/classroom/GradesTab';
+import { useDbUser } from '@/lib/hooks/useUser';
+import {
+  Assignment,
+  useClassroom,
+  useClassroomAssignments,
+  useClassroomSubmissions,
+} from '@/lib/hooks/useClassroom';
 
-interface Classroom {
-  id: number;
-  name: string;
-  code: string;
-  inviteLink: string;
-  year: string;
-  division: string;
-  creatorFirstName: string;
-  creatorLastName: string;
-  creatorEmail: string;
-  courseCode: string;
-  courseName: string;
-}
-
-interface User {
-  id: string;
-  firstName: string;
-  email: string;
-  role: "STUDENT" | "PROFESSOR" | "ADMIN";
-}
-
-interface Assignment {
-  id: number;
-  title: string;
-  type: 'theory' | 'lab';
-  deadline: string;
-  maxMarks: number;
-  description?: string;
-  requirements?: string[];
-  creator: {
-    firstName: string;
-  };
-}
-
-interface Resource {
-  id: number;
-  title: string;
-  url: string;
-  uploadedBy: string;
-  uploadedAt: string;
-}
-
-interface Member {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  rollNo: string | null;
-  srn: string | null;
-  prn: string | null;
-}
-
-interface Submission {
-  id: string;
-  submittedAt: Date | string;
-  content: string;
-  userId: string;
-  assignmentId: string;
-  marks: number;
-  assignment: {
-    id: string;
-    title: string;
-    maxMarks: number;
-  };
-}
-
-
-const ITEMS_PER_PAGE = 10;
+const GradesTab = dynamic(
+  () => import('@/components/classroom/GradesTab').then((mod) => mod.GradesTab),
+  {
+    ssr: false,
+    loading: () => (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[400px] w-full rounded-lg" />
+        </CardContent>
+      </Card>
+    ),
+  }
+);
 
 const ClassroomPage = () => {
   const { user: clerkUser, isLoaded: isUserLoaded } = useUser();
-  const [dbUser, setDbUser] = useState<User | null>(null);
+  const { dbUser, isLoading: isDbUserLoading } = useDbUser();
   const params = useParams();
-  const [classroom, setClassroom] = useState<Classroom | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const assignmentsRef = useRef<Assignment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const classroomId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
-  const [isLoadingAssignments, setIsLoadingAssignments] = useState(true);
+  const [activeTab, setActiveTab] = useState('assignments');
 
-  const fetchClassroomData = useCallback(async () => {
-    if (!params.id) return;
+  const queriesEnabled = isUserLoaded && !!clerkUser && !!classroomId;
+  const classroomQuery = useClassroom(classroomId, queriesEnabled);
+  const assignmentsQuery = useClassroomAssignments(classroomId, queriesEnabled);
+  const submissionsQuery = useClassroomSubmissions(
+    classroomId,
+    queriesEnabled && activeTab === 'grades'
+  );
 
-    try {
-      const response = await axios.get(`/api/classrooms/${params.id}`);
-      setClassroom(response.data.classroom);
+  const classroom = classroomQuery.data;
+  const assignments = assignmentsQuery.data ?? [];
+  const submissions = submissionsQuery.data ?? [];
 
-    } catch (err) {
-      console.error('Failed to fetch classroom data:', err);
-      setError('Failed to load classroom data. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [params.id]);
+  const handleCreateAssignment = useCallback(async (newAssignment: any): Promise<Assignment | null> => {
+    if (!classroomId) return null;
 
-  const fetchAssignments = useCallback(async () => {
-    if (!params.id) return;
-    try {
-      setIsLoadingAssignments(true);
-      const response = await axios.get(`/api/classrooms/${params.id}/assignments`, {
-        params: {
-          includeSubmissions: true
-        }
-      });
-      setAssignments(response.data);
-      assignmentsRef.current = response.data;
-    } catch (error) {
-      console.error('Failed to fetch assignments:', error);
-      setError('Failed to load assignments. Please try again later.');
-    } finally {
-      setIsLoadingAssignments(false);
-    }
-  }, [params.id]);
-
-
-  const fetchMembers = useCallback(async () => {
-    if (!params.id) return;
-    try {
-      const response = await axios.get(`/api/classrooms/${params.id}/members`);
-      setMembers(response.data);
-    } catch (error) {
-      console.error('Failed to fetch members:', error);
-      setError('Failed to load members. Please try again later.');
-    }
-  }, [params.id]);
-
-  const fetchSubmissions = useCallback(async () => {
-    if (!params.id) return;
-    try {
-      const response = await axios.get(`/api/classrooms/${params.id}/submissions`);
-      setSubmissions(response.data);
-    } catch (error) {
-      console.error('Failed to fetch submissions:', error);
-      setError('Failed to load submissions. Please try again later.');
-    }
-  }, [params.id]);
-
-  const fetchUserData = useCallback(async () => {
-    try {
-      const response = await axios.get('/api/user');
-      setDbUser(response.data);
-    } catch (error) {
-      console.error('Failed to fetch user data:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isUserLoaded && clerkUser) {
-      fetchUserData();
-    }
-  }, [isUserLoaded, clerkUser, fetchUserData]);
-
-  useEffect(() => {
-    if (isUserLoaded && clerkUser && params.id) {
-      fetchClassroomData();
-      fetchAssignments();
-      fetchMembers();
-      fetchSubmissions();
-    }
-  }, [isUserLoaded, clerkUser, params.id, fetchClassroomData, fetchAssignments, fetchMembers, fetchSubmissions]);
-
-  const handleCreateAssignment = async (newAssignment: any): Promise<Assignment | null> => {
     try {
       setIsCreatingAssignment(true);
       
       const formattedDeadline = newAssignment.deadline.toISOString();
-      const response = await axios.post(`/api/classrooms/${params.id}/assignments`, {
+      const response = await axios.post(`/api/classrooms/${classroomId}/assignments`, {
         ...newAssignment,
         deadline: formattedDeadline,
       });
       const createdAssignment = response.data;
       
-      const updatedAssignments = [...assignmentsRef.current, createdAssignment];
-      setAssignments(updatedAssignments);
-      assignmentsRef.current = updatedAssignments;
+      queryClient.setQueryData<Assignment[]>(['classroom', classroomId, 'assignments'], (current = []) => [
+        ...current,
+        createdAssignment,
+      ]);
 
-      await axios.post(`/api/classrooms/${params.id}/notify`, {
+      await axios.post(`/api/classrooms/${classroomId}/notify`, {
         assignmentTitle: newAssignment.title,
         assignmentDeadline: formattedDeadline,
         description: newAssignment.description,
@@ -215,24 +97,28 @@ const ClassroomPage = () => {
     } finally {
       setIsCreatingAssignment(false);
     }
-  };
+  }, [classroomId, queryClient]);
 
 
-  const handleDeleteAssignment = async (assignmentId: number): Promise<boolean> => {
+  const handleDeleteAssignment = useCallback(async (assignmentId: number): Promise<boolean> => {
+    if (!classroomId) return false;
+
     try {
-      await axios.delete(`/api/classrooms/${params.id}/assignments/${assignmentId}`);
-      const updatedAssignments = assignmentsRef.current.filter(a => a.id !== assignmentId);
-      setAssignments(updatedAssignments);
-      assignmentsRef.current = updatedAssignments;
+      await axios.delete(`/api/classrooms/${classroomId}/assignments/${assignmentId}`);
+      queryClient.setQueryData<Assignment[]>(['classroom', classroomId, 'assignments'], (current = []) =>
+        current.filter((assignment) => assignment.id !== assignmentId)
+      );
       return true;
     } catch (error) {
       console.error('Failed to delete assignment:', error);
       setError('Failed to delete assignment. Please try again.');
       return false;
     }
-  };
+  }, [classroomId, queryClient]);
 
-  const handleUpdateAssignment = async (assignmentId: number, updatedData: Partial<Assignment>): Promise<boolean> => {
+  const handleUpdateAssignment = useCallback(async (assignmentId: number, updatedData: Partial<Assignment>): Promise<boolean> => {
+    if (!classroomId) return false;
+
     try {
       const formattedData = {
         ...updatedData,
@@ -243,16 +129,15 @@ const ClassroomPage = () => {
           : new Date().toISOString()
       };
 
-      await axios.put(`/api/classrooms/${params.id}/assignments/${assignmentId}`, formattedData);
-      
-      const updatedAssignments = assignmentsRef.current.map(assignment => 
-        assignment.id === assignmentId 
+      await axios.put(`/api/classrooms/${classroomId}/assignments/${assignmentId}`, formattedData);
+
+      queryClient.setQueryData<Assignment[]>(['classroom', classroomId, 'assignments'], (current = []) =>
+        current.map((assignment) =>
+          assignment.id === assignmentId
           ? { ...assignment, ...updatedData, deadline: formattedData.deadline }
           : assignment
+        )
       );
-      
-      setAssignments(updatedAssignments);
-      assignmentsRef.current = updatedAssignments;
       
       return true;
     } catch (error) {
@@ -260,11 +145,9 @@ const ClassroomPage = () => {
       setError('Failed to update assignment. Please try again.');
       return false;
     }
-  };
+  }, [classroomId, queryClient]);
 
-  const totalPages = Math.ceil(members.length / ITEMS_PER_PAGE);
-
-  if (!isUserLoaded || isLoading) {
+  if (!isUserLoaded || classroomQuery.isLoading || isDbUserLoading) {
     return (
       <div className="container mx-auto p-6 max-w-7xl">
         <Skeleton className="h-[200px] w-full mb-8 rounded-lg" />
@@ -284,6 +167,8 @@ const ClassroomPage = () => {
   }
 
   if (!clerkUser) return <p className="text-center text-xl mt-10">You need to be logged in</p>;
+
+  if (classroomQuery.isError) return <p className="text-center text-xl mt-10 text-red-500">Failed to load classroom data. Please try again later.</p>;
 
   if (error) return <p className="text-center text-xl mt-10 text-red-500">{error}</p>;
 
@@ -326,14 +211,14 @@ const ClassroomPage = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full">
-            <Link href={`/classroom/${params.id}/resources`} className="w-full sm:w-auto">
+            <Link href={`/classroom/${classroomId}/resources`} className="w-full sm:w-auto">
               <Button className="w-full">
                 <BookOpen className="mr-2 h-4 w-4" />
                 {dbUser?.role === 'PROFESSOR' ? 'Manage Resources' : 'Resources'}
               </Button>
             </Link>
             {dbUser?.role !== 'STUDENT' && (
-              <Link href={`/classroom/${params.id}/attendance`} className="w-full sm:w-auto">
+              <Link href={`/classroom/${classroomId}/attendance`} className="w-full sm:w-auto">
                 <Button className="w-full">
                   <Users className="mr-2 h-4 w-4" />
                   {dbUser?.role === 'PROFESSOR' ? 'Manage Attendance' : 'Attendance'}
@@ -344,34 +229,41 @@ const ClassroomPage = () => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="assignments" className="mb-8">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
         <TabsList className="flex flex-wrap justify-center md:justify-around gap-2 mb-8">
           <TabsTrigger value="assignments" className="flex-grow sm:flex-grow-0">Assignments</TabsTrigger>
           <TabsTrigger value="grades" className="flex-grow sm:flex-grow-0">Grades</TabsTrigger>
-          <TabsTrigger value="code-execution" className="flex-grow sm:flex-grow-0">Code Execution</TabsTrigger>
         </TabsList>
         <TabsContent value="assignments">
           <AssignmentsTab
             assignments={assignments}
-            submissions={submissions}
-            classroomId={params.id as string}
+            submissions={[]}
+            classroomId={classroomId as string}
             userRole={dbUser?.role}
             onCreateAssignment={handleCreateAssignment}
             onDeleteAssignment={handleDeleteAssignment}
             onUpdateAssignment={handleUpdateAssignment}
             isCreatingAssignment={isCreatingAssignment}
-            isLoading={isLoadingAssignments}
+            isLoading={assignmentsQuery.isLoading}
           />
         </TabsContent>
         <TabsContent value="grades">
-          <GradesTab
-            submissions={submissions}
-            assignments={assignments}
-            userId={clerkUser?.id}
-          />
-        </TabsContent>
-        <TabsContent value="code-execution">
-          <CodeExecution />
+          {submissionsQuery.isLoading ? (
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-40" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[400px] w-full rounded-lg" />
+              </CardContent>
+            </Card>
+          ) : (
+            <GradesTab
+              submissions={submissions}
+              assignments={assignments}
+              userId={clerkUser?.id}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

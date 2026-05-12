@@ -278,7 +278,7 @@ function BentoFeatures() {
               Q
             </div>
             <div className="font-medium">
-              What's the time complexity of quicksort worst-case?
+              What&apos;s the time complexity of quicksort worst-case?
             </div>
             <div className="mt-2 text-gray-500 dark:text-gray-400 text-xs">
               A

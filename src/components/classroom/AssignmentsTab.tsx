@@ -9,17 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, set } from "date-fns";
+import { format } from "date-fns";
 import { Clock, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
-import axios from 'axios';
 import { useToast } from "@/components/ui/use-toast";
 import ConfirmationModal from '@/components/classroom/ConfirmationModal';
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { Badge } from "@/components/ui/badge";
-import { Submission } from '@prisma/client';
-import { generateWithGemini, parseRequirementsFromGeminiResponse } from '@/lib/utils/gemini';
 
 interface Assignment {
   id: number;
@@ -36,6 +31,11 @@ interface Assignment {
     marks?: number;
     submittedAt?: string;
   };
+  submissions?: {
+    id: string;
+    submittedAt: string;
+    marks: number;
+  }[];
 }
 
 interface AssignmentsTabProps {
@@ -187,6 +187,11 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
 
     setIsGenerating(true);
     try {
+      const {
+        generateWithGemini,
+        parseRequirementsFromGeminiResponse,
+      } = await import('@/lib/utils/gemini');
+
       const prompt = `You are an experienced professor creating requirements for an assignment.
 
 Assignment Title: "${newAssignment.title}"
@@ -226,6 +231,13 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const hasSubmission = (assignment: Assignment) => {
+    return (
+      assignment.submissions?.some((submission) => submission.id) ||
+      submissions?.some((sub) => sub.assignmentId === assignment.id.toString())
+    );
   };
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
@@ -583,7 +595,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
                         {new Date(assignment.deadline) < new Date() ? 'Overdue' : 'Due'} {format(new Date(assignment.deadline), 'MMM d')}
                       </Badge>
                       
-                      {submissions?.some(sub => sub.assignmentId === assignment.id.toString()) && (
+                      {hasSubmission(assignment) && (
                         <Badge variant="secondary" className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 hover:bg-green-100/80 dark:hover:bg-green-900/80">
                           Submitted
                         </Badge>
@@ -687,7 +699,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
                       <Badge variant="destructive" className="text-xs">
                         Overdue
                       </Badge>
-                      {submissions?.some(sub => sub.assignmentId === assignment.id.toString()) && (
+                      {hasSubmission(assignment) && (
                         <Badge variant="secondary" className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-xs">
                           Submitted
                         </Badge>
