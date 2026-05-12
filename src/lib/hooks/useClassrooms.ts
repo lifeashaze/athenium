@@ -3,7 +3,7 @@ import axios from 'axios'
 import { useToast } from "@/components/ui/use-toast"
 
 interface Classroom {
-  id: number
+  id: string
   name: string
   code: string
   year: string
@@ -80,7 +80,7 @@ export function useClassrooms() {
   })
 
   const leaveMutation = useMutation({
-    mutationFn: async (classroomId: number) => {
+    mutationFn: async (classroomId: string) => {
       await axios.post(`/api/classrooms/${classroomId}/leave`)
     },
     onSuccess: () => {
@@ -100,7 +100,7 @@ export function useClassrooms() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: async (classroomId: number) => {
+    mutationFn: async (classroomId: string) => {
       await axios.delete(`/api/classrooms/${classroomId}`)
     },
     onSuccess: () => {

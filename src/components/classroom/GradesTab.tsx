@@ -19,7 +19,7 @@ interface Submission {
 }
 
 interface Assignment {
-  id: number;
+  id: string;
   title: string;
   type: 'theory' | 'lab';
   deadline: string;

@@ -17,7 +17,7 @@ import ConfirmationModal from '@/components/classroom/ConfirmationModal';
 import { Badge } from "@/components/ui/badge";
 
 interface Assignment {
-  id: number;
+  id: string;
   title: string;
   deadline: string;
   description?: string;
@@ -43,8 +43,8 @@ interface AssignmentsTabProps {
   classroomId: string;
   userRole: 'STUDENT' | 'PROFESSOR' | 'ADMIN' | undefined; // Update this line
   onCreateAssignment: (assignment: any) => Promise<Assignment | null>;
-  onDeleteAssignment: (assignmentId: number) => Promise<boolean>;
-  onUpdateAssignment: (assignmentId: number, updatedData: Partial<Assignment>) => Promise<boolean>;
+  onDeleteAssignment: (assignmentId: string) => Promise<boolean>;
+  onUpdateAssignment: (assignmentId: string, updatedData: Partial<Assignment>) => Promise<boolean>;
   isCreatingAssignment: boolean;
   isLoading: boolean;
   submissions: {
@@ -236,7 +236,7 @@ Keep the requirements concise but detailed enough for proper evaluation.`;
   const hasSubmission = (assignment: Assignment) => {
     return (
       assignment.submissions?.some((submission) => submission.id) ||
-      submissions?.some((sub) => sub.assignmentId === assignment.id.toString())
+      submissions?.some((sub) => sub.assignmentId === assignment.id)
     );
   };
 

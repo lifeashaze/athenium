@@ -2,21 +2,21 @@ import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 
 export interface Classroom {
-  id: number
+  id: string
   name: string
   code: string
-  inviteLink: string
+  inviteLink?: string
   year: string
   division: string
   creatorFirstName: string
   creatorLastName: string
-  creatorEmail: string
+  creatorEmail?: string
   courseCode: string
   courseName: string
 }
 
 export interface Assignment {
-  id: number
+  id: string
   title: string
   type: 'theory' | 'lab'
   deadline: string
@@ -47,14 +47,28 @@ export interface Submission {
   }
 }
 
+export async function fetchClassroom(classroomId: string) {
+  const response = await axios.get(`/api/classrooms/${classroomId}`)
+  return response.data.classroom as Classroom
+}
+
+export async function fetchClassroomAssignments(classroomId: string) {
+  const response = await axios.get(`/api/classrooms/${classroomId}/assignments`, {
+    params: { includeSubmissions: true },
+  })
+  return response.data as Assignment[]
+}
+
+export async function fetchClassroomSubmissions(classroomId: string) {
+  const response = await axios.get(`/api/classrooms/${classroomId}/submissions`)
+  return response.data as Submission[]
+}
+
 export function useClassroom(classroomId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: ['classroom', classroomId],
     enabled: enabled && !!classroomId,
-    queryFn: async () => {
-      const response = await axios.get(`/api/classrooms/${classroomId}`)
-      return response.data.classroom as Classroom
-    },
+    queryFn: () => fetchClassroom(classroomId as string),
   })
 }
 
@@ -62,12 +76,7 @@ export function useClassroomAssignments(classroomId: string | undefined, enabled
   return useQuery({
     queryKey: ['classroom', classroomId, 'assignments'],
     enabled: enabled && !!classroomId,
-    queryFn: async () => {
-      const response = await axios.get(`/api/classrooms/${classroomId}/assignments`, {
-        params: { includeSubmissions: true },
-      })
-      return response.data as Assignment[]
-    },
+    queryFn: () => fetchClassroomAssignments(classroomId as string),
   })
 }
 
@@ -75,9 +84,6 @@ export function useClassroomSubmissions(classroomId: string | undefined, enabled
   return useQuery({
     queryKey: ['classroom', classroomId, 'submissions'],
     enabled: enabled && !!classroomId,
-    queryFn: async () => {
-      const response = await axios.get(`/api/classrooms/${classroomId}/submissions`)
-      return response.data as Submission[]
-    },
+    queryFn: () => fetchClassroomSubmissions(classroomId as string),
   })
 }
